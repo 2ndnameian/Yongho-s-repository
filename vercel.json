@@ -1,5 +1,1 @@
-{
-  "functions": {
-    "api/news.js": { "runtime": "nodejs20.x" }
-  }
-}
+json{}
