@@ -1,1 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업훈련 뉴스 인텔리전스</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans KR',sans-serif; background:#070d1f; color:#e2e8f0; min-height:100vh; }
+  .header { background:linear-gradient(90deg,#05091a,#0b1535,#05091a); border-bottom:1px solid rgba(99,179,237,0.10); padding:0 24px; height:54px; display:flex; align-items:center; gap:14px; }
+  .logo { width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .header-title { font-size:14px; font-weight:800; color:#f1f5f9; }
+  .header-sub { font-size:10px; color:#334155; }
+  .layout { display:flex; height:calc(100vh - 54px); }
+  .sidebar { width:210px; background:#09111f; border-right:1px solid rgba(255,255,255,0.05); padding:14px 10px; overflow-y:auto; flex-shrink:0; }
+  .sidebar-label { font-size:9px; color:#1e3a5f; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; }
+  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:7px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#4b5563; font-size:13px; text-align:left; transition:all 0.12s; }
+  .sidebar-btn.active { background:rgba(59,130,246,0.15); color:#93c5fd; font-weight:700; }
+  .sidebar-btn:hover:not(.active) { background:rgba(255,255,255,0.03); }
+  .badge { font-size:10px; padding:1px 6px; border-radius:10px; background:rgba(255,255,255,0.07); color:#6b7280; font-weight:700; }
+  .badge.active { background:#3b82f6; color:white; }
+  .main { flex:1; overflow-y:auto; padding:20px 24px; }
+  .card { background:#0d1526; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:18px; margin-bottom:14px; }
+  .kw-chip { padding:6px 13px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#374151; transition:all 0.12s; margin:3px; display:inline-block; }
+  .kw-chip.on { font-weight:600; }
+  .btn-primary { width:100%; padding:13px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#3b82f6,#8b5cf6); transition:all 0.2s; }
+  .btn-primary:disabled { background:rgba(100,116,139,0.22); cursor:not-allowed; }
+  .progress-bar { background:rgba(255,255,255,0.06); border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
+  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#3b82f6,#8b5cf6); }
+  .news-card { background:#0d1526; border-radius:11px; overflow:hidden; margin-bottom:9px; }
+  .news-header { padding:8px 14px; display:flex; justify-content:space-between; align-items:center; }
+  .news-body { padding:11px 14px; }
+  .news-title { font-size:13px; font-weight:700; color:#f1f5f9; margin-bottom:5px; line-height:1.45; }
+  .news-title a { color:#f1f5f9; text-decoration:none; }
+  .news-title a:hover { color:#93c5fd; }
+  .news-summary { font-size:12px; color:#64748b; line-height:1.6; margin-bottom:8px; }
+  .tag { font-size:10px; padding:2px 7px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:4px; color:#374151; margin-right:4px; }
+  .urgency-badge { font-size:10px; padding:2px 7px; border-radius:4px; font-weight:700; }
+  .ai-result { background:rgba(139,92,246,0.05); border:1px solid rgba(139,92,246,0.18); border-radius:8px; padding:10px 12px; margin-top:8px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .analysis-box { border-radius:6px; padding:8px 10px; }
+  .step-item { display:flex; align-items:center; gap:10px; padding:7px 12px; border-radius:8px; margin-bottom:6px; transition:all 0.3s; }
+  .divider { height:1px; background:rgba(255,255,255,0.04); margin:8px 0; }
+</style>
+</head>
+<body>
 
+<div class="header">
+  <div class="logo">📡</div>
+  <div>
+    <div class="header-title">직업훈련 뉴스 인텔리전스</div>
+    <div class="header-sub">네이버 뉴스 실시간 수집 · 최근 7일</div>
+  </div>
+  <div id="ticker" style="flex:1;overflow:hidden;margin:0 12px;border-left:1px solid rgba(255,255,255,0.06);padding-left:14px;display:none;">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <span style="font-size:9px;padding:2px 5px;background:#3b82f6;color:white;border-radius:3px;font-weight:800;">LIVE</span>
+      <span id="ticker-text" style="font-size:12px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-label">메뉴</div>
+    <button class="sidebar-btn active" onclick="showTab('search')">🔍 키워드 설정 <span class="badge active" id="kw-count">12개</span></button>
+    <button class="sidebar-btn" onclick="showTab('results')">📋 수집 결과 <span class="badge" id="result-count"></span></button>
+    <button class="sidebar-btn" onclick="showTab('detail')">🤖 AI 심층분석 <span class="badge" id="detail-badge"></span></button>
+    <div class="divider"></div>
+    <div class="sidebar-label">검색 출처</div>
+    <div style="padding:7px 9px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.14);border-radius:6px;margin-bottom:5px;">
+      <div style="font-size:10px;color:#6ee7b7;font-weight:700;margin-bottom:2px;">🏛️ 정부·지자체</div>
+      <div style="font-size:10px;color:#374151;">고용노동부·교육부·과기정통부 외</div>
+    </div>
+    <div style="padding:7px 9px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.14);border-radius:6px;">
+      <div style="font-size:10px;color:#a5b4fc;font-weight:700;margin-bottom:2px;">📰 언론사</div>
+      <div style="font-size:10px;color:#374151;">연합뉴스·매일경제·한겨레 외</div>
+    </div>
+    <div class="divider"></div>
+    <div id="filter-section" style="display:none;">
+      <div class="sidebar-label">영역 필터</div>
+      <div id="filter-groups"></div>
+      <div class="sidebar-label" style="margin-top:8px;">긴급도</div>
+      <div id="filter-urgency"></div>
+    </div>
+    <div style="margin-top:auto;padding:10px 4px;font-size:10px;color:#334155;line-height:1.8;" id="sidebar-stats">
+      <div>📦 키워드 <span id="stat-kw">12</span>개</div>
+      <div>📊 수집 <span id="stat-news">0</span>건</div>
+      <div style="color:#10b981;">🤖 분석 <span id="stat-analyzed">0</span>건</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- 키워드 설정 탭 -->
+    <div id="tab-search">
+      <div style="background:linear-gradient(135deg,rgba(59,130,246,0.09),rgba(139,92,246,0.09));border:1px solid rgba(59,130,246,0.18);border-radius:16px;padding:20px 24px;margin-bottom:14px;">
+        <div style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:5px;">🔍 실시간 뉴스 수집</div>
+        <p style="font-size:12px;color:#475569;line-height:1.7;">키워드를 선택하면 <strong style="color:#6ee7b7;">네이버 뉴스</strong>에서 최근 7일 실제 기사를 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#c4b5fd;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
+      </div>
+      <div id="week-range" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.18);border-radius:8px;padding:7px 14px;margin-bottom:12px;font-size:12px;color:#6ee7b7;"></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;overflow-x:auto;" id="group-tabs"></div>
+      <div id="keyword-panel"></div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:7px;">➕ 추가 키워드</div>
+        <textarea id="custom-kw" placeholder="쉼표·줄바꿈으로 구분&#10;예: 스마트제조 훈련, 반도체 교육..." style="width:100%;min-height:64px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:12px;outline:none;resize:vertical;line-height:1.6;font-family:inherit;"></textarea>
+      </div>
+      <button class="btn-primary" id="search-btn" onclick="runSearch()">🌐 수집 시작</button>
+      <div id="progress-panel" style="display:none;" class="card" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- 수집 결과 탭 -->
+    <div id="tab-results" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:2px;">📋 수집 결과 — 최근 7일</div>
+          <div style="font-size:11px;color:#374151;" id="result-meta"></div>
+        </div>
+        <div style="display:flex;gap:7px;">
+          <input id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 11px;color:#e2e8f0;font-size:12px;outline:none;width:150px;">
+          <button onclick="showTab('search')" style="padding:6px 13px;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.28);border-radius:7px;color:#93c5fd;font-size:12px;cursor:pointer;">🔄 재수집</button>
+        </div>
+      </div>
+      <div id="error-log" style="display:none;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
+      <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;"></div>
+      <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.16);border-radius:8px;padding:7px 14px;margin-bottom:12px;font-size:12px;color:#c4b5fd;">
+        💡 카드의 <strong>🤖 AI 분석</strong>으로 필요한 항목만 개별 분석 · 🔗 링크로 원문 확인
+      </div>
+      <div id="news-list"></div>
+    </div>
+
+    <!-- AI 심층분석 탭 -->
+    <div id="tab-detail" style="display:none;">
+      <div id="detail-content" style="text-align:center;padding:70px 20px;">
+        <div style="font-size:44px;margin-bottom:12px;">🤖</div>
+        <div style="font-size:14px;color:#374151;">수집 결과에서 <strong style="color:#c4b5fd;">상세 →</strong> 버튼을 클릭하세요</div>
+        <button onclick="showTab('results')" style="margin-top:14px;padding:8px 20px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:7px;color:#93c5fd;font-size:13px;cursor:pointer;">결과 목록으로 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NEWS_API = "https://yongho-s-repository-git-main-2ndnameians-projects.vercel.app/api/news";
+const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+
+const GROUPS = [
+  { id:"vocational", label:"직업훈련 정책", icon:"🏛️", color:"59,130,246",
+    keywords:["직업훈련","국비훈련","고용노동부 직업훈련","KDT","KDC","직업능력개발훈련","훈련기관 평가","HRD-Net","훈련비 지원","재직자 훈련","청년 직업훈련","기업맞춤형 훈련"] },
+  { id:"education", label:"교육 동향", icon:"📚", color:"139,92,246",
+    keywords:["AI 인재양성","디지털 교육","에듀테크","평생교육","마이크로디그리","소프트웨어 교육","AI 교육","데이터 교육","융합교육","산학협력 교육","교육부 정책","미래교육"] },
+  { id:"industry", label:"산업 동향", icon:"🏭", color:"16,185,129",
+    keywords:["AI 산업","반도체 산업","로봇 산업","디지털 전환","IT 인력 부족","개발자 채용","AI 투자","기업 AI 전략","디지털 인력 수요","데이터 산업"] },
+  { id:"competitor", label:"경쟁기관 레이더", icon:"🎯", color:"245,158,11",
+    keywords:["직업훈련기관","IT 교육기관","코딩 교육","AI 교육기관","부트캠프","취업연계 교육","훈련기관 신규 과정","교육기관 확장","훈련기관 투자","교육기관 MOU"] },
+];
+
+const URGENCY = {
+  critical:{ label:"긴급", color:"#ef4444", bg:"rgba(239,68,68,0.10)", border:"rgba(239,68,68,0.30)" },
+  high:    { label:"주의", color:"#f59e0b", bg:"rgba(245,158,11,0.09)", border:"rgba(245,158,11,0.30)" },
+  medium:  { label:"보통", color:"#3b82f6", bg:"rgba(59,130,246,0.08)", border:"rgba(59,130,246,0.25)" },
+  low:     { label:"참고", color:"#64748b", bg:"rgba(100,116,139,0.07)", border:"rgba(100,116,139,0.18)" },
+};
+
+let selectedKws = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
+let activeGroup = "vocational";
+let allResults  = {};
+let analysisMap = {};
+let selectedNews = null;
+let filterGroup  = "all";
+let filterUrgency= "all";
+let tickerTimer  = null;
+let tickerIdx    = 0;
+
+// ── 초기화 ──
+function init() {
+  const now  = new Date();
+  const ago  = new Date(now - 7*24*60*60*1000);
+  const fmt  = d => d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
+  document.getElementById("week-range").textContent = `📅 수집 기간: ${fmt(ago)} ~ ${fmt(now)}`;
+  renderGroupTabs();
+  renderKeywordPanel();
+  updateKwCount();
+}
+
+function renderGroupTabs() {
+  const el = document.getElementById("group-tabs");
+  el.innerHTML = GROUPS.map(g => {
+    const cnt = (selectedKws[g.id]||[]).length;
+    const active = g.id === activeGroup;
+    return `<button onclick="setActiveGroup('${g.id}')" style="display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;flex-shrink:0;border:1px solid ${active?`rgba(${g.color},0.45)`:"rgba(255,255,255,0.07)"};background:${active?`rgba(${g.color},0.12)`:"rgba(255,255,255,0.02)"};color:${active?`rgb(${g.color})`:"#4b5563"};font-size:13px;font-weight:600;cursor:pointer;">
+      ${g.icon} ${g.label} <span style="font-size:11px;padding:0 5px;border-radius:8px;background:${active?`rgba(${g.color},0.2)`:"rgba(255,255,255,0.06)"};color:${active?`rgb(${g.color})`:"#6b7280"};">${cnt}</span>
+    </button>`;
+  }).join("");
+}
+
+function renderKeywordPanel() {
+  const group = GROUPS.find(g=>g.id===activeGroup);
+  const sel   = selectedKws[group.id]||[];
+  document.getElementById("keyword-panel").innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:#f1f5f9;">${group.icon} ${group.label} <span style="font-size:11px;color:#4b5563;">${sel.length}/${group.keywords.length}개</span></div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="clearGroup('${group.id}')" style="font-size:11px;padding:3px 9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:5px;color:#4b5563;cursor:pointer;">해제</button>
+          <button onclick="selectAllGroup('${group.id}')" style="font-size:11px;padding:3px 9px;background:rgba(${group.color},0.08);border:1px solid rgba(${group.color},0.25);border-radius:5px;color:rgb(${group.color});cursor:pointer;">전체</button>
+        </div>
+      </div>
+      <div>${group.keywords.map(kw => {
+        const on = sel.includes(kw);
+        return `<span class="kw-chip ${on?"on":""}" onclick="toggleKw('${group.id}','${kw}')"
+          style="${on?`background:rgba(${group.color},0.15);border-color:rgba(${group.color},0.45);color:rgb(${group.color});`:""}">
+          ${on?"✓ ":""}${kw}</span>`;
+      }).join("")}</div>
+    </div>`;
+}
+
+function setActiveGroup(id) { activeGroup=id; renderGroupTabs(); renderKeywordPanel(); }
+function toggleKw(gid, kw) {
+  const cur = selectedKws[gid]||[];
+  selectedKws[gid] = cur.includes(kw) ? cur.filter(k=>k!==kw) : [...cur,kw];
+  renderKeywordPanel(); renderGroupTabs(); updateKwCount();
+}
+function clearGroup(gid)     { selectedKws[gid]=[]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
+function selectAllGroup(gid) { selectedKws[gid]=[...GROUPS.find(g=>g.id===gid).keywords]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
+function updateKwCount() {
+  const total = Object.values(selectedKws).flat().length;
+  document.getElementById("kw-count").textContent = total+"개";
+  document.getElementById("stat-kw").textContent  = total;
+  const btn = document.getElementById("search-btn");
+  btn.disabled = total===0;
+  btn.textContent = total===0 ? "키워드를 선택하세요" : `🌐 수집 시작 — ${total}개 키워드`;
+}
+
+function showTab(id) {
+  ["search","results","detail"].forEach(t => {
+    document.getElementById("tab-"+t).style.display = t===id?"block":"none";
+    document.querySelectorAll(".sidebar-btn")[["search","results","detail"].indexOf(t)].classList.toggle("active", t===id);
+  });
+  if (id==="results") {
+    document.getElementById("filter-section").style.display="block";
+    renderFilterGroups(); renderFilterUrgency(); renderResults();
+  }
+}
+
+// ── 수집 ──
+async function runSearch() {
+  const activeGroups = GROUPS.filter(g=>(selectedKws[g.id]||[]).length>0);
+  if (!activeGroups.length) return;
+
+  const btn = document.getElementById("search-btn");
+  btn.disabled = true;
+  btn.textContent = "⏳ 수집 중...";
+
+  allResults = {};
+  const errors = [];
+  const panel  = document.getElementById("progress-panel");
+  panel.style.display = "block";
+  panel.style.marginTop = "14px";
+
+  const total = activeGroups.length + 1;
+
+  const renderProgress = (pct, steps) => {
+    panel.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:13px;color:#93c5fd;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
+        <span style="font-size:13px;font-weight:800;color:#f1f5f9;">${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${pct===100?"background:linear-gradient(90deg,#10b981,#34d399)":""}"></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${steps.map(s=>{
+          const colors = {pending:"#334155",running:"#3b82f6",done:"#10b981",error:"#ef4444"};
+          const icons  = {pending:"○",running:"◉",done:"✓",error:"✕"};
+          const isCur  = s.status==="running";
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;background:${isCur?"rgba(59,130,246,0.10)":s.status==="done"?"rgba(16,185,129,0.06)":s.status==="error"?"rgba(239,68,68,0.06)":"rgba(255,255,255,0.02)"};border:1px solid ${isCur?"rgba(59,130,246,0.30)":s.status==="done"?"rgba(16,185,129,0.20)":s.status==="error"?"rgba(239,68,68,0.20)":"rgba(255,255,255,0.05)"};">
+            <span style="font-size:14px;color:${colors[s.status]};font-weight:700;width:16px;text-align:center;">${icons[s.status]}</span>
+            <span style="font-size:12px;color:${isCur?"#93c5fd":s.status==="done"?"#6ee7b7":s.status==="error"?"#f87171":"#4b5563"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
+            ${s.status==="running"?`<span style="font-size:10px;color:#3b82f6;padding:2px 8px;background:rgba(59,130,246,0.12);border-radius:4px;">검색 중</span>`:""}
+            ${s.status==="done"&&s.id!=="__done__"?`<span style="font-size:10px;color:#10b981;">${(allResults[s.id]||[]).length}건</span>`:""}
+            ${s.status==="error"?`<span style="font-size:10px;color:#f87171;">없음</span>`:""}
+          </div>`;
+        }).join("")}
+      </div>
+      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:8px 12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.18);border-radius:8px;font-size:12px;color:#6ee7b7;">📥 현재까지 수집: <strong>${Object.values(allResults).flat().length}건</strong></div>`:""}
+    `;
+  };
+
+  let steps = [
+    ...activeGroups.map(g=>({id:g.id, label:`${g.icon} ${g.label}`, status:"pending"})),
+    {id:"__done__", label:"✅ 수집 완료", status:"pending"},
+  ];
+
+  for (let gi=0; gi<activeGroups.length; gi++) {
+    const group = activeGroups[gi];
+    const kws   = (selectedKws[group.id]||[]).slice(0,4);
+    const custom = document.getElementById("custom-kw").value;
+    const extras = custom ? custom.split(/[,\n]/).map(k=>k.trim()).filter(Boolean) : [];
+    const allKws = [...kws, ...extras].slice(0,6);
+
+    steps[gi].status = "running";
+    renderProgress(Math.round((gi/total)*100), steps);
+
+    try {
+      const res   = await fetch(`${NEWS_API}?keywords=${encodeURIComponent(allKws.join(","))}`);
+      if (!res.ok) throw new Error("HTTP "+res.status);
+      const items = await res.json();
+
+      if (Array.isArray(items) && items.length>0) {
+        allResults[group.id] = items.slice(0,6).map((item,i) => {
+          const title   = (item.title||"").replace(/<[^>]+>/g,"");
+          const summary = (item.description||"").replace(/<[^>]+>/g,"");
+          let source = "네이버뉴스";
+          try { source = new URL(item.originallink||item.link).hostname.replace("www.",""); } catch{}
+          let date = "";
+          try { const d=new Date(item.pubDate); date=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; } catch{}
+          const urgency = title.includes("긴급")||title.includes("폐지")||title.includes("중단")?"critical":title.includes("확대")||title.includes("개편")||title.includes("신규")?"high":title.includes("모집")||title.includes("공고")?"medium":"low";
+          return { id:`${group.id}-${i}-${Date.now()}`, groupId:group.id, groupLabel:group.label, groupColor:group.color, title, summary, detail:"", action:"", source, url:item.link||"", date, urgency, impact:"medium", tags:[group.label] };
+        });
+        steps[gi].status = "done";
+      } else {
+        allResults[group.id] = [];
+        errors.push(`[${group.label}] 검색 결과 없음`);
+        steps[gi].status = "error";
+      }
+    } catch(e) {
+      allResults[group.id] = [];
+      errors.push(`[${group.label}] 오류: ${e.message}`);
+      steps[gi].status = "error";
+    }
+    renderProgress(Math.round(((gi+1)/total)*100), steps);
+  }
+
+  steps[activeGroups.length].status = "done";
+  renderProgress(100, steps);
+
+  document.getElementById("stat-news").textContent = Object.values(allResults).flat().length;
+  document.getElementById("result-count").textContent = Object.values(allResults).flat().length+"건";
+
+  btn.disabled = false;
+  btn.textContent = `🌐 재수집`;
+
+  startTicker();
+  setTimeout(()=>showTab("results"), 700);
+}
+
+// ── 결과 렌더링 ──
+function renderResults() {
+  const allNews = Object.values(allResults).flat();
+  const q = document.getElementById("search-filter")?.value||"";
+  const filtered = allNews.filter(n=>{
+    const gOk = filterGroup==="all"||n.groupId===filterGroup;
+    const uOk = filterUrgency==="all"||n.urgency===filterUrgency;
+    const qOk = !q||n.title.includes(q)||n.summary.includes(q);
+    return gOk&&uOk&&qOk;
+  });
+
+  const lastSearch = document.getElementById("result-meta");
+  if (lastSearch) lastSearch.textContent = `총 ${allNews.length}건 수집`;
+
+  // 통계
+  const statsRow = document.getElementById("stats-row");
+  const crit = allNews.filter(n=>n.urgency==="critical").length;
+  const high = allNews.filter(n=>n.urgency==="high").length;
+  const analyzed = Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error).length;
+  statsRow.innerHTML = [
+    {label:"전체",count:allNews.length,col:"99,102,241",icon:"📋"},
+    {label:"긴급",count:crit,col:"239,68,68",icon:"🔴"},
+    {label:"주의",count:high,col:"245,158,11",icon:"🟡"},
+    {label:"분석완료",count:analyzed,col:"16,185,129",icon:"🤖"},
+  ].map(s=>`<div style="background:rgba(${s.col},0.07);border:1px solid rgba(${s.col},0.20);border-radius:9px;padding:11px 13px;display:flex;gap:9px;align-items:center;">
+    <span style="font-size:18px;">${s.icon}</span>
+    <div><div style="font-size:19px;font-weight:800;color:rgb(${s.col});line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
+  </div>`).join("");
+
+  // 오류
+  const errEl = document.getElementById("error-log");
+  const errors = GROUPS.map(g=>allResults[g.id]===undefined?null:allResults[g.id].length===0?`[${g.label}] 결과 없음`:null).filter(Boolean);
+  if (errors.length) { errEl.style.display="block"; errEl.innerHTML=`<div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:5px;">⚠️ 수집 알림</div>`+errors.map(e=>`<div style="font-size:11px;color:#fde68a;">${e}</div>`).join(""); }
+  else errEl.style.display="none";
+
+  // 뉴스 목록
+  const list = document.getElementById("news-list");
+  const groups = filterGroup==="all" ? GROUPS : GROUPS.filter(g=>g.id===filterGroup);
+  list.innerHTML = groups.map(group=>{
+    const gNews = filtered.filter(n=>n.groupId===group.id);
+    if (!gNews.length) return "";
+    return `<div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+        <span style="font-size:11px;padding:3px 11px;background:rgba(${group.color},0.10);border:1px solid rgba(${group.color},0.28);border-radius:6px;color:rgb(${group.color});font-weight:700;">${group.icon} ${group.label}</span>
+        <span style="font-size:10px;color:#374151;">${gNews.length}건</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.04);"></div>
+      </div>
+      ${gNews.map(news=>renderNewsCard(news)).join("")}
+    </div>`;
+  }).join("");
+}
+
+function renderNewsCard(news) {
+  const u   = URGENCY[news.urgency]||URGENCY.medium;
+  const ai  = analysisMap[news.id];
+  const gcol= news.groupColor||"59,130,246";
+  return `<div class="news-card" style="border:1px solid ${u.border};">
+    <div class="news-header" style="background:${u.bg};border-bottom:1px solid ${u.border};">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${u.color};flex-shrink:0;display:inline-block;"></span>
+        <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.color};">${u.label}</span>
+        <span style="font-size:10px;color:#475569;">📅 ${news.date} · ${news.source}</span>
+      </div>
+      <div style="display:flex;gap:5px;">
+        ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:10px;padding:3px 10px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);border-radius:5px;color:#c4b5fd;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
+        ${ai&&!ai.error?`<span style="font-size:10px;color:#10b981;padding:3px 6px;">✅</span>`:""}
+        <button onclick="openDetail('${news.id}')" style="font-size:10px;padding:3px 10px;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.28);border-radius:5px;color:#93c5fd;cursor:pointer;">상세 →</button>
+      </div>
+    </div>
+    <div class="news-body">
+      <div class="news-title">${news.url?`<a href="${news.url}" target="_blank">${news.title} <span style="font-size:11px;color:#3b82f6;">🔗</span></a>`:news.title}</div>
+      <div class="news-summary">${news.summary}</div>
+      ${ai&&!ai.error?`<div class="ai-result">
+        <div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;">
+          <span style="font-size:10px;color:#8b5cf6;font-weight:700;">🤖 AI 분석</span>
+          <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(139,92,246,0.12);color:${ai.risk_level==="높음"?"#ef4444":ai.risk_level==="보통"?"#f59e0b":"#10b981"};font-weight:700;">위험 ${ai.risk_level}</span>
+        </div>
+        <p style="font-size:11px;color:#cbd5e1;line-height:1.55;margin:0 0 6px;">${ai.key_insight}</p>
+        <div class="grid2">
+          <div class="analysis-box" style="background:rgba(239,68,68,0.05);">
+            <div style="font-size:10px;color:#f87171;font-weight:700;margin-bottom:2px;">🚨 즉시 조치</div>
+            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="font-size:10px;color:#fca5a5;line-height:1.5;">${i+1}. ${a}</div>`).join("")}
+          </div>
+          <div class="analysis-box" style="background:rgba(16,185,129,0.05);">
+            <div style="font-size:10px;color:#10b981;font-weight:700;margin-bottom:2px;">✨ 기회</div>
+            <p style="font-size:10px;color:#a7f3d0;margin:0;line-height:1.5;">${ai.opportunity}</p>
+          </div>
+        </div>
+      </div>`:""}
+      <div style="margin-top:7px;">${(news.tags||[]).slice(0,5).map(t=>`<span class="tag">#${t}</span>`).join("")}</div>
+    </div>
+  </div>`;
+}
+
+// ── AI 분석 ──
+const allNewsMap = () => Object.values(allResults).flat().reduce((m,n)=>(m[n.id]=n,m),{});
+
+async function analyzeNews(id) {
+  const news = allNewsMap()[id];
+  if (!news || analysisMap[id]) return;
+  analysisMap[id] = { loading:true };
+  renderResults();
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "anthropic-beta":"claude-ai-artifacts" },
+      body: JSON.stringify({
+        model:"claude-sonnet-4-6", max_tokens:900,
+        messages:[{ role:"user", content:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})` }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+    const parsed = (() => {
+      try { return JSON.parse(text); } catch{}
+      try { const a=text.indexOf("{"),b=text.lastIndexOf("}"); if(a!==-1&&b>a) return JSON.parse(text.slice(a,b+1)); } catch{}
+      return null;
+    })();
+    analysisMap[id] = parsed || { error:"파싱 실패" };
+  } catch(e) {
+    analysisMap[id] = { error: e.message };
+  }
+  document.getElementById("stat-analyzed").textContent = Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error&&!analysisMap[k]?.loading).length;
+  renderResults();
+  if (selectedNews?.id===id) openDetail(id);
+}
+
+// ── 상세 ──
+function openDetail(id) {
+  const news = allNewsMap()[id];
+  if (!news) return;
+  selectedNews = news;
+  document.getElementById("detail-badge").textContent = "●";
+  showTab("detail");
+
+  const ai  = analysisMap[id];
+  const u   = URGENCY[news.urgency]||URGENCY.medium;
+  const gcol= news.groupColor||"59,130,246";
+
+  document.getElementById("detail-content").innerHTML = `
+    <div style="display:flex;gap:7px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <button onclick="showTab('results')" style="padding:4px 11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;">← 목록</button>
+      <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.color};">${u.label}</span>
+      <span style="font-size:10px;padding:2px 8px;background:rgba(${gcol},0.09);border:1px solid rgba(${gcol},0.25);border-radius:4px;color:rgb(${gcol});">${news.groupLabel}</span>
+      <span style="font-size:11px;color:#374151;">${news.date} · ${news.source}</span>
+      ${news.url?`<a href="${news.url}" target="_blank" style="font-size:11px;color:#60a5fa;">🔗 원문</a>`:""}
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:800;color:#f1f5f9;line-height:1.45;margin-bottom:9px;">${news.title}</div>
+      <p style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:10px;">${news.summary}</p>
+    </div>
+    <div class="card" style="border:1px solid rgba(139,92,246,0.28);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:#c4b5fd;">🤖 Claude AI 심층 분석</div>
+        <div style="display:flex;gap:7px;align-items:center;">
+          ${!ai||ai.loading?`<button onclick="analyzeNews('${id}')" style="padding:6px 15px;background:rgba(139,92,246,0.14);border:1px solid rgba(139,92,246,0.38);border-radius:7px;color:#c4b5fd;font-size:12px;font-weight:600;cursor:pointer;">${ai?.loading?"⏳ 분석 중...":"🔍 분석 실행"}</button>`:""}
+          ${ai&&!ai.error&&!ai.loading?`<span style="font-size:11px;color:#10b981;">✅ 완료</span><button onclick="delete analysisMap['${id}'];openDetail('${id}')" style="font-size:10px;padding:3px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;color:#4b5563;cursor:pointer;">↩ 재분석</button>`:""}
+        </div>
+      </div>
+      ${!ai?`<div style="text-align:center;padding:24px;color:#374151;font-size:13px;"><div style="font-size:32px;margin-bottom:9px;">🔍</div>분석 실행 버튼으로 훈련기관 관점 대응 방안을 분석합니다.</div>`:""}
+      ${ai?.loading?`<div style="text-align:center;padding:24px;color:#8b5cf6;font-size:13px;">⏳ 분석 중...</div>`:""}
+      ${ai?.error?`<div style="color:#f87171;font-size:12px;padding:10px;">⚠️ ${ai.error}</div>`:""}
+      ${ai&&!ai.error&&!ai.loading?`
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:9px;padding:12px 14px;text-align:center;flex-shrink:0;min-width:85px;">
+            <div style="font-size:10px;color:#8b5cf6;font-weight:700;margin-bottom:4px;">위험 수준</div>
+            <div style="font-size:18px;font-weight:800;color:${ai.risk_level==="높음"?"#ef4444":ai.risk_level==="보통"?"#f59e0b":"#10b981"};">${ai.risk_level}</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.02);border-radius:9px;padding:11px 13px;">
+            <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">💡 핵심 인사이트</div>
+            <p style="font-size:12px;color:#cbd5e1;line-height:1.65;margin:0;">${ai.key_insight}</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">
+          <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.16);border-radius:8px;padding:11px;">
+            <div style="font-size:11px;color:#f87171;font-weight:700;margin-bottom:7px;">🚨 즉시 조치</div>
+            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="display:flex;gap:5px;margin-bottom:4px;"><span style="color:#ef4444;font-size:11px;flex-shrink:0;font-weight:700;">${i+1}.</span><span style="font-size:11px;color:#fca5a5;line-height:1.5;">${a}</span></div>`).join("")}
+          </div>
+          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.16);border-radius:8px;padding:11px;">
+            <div style="font-size:11px;color:#60a5fa;font-weight:700;margin-bottom:7px;">📅 단기 계획</div>
+            ${(ai.mid_actions||[]).map((a,i)=>`<div style="display:flex;gap:5px;margin-bottom:4px;"><span style="color:#3b82f6;font-size:11px;flex-shrink:0;font-weight:700;">${i+1}.</span><span style="font-size:11px;color:#93c5fd;line-height:1.5;">${a}</span></div>`).join("")}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+          <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.18);border-radius:7px;padding:9px;">
+            <div style="font-size:10px;color:#10b981;font-weight:700;margin-bottom:3px;">✨ 기회 포인트</div>
+            <p style="font-size:11px;color:#a7f3d0;margin:0;line-height:1.5;">${ai.opportunity}</p>
+          </div>
+          <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.16);border-radius:7px;padding:9px;">
+            <div style="font-size:10px;color:#ef4444;font-weight:700;margin-bottom:3px;">⚠️ 핵심 리스크</div>
+            <p style="font-size:11px;color:#fca5a5;margin:0;line-height:1.5;">${ai.warning}</p>
+          </div>
+        </div>`:""}
+    </div>`;
+}
+
+function renderFilterGroups() {
+  document.getElementById("filter-groups").innerHTML =
+    [{id:"all",label:"전체",icon:"📋"},...GROUPS.map(g=>({id:g.id,label:g.label,icon:g.icon}))].map(item=>{
+      const cnt = item.id==="all"?Object.values(allResults).flat().length:(allResults[item.id]||[]).length;
+      return `<button onclick="filterGroup='${item.id}';renderFilterGroups();renderFilterUrgency();renderResults();" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:5px;border:none;cursor:pointer;margin-bottom:1px;background:${filterGroup===item.id?"rgba(59,130,246,0.12)":"transparent"};color:${filterGroup===item.id?"#93c5fd":"#374151"};font-size:11px;text-align:left;">${item.icon} ${item.label}<span style="font-size:10px;">${cnt}</span></button>`;
+    }).join("");
+}
+
+function renderFilterUrgency() {
+  const all = Object.values(allResults).flat();
+  document.getElementById("filter-urgency").innerHTML =
+    ["all","critical","high","medium","low"].map(u=>{
+      const cfg = u==="all"?{label:"전체",color:"#64748b"}:URGENCY[u];
+      const cnt = u==="all"?all.length:all.filter(n=>n.urgency===u).length;
+      return `<button onclick="filterUrgency='${u}';renderFilterGroups();renderFilterUrgency();renderResults();" style="width:100%;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;border:none;cursor:pointer;margin-bottom:1px;background:${filterUrgency===u?"rgba(59,130,246,0.10)":"transparent"};color:${filterUrgency===u?cfg.color:"#374151"};font-size:11px;text-align:left;">
+        ${u!=="all"?`<span style="width:5px;height:5px;border-radius:50%;background:${cfg.color};flex-shrink:0;display:inline-block;"></span>`:""}
+        <span style="flex:1;">${u==="all"?"전체":cfg.label}</span><span style="font-size:10px;">${cnt}</span>
+      </button>`;
+    }).join("");
+}
+
+function startTicker() {
+  const all = Object.values(allResults).flat();
+  if (!all.length) return;
+  document.getElementById("ticker").style.display="block";
+  clearInterval(tickerTimer);
+  tickerTimer = setInterval(()=>{
+    tickerIdx = (tickerIdx+1)%all.length;
+    document.getElementById("ticker-text").textContent = all[tickerIdx]?.title||"";
+  }, 3800);
+}
+
+init();
+</script>
+</body>
+</html>
