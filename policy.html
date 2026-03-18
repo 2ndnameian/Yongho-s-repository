@@ -12,7 +12,8 @@
   .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
   .header-sub { font-size:10px; color:#6ee7b7; }
   .ticker-wrap { flex:1; overflow:hidden; margin:0 16px; border-left:1px solid rgba(255,255,255,0.25); padding-left:14px; display:none; }
-  .nav-link { font-size:12px; color:#6ee7b7; text-decoration:none; padding:6px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
+  .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
+  .nav-link { font-size:12px; color:#6ee7b7; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; box-shadow:2px 0 6px rgba(0,0,0,0.04); }
@@ -24,13 +25,14 @@
   .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
   .badge.active { background:#065f46; color:white; }
   .divider { height:1px; background:#f1f5f9; margin:8px 0; }
+  .src-box { padding:8px 10px; border-radius:8px; margin-bottom:6px; }
   .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
   .hero { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
   .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
   .kw-chip { padding:5px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; transition:all 0.12s; margin:3px; display:inline-block; }
   .kw-chip.on { font-weight:600; }
   .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#065f46,#059669); transition:all 0.2s; box-shadow:0 4px 12px rgba(6,95,70,0.25); }
-  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 16px rgba(6,95,70,0.30); }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
   .btn-primary:disabled { background:#cbd5e1; cursor:not-allowed; box-shadow:none; }
   .progress-bar { background:#f1f5f9; border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
   .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#065f46,#059669); }
@@ -50,17 +52,13 @@
   .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#64748b; font-size:11px; text-align:left; font-family:inherit; }
   .filter-btn.active { background:#ecfdf5; color:#065f46; font-weight:600; }
   .filter-btn:hover:not(.active) { background:#f8fafc; }
-  .org-chip { padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; transition:all 0.12s; margin:2px; display:inline-block; }
-  .org-chip.on { background:#ecfdf5; border-color:#a7f3d0; color:#065f46; font-weight:600; }
-  textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
-  textarea:focus { border-color:#6ee7b7; box-shadow:0 0 0 3px rgba(110,231,183,0.20); }
-  input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
-  input[type=text]:focus { border-color:#6ee7b7; }
-  .group-tab { display:flex; align-items:center; gap:5px; padding:7px 13px; border-radius:8px; flex-shrink:0; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid #e2e8f0; background:white; color:#64748b; white-space:nowrap; }
+  .week-range { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:8px 14px; margin-bottom:14px; font-size:12px; color:#065f46; font-weight:600; }
+  .group-tab { display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:8px; flex-shrink:0; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid #e2e8f0; background:white; color:#64748b; white-space:nowrap; }
   .group-tab.active { color:white; border-color:transparent; }
   .section-label { font-size:11px; padding:3px 10px; border-radius:5px; font-weight:700; display:inline-block; margin-bottom:8px; }
-  .org-section { margin-bottom:12px; }
-  .org-section-title { font-size:11px; font-weight:700; color:#374151; margin-bottom:6px; padding-left:2px; border-left:3px solid #059669; padding-left:8px; }
+  textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
+  textarea:focus { border-color:#6ee7b7; }
+  input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
 </style>
 </head>
 <body>
@@ -77,7 +75,12 @@
       <span id="ticker-text" style="font-size:12px;color:#6ee7b7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
   </div>
-  <a href="/" class="nav-link">📰 뉴스 수집으로 →</a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">📰 뉴스</a>
+    <a href="/market.html" class="nav-link">📊 시장</a>
+    <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
+  </div>
 </div>
 
 <div class="layout">
@@ -89,21 +92,21 @@
       <button class="sidebar-btn" onclick="showTab('detail')">🤖 AI 심층분석 <span class="badge" id="detail-badge"></span></button>
       <div class="divider"></div>
       <div class="sidebar-label">수집 대상 기관</div>
-      <div style="padding:6px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:4px;">
-        <div style="font-size:10px;color:#065f46;font-weight:700;margin-bottom:3px;">🏛️ 중앙부처</div>
-        <div style="font-size:10px;color:#374151;line-height:1.6;">고용노동부·교육부·과기정통부 외</div>
+      <div class="src-box" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+        <div style="font-size:11px;color:#065f46;font-weight:700;margin-bottom:3px;">🏛️ 중앙부처</div>
+        <div style="font-size:11px;color:#374151;">고용노동부·교육부·과기정통부 외</div>
       </div>
-      <div style="padding:6px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:4px;">
-        <div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-bottom:3px;">🏢 직업훈련기관</div>
-        <div style="font-size:10px;color:#374151;line-height:1.6;">산업인력공단·대한상의·HRD-Net</div>
+      <div class="src-box" style="background:#eff6ff;border:1px solid #bfdbfe;">
+        <div style="font-size:11px;color:#1d4ed8;font-weight:700;margin-bottom:3px;">🏢 직업훈련기관</div>
+        <div style="font-size:11px;color:#374151;">산업인력공단·대한상의·HRD-Net</div>
       </div>
-      <div style="padding:6px 8px;background:#fefce8;border:1px solid #fef08a;border-radius:8px;margin-bottom:4px;">
-        <div style="font-size:10px;color:#92400e;font-weight:700;margin-bottom:3px;">🌏 지역인력기관</div>
-        <div style="font-size:10px;color:#374151;line-height:1.6;">서울경제진흥원·경기경제과학진흥원 외</div>
+      <div class="src-box" style="background:#fefce8;border:1px solid #fef08a;">
+        <div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:3px;">🌏 지역인력기관</div>
+        <div style="font-size:11px;color:#374151;">서울경제진흥원·경기경제과학진흥원 외</div>
       </div>
-      <div style="padding:6px 8px;background:#fdf2f8;border:1px solid #f0abfc;border-radius:8px;">
-        <div style="font-size:10px;color:#86198f;font-weight:700;margin-bottom:3px;">🤝 지역사회</div>
-        <div style="font-size:10px;color:#374151;line-height:1.6;">지자체·산업협회·창업지원기관 외</div>
+      <div class="src-box" style="background:#fdf2f8;border:1px solid #f0abfc;">
+        <div style="font-size:11px;color:#86198f;font-weight:700;margin-bottom:3px;">🤝 지역사회</div>
+        <div style="font-size:11px;color:#374151;">지자체·산업협회·창업지원기관 외</div>
       </div>
       <div class="divider"></div>
       <div id="filter-section" style="display:none;">
@@ -121,13 +124,12 @@
   </div>
 
   <div class="main">
-    <!-- 키워드 설정 탭 -->
     <div id="tab-search">
       <div class="hero">
         <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">📋 정책 수집</h1>
         <p style="font-size:13px;color:#64748b;line-height:1.7;">정부부처·훈련기관·지역기관의 <strong style="color:#065f46;">공고·보도자료·정책</strong>을 최근 7일 기준으로 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#059669;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
       </div>
-      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#065f46;font-weight:600;" id="week-range"></div>
+      <div class="week-range" id="week-range"></div>
       <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;overflow-x:auto;" id="group-tabs"></div>
       <div id="keyword-panel"></div>
       <div class="card">
@@ -138,7 +140,6 @@
       <div id="progress-panel" style="display:none;margin-top:14px;" class="card"></div>
     </div>
 
-    <!-- 수집 결과 탭 -->
     <div id="tab-results" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
@@ -158,7 +159,6 @@
       <div id="news-list"></div>
     </div>
 
-    <!-- AI 심층분석 탭 -->
     <div id="tab-detail" style="display:none;">
       <div id="detail-content" style="text-align:center;padding:80px 20px;">
         <div style="font-size:48px;margin-bottom:14px;">🤖</div>
@@ -326,19 +326,13 @@ async function runSearch(){
           const summary=(item.description||"").replace(/<[^>]+>/g,"");
           let source="정책";
           try{source=new URL(item.originallink||item.link).hostname.replace("www.","");}catch{}
-const date = item.formattedDate || (() => {
-  try { const d=new Date(item.pubDate); return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; } catch { return ""; }
-})();
+          const date=item.formattedDate||(()=>{try{const d=new Date(item.pubDate);return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{return "";}})();
           const urgency=title.includes("긴급")||title.includes("마감")||title.includes("즉시")?"critical":title.includes("공고")||title.includes("모집")||title.includes("선정")?"high":title.includes("발표")||title.includes("시행")||title.includes("추진")?"medium":"low";
           return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url:item.link||"",date,urgency,tags:[group.label]};
         });
         steps[gi].status="done";
-      } else {
-        allResults[group.id]=[]; steps[gi].status="error";
-      }
-    }catch(e){
-      allResults[group.id]=[]; steps[gi].status="error";
-    }
+      } else { allResults[group.id]=[]; steps[gi].status="error"; }
+    }catch(e){ allResults[group.id]=[]; steps[gi].status="error"; }
     renderProgress(Math.round(((gi+1)/total)*100),steps);
   }
   steps[activeGroups.length].status="done";
@@ -366,7 +360,7 @@ function renderResults(){
     {label:"분석완료",count:analyzed,bg:"#eff6ff",border:"#bfdbfe",color:"#1d4ed8",icon:"🤖"},
   ].map(s=>`<div class="stat-card" style="background:${s.bg};border-color:${s.border};">
     <span style="font-size:22px;">${s.icon}</span>
-    <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#64748b;">${s.label}</div></div>
+    <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
   </div>`).join("");
 
   const errEl=document.getElementById("error-log");
