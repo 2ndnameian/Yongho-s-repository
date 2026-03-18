@@ -6,27 +6,27 @@ export default async function handler(req, res) {
 
   const { category } = req.query;
 
-  // 카테고리별 RSS 피드 주소 매핑
+  // 확인된 RSS 피드만 사용
   const RSS_FEEDS = {
     vocational_policy: [
-      { url:"https://www.moel.go.kr/rss/notice.do",   org:"고용노동부", type:"공고" },
-      { url:"https://www.moel.go.kr/rss/lawinfo.do",  org:"고용노동부", type:"입법예고" },
+      { url:"https://www.moel.go.kr/rss/notice.do",  org:"고용노동부", type:"공고" },
+      { url:"https://www.moel.go.kr/rss/lawinfo.do", org:"고용노동부", type:"입법예고" },
     ],
     talent_policy: [
-      { url:"https://www.msit.go.kr/bbs/rssList.do?sCode=user&mId=113&mPid=112&bbsSeqNo=94", org:"과기정통부", type:"보도자료" },
-      { url:"https://www.korea.kr/rss/policy.do", org:"정책브리핑", type:"정책" },
+      { url:"https://www.moel.go.kr/rss/notice.do",  org:"고용노동부", type:"공고" },
+      { url:"https://www.korea.kr/rss/pressRelease.do", org:"정책브리핑", type:"보도자료" },
     ],
     edu_policy: [
-      { url:"https://www.moe.go.kr/boardCnts/getRss.do?boardID=294&m=0503", org:"교육부", type:"보도자료" },
-      { url:"https://www.korea.kr/rss/policy.do", org:"정책브리핑", type:"정책" },
+      { url:"https://www.korea.kr/rss/pressRelease.do", org:"정책브리핑", type:"보도자료" },
+      { url:"https://www.moel.go.kr/rss/notice.do",     org:"고용노동부", type:"공고" },
     ],
     project_open: [
       { url:"https://www.moel.go.kr/rss/notice.do",  org:"고용노동부", type:"공고" },
-      { url:"https://www.mss.go.kr/site/smba/rss/bizNotice.do", org:"중소벤처기업부", type:"사업공고" },
+      { url:"https://www.moel.go.kr/rss/lawinfo.do", org:"고용노동부", type:"입법예고" },
     ],
     industry_policy: [
-      { url:"https://www.msit.go.kr/bbs/rssList.do?sCode=user&mId=113&mPid=112&bbsSeqNo=94", org:"과기정통부", type:"보도자료" },
-      { url:"https://www.mss.go.kr/site/smba/rss/bizNotice.do", org:"중소벤처기업부", type:"사업공고" },
+      { url:"https://www.korea.kr/rss/pressRelease.do", org:"정책브리핑", type:"보도자료" },
+      { url:"https://www.moel.go.kr/rss/notice.do",     org:"고용노동부", type:"공고" },
     ],
   };
 
@@ -34,6 +34,23 @@ export default async function handler(req, res) {
   const now   = new Date();
   const start = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const results = [];
+
+  // 날짜 파싱 함수 (다양한 형식 처리)
+  function parseDate(str) {
+    if (!str) return null;
+    // 한국식 날짜 (2026-03-18, 2026.03.18)
+    const krMatch = str.match(/(\d{4})[-.](\d{2})[-.](\d{2})/);
+    if (krMatch) return new Date(`${krMatch[1]}-${krMatch[2]}-${krMatch[3]}`);
+    // RFC 2822 (Mon, 18 Mar 2026 09:00:00 +0900)
+    try { const d = new Date(str); if (!isNaN(d)) return d; } catch {}
+    return null;
+  }
+
+  // 날짜 포맷 함수
+  function formatDate(d) {
+    if (!d || isNaN(d)) return "";
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+  }
 
   for (const feed of feeds) {
     try {
@@ -44,29 +61,33 @@ export default async function handler(req, res) {
       if (!response.ok) continue;
       const xml = await response.text();
 
-      // XML 파싱 (간단한 정규식 방식)
-      const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-      for (const item of items.slice(0, 10)) {
-        const title   = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/))?.[1]?.trim() || "";
-        const link    = (item.match(/<link>(.*?)<\/link>/) || item.match(/<guid>(.*?)<\/guid>/))?.[1]?.trim() || "";
-        const desc    = (item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || item.match(/<description>(.*?)<\/description>/))?.[1]?.trim() || "";
-        const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/))?.[1]?.trim() || "";
+      const items = xml.match(/<item[\s\S]*?<\/item>/g) || [];
+      for (const item of items.slice(0, 15)) {
+        const title   = (item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ||
+                         item.match(/<title>([\s\S]*?)<\/title>/))?.[1]?.trim() || "";
+        const link    = (item.match(/<link>([\s\S]*?)<\/link>/) ||
+                         item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/))?.[1]?.trim() || "";
+        const desc    = (item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ||
+                         item.match(/<description>([\s\S]*?)<\/description>/))?.[1]?.trim() || "";
+        const pubRaw  = (item.match(/<pubDate>([\s\S]*?)<\/pubDate>/) ||
+                         item.match(/<dc:date>([\s\S]*?)<\/dc:date>/))?.[1]?.trim() || "";
 
         if (!title) continue;
 
-        // 7일 필터
-        let pub = null;
-        try { pub = new Date(pubDate); } catch {}
+        const pub = parseDate(pubRaw);
+
+        // 7일 필터 (날짜 파싱 실패 시 포함)
         if (pub && (pub < start || pub > now)) continue;
 
         results.push({
-          title:       title.replace(/<[^>]+>/g, ""),
-          description: desc.replace(/<[^>]+>/g, "").slice(0, 150),
+          title:        title.replace(/<[^>]+>/g, "").trim(),
+          description:  desc.replace(/<[^>]+>/g, "").replace(/\s+/g," ").trim().slice(0, 150),
           link,
           originallink: link,
-          pubDate:     pub ? pub.toUTCString() : pubDate,
-          org:         feed.org,
-          type:        feed.type,
+          pubDate:      pub ? pub.toUTCString() : "",
+          formattedDate: formatDate(pub),
+          org:          feed.org,
+          type:         feed.type,
         });
       }
     } catch(e) {
@@ -76,6 +97,6 @@ export default async function handler(req, res) {
   }
 
   // 날짜순 정렬
-  results.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-  res.status(200).json(results.slice(0, 10));
+  results.sort((a,b) => new Date(b.pubDate||0) - new Date(a.pubDate||0));
+  res.status(200).json(results.slice(0, 12));
 }
