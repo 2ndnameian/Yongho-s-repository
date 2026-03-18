@@ -350,7 +350,7 @@ async function runSearch(){
           let date="";
           try{const d=new Date(item.pubDate);if(!isNaN(d))date=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{}
           // 어떤 기관 기사인지 태깅
-          const matchedOrg=item._orgName||(orgs.find(o=>title.includes(o)||summary.includes(o))||type.label;
+          const matchedOrg=orgs.find(o=>title.includes(o)||summary.includes(o))||type.label;
           const urgency=title.includes("신규")||title.includes("개설")||title.includes("선정")?"high":title.includes("협약")||title.includes("MOU")||title.includes("확대")?"medium":"low";
           return {id:`${type.id}-${i}-${Date.now()}`,groupId:type.id,groupLabel:type.label,groupColor:type.color,groupBg:type.bg,groupBorder:type.border,title,summary,source,url:item.link||"",date,urgency,tags:[matchedOrg]};
         });
