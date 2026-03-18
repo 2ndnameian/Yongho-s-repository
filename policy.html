@@ -326,8 +326,9 @@ async function runSearch(){
           const summary=(item.description||"").replace(/<[^>]+>/g,"");
           let source="정책";
           try{source=new URL(item.originallink||item.link).hostname.replace("www.","");}catch{}
-          let date="";
-          try{const d=new Date(item.pubDate);date=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{}
+const date = item.formattedDate || (() => {
+  try { const d=new Date(item.pubDate); return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; } catch { return ""; }
+})();
           const urgency=title.includes("긴급")||title.includes("마감")||title.includes("즉시")?"critical":title.includes("공고")||title.includes("모집")||title.includes("선정")?"high":title.includes("발표")||title.includes("시행")||title.includes("추진")?"medium":"low";
           return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url:item.link||"",date,urgency,tags:[group.label]};
         });
