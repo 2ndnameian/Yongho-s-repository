@@ -12,14 +12,14 @@
   .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
   .header-sub { font-size:10px; color:#bfdbfe; }
   .ticker-wrap { flex:1; overflow:hidden; margin:0 16px; border-left:1px solid rgba(255,255,255,0.25); padding-left:14px; display:none; }
-  .nav-links { display:flex; gap:8px; flex-shrink:0; }
+  .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
   .nav-link { font-size:12px; color:#bfdbfe; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
   .sidebar-inner { padding:16px 12px 8px; }
   .sidebar-label { font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; margin-top:8px; }
-  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#64748b; font-size:13px; text-align:left; transition:all 0.12s; font-family:inherit; }
+  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#64748b; font-size:13px; text-align:left; font-family:inherit; transition:all 0.12s; }
   .sidebar-btn.active { background:#eff6ff; color:#1e40af; font-weight:700; }
   .sidebar-btn:hover:not(.active) { background:#f8fafc; }
   .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
@@ -31,7 +31,7 @@
   .kw-chip { padding:5px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; transition:all 0.12s; margin:3px; display:inline-block; }
   .kw-chip.on { font-weight:600; }
   .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#1e40af,#3b82f6); transition:all 0.2s; box-shadow:0 4px 12px rgba(30,64,175,0.25); }
-  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 16px rgba(30,64,175,0.30); }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
   .btn-primary:disabled { background:#cbd5e1; cursor:not-allowed; box-shadow:none; }
   .progress-bar { background:#f1f5f9; border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
   .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#1e40af,#3b82f6); }
@@ -57,7 +57,6 @@
   textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
   textarea:focus { border-color:#93c5fd; }
   input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
-  input[type=text]:focus { border-color:#93c5fd; }
 </style>
 </head>
 <body>
@@ -77,6 +76,8 @@
   <div class="nav-links">
     <a href="/" class="nav-link">📰 뉴스</a>
     <a href="/policy.html" class="nav-link">📋 정책</a>
+    <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
   </div>
 </div>
 
@@ -88,7 +89,6 @@
       <button class="sidebar-btn" onclick="showTab('results')">📊 수집 결과 <span class="badge" id="result-count"></span></button>
       <button class="sidebar-btn" onclick="showTab('detail')">🤖 AI 심층분석 <span class="badge" id="detail-badge"></span></button>
       <div class="divider"></div>
-
       <div class="sidebar-label">수집 분류</div>
       <div style="padding:7px 9px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;margin-bottom:5px;">
         <div style="font-size:10px;color:#1e40af;font-weight:700;margin-bottom:3px;">🏢 기관 유형별</div>
@@ -103,7 +103,6 @@
         <div style="font-size:10px;color:#374151;line-height:1.6;">AI·반도체·콘텐츠·스마트제조 등</div>
       </div>
       <div class="divider"></div>
-
       <div id="filter-section" style="display:none;">
         <div class="sidebar-label">영역 필터</div>
         <div id="filter-groups"></div>
@@ -119,14 +118,10 @@
   </div>
 
   <div class="main">
-    <!-- 키워드 설정 탭 -->
     <div id="tab-search">
       <div class="hero">
         <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">📊 시장동향 수집</h1>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:10px;">
-          훈련시장 경쟁기관의 <strong style="color:#1e40af;">신규 과정·공모참여·협약·디지털 확대</strong> 동향을 최근 7일 기준으로 수집합니다.<br>
-          수집 후 각 카드에서 <strong style="color:#3b82f6;">🤖 AI 분석</strong>을 개별 실행하세요.
-        </p>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:10px;">훈련시장 경쟁기관의 <strong style="color:#1e40af;">신규 과정·공모참여·협약·디지털 확대</strong> 동향을 최근 7일 기준으로 수집합니다.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <div style="padding:5px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;color:#1e40af;font-weight:600;">🎯 경쟁기관 전략 파악</div>
           <div style="padding:5px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#065f46;font-weight:600;">🔍 신규 훈련 아이템 포착</div>
@@ -134,19 +129,14 @@
           <div style="padding:5px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e;font-weight:600;">🤝 산학협력 사례 수집</div>
         </div>
       </div>
-
       <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;" id="week-range"></div>
-
-      <!-- 탭 구분: 기관유형 / 동향유형 / 분야별 -->
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button onclick="setTabGroup('org')" id="tabgrp-org" style="padding:6px 14px;border-radius:7px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;">🏢 기관 유형별</button>
         <button onclick="setTabGroup('trend')" id="tabgrp-trend" style="padding:6px 14px;border-radius:7px;border:1px solid #e2e8f0;background:white;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;">📌 동향 유형별</button>
         <button onclick="setTabGroup('field')" id="tabgrp-field" style="padding:6px 14px;border-radius:7px;border:1px solid #e2e8f0;background:white;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;">💡 분야별</button>
       </div>
-
       <div style="display:flex;gap:6px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e2e8f0;overflow-x:auto;" id="group-tabs"></div>
       <div id="keyword-panel"></div>
-
       <div class="card">
         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;">➕ 추가 키워드</div>
         <textarea id="custom-kw" placeholder="쉼표·줄바꿈으로 구분&#10;예: 패스트캠퍼스, 멀티캠퍼스, 이노베이션아카데미..."></textarea>
@@ -155,7 +145,6 @@
       <div id="progress-panel" style="display:none;margin-top:14px;" class="card"></div>
     </div>
 
-    <!-- 수집 결과 탭 -->
     <div id="tab-results" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
@@ -175,7 +164,6 @@
       <div id="news-list"></div>
     </div>
 
-    <!-- AI 심층분석 탭 -->
     <div id="tab-detail" style="display:none;">
       <div id="detail-content" style="text-align:center;padding:80px 20px;">
         <div style="font-size:48px;margin-bottom:14px;">🤖</div>
@@ -190,48 +178,27 @@
 const MARKET_API = "https://yongho-s-repository-git-main-2ndnameians-projects.vercel.app/api/market";
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
 
-// 기관 유형별
 const ORG_GROUPS = [
-  { id:"org_large",   label:"대형 직업훈련기관", icon:"🏛️", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe",
-    keywords:["대형 직업훈련기관","직업훈련기관 신규","훈련기관 확장","훈련기관 협약","직업훈련 과정 개설"] },
-  { id:"org_univ",    label:"대학 산학협력단",   icon:"🎓", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe",
-    keywords:["대학 산학협력단","산학협력 훈련","대학 직업훈련","대학 부트캠프","대학 디지털 교육"] },
-  { id:"org_edutech", label:"에듀테크 기업",      icon:"💻", color:"#0369a1", bg:"#f0f9ff", border:"#bae6fd",
-    keywords:["에듀테크","교육 플랫폼","온라인 훈련","AI 교육 플랫폼","디지털 교육 기업"] },
-  { id:"org_it",      label:"IT 교육기관",        icon:"🖥️", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0",
-    keywords:["IT 교육기관","코딩 교육","개발자 교육","부트캠프","SW 교육기관"] },
-  { id:"org_special", label:"전문교육기관",        icon:"📐", color:"#92400e", bg:"#fffbeb", border:"#fde68a",
-    keywords:["전문교육기관","자격증 교육","직무교육","전문 훈련기관","기술교육"] },
+  { id:"org_large",   label:"대형 직업훈련기관", icon:"🏛️", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe", keywords:["대형 직업훈련기관","직업훈련기관 신규","훈련기관 확장","훈련기관 협약","직업훈련 과정 개설"] },
+  { id:"org_univ",    label:"대학 산학협력단",   icon:"🎓", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe", keywords:["대학 산학협력단","산학협력 훈련","대학 직업훈련","대학 부트캠프","대학 디지털 교육"] },
+  { id:"org_edutech", label:"에듀테크 기업",      icon:"💻", color:"#0369a1", bg:"#f0f9ff", border:"#bae6fd", keywords:["에듀테크","교육 플랫폼","온라인 훈련","AI 교육 플랫폼","디지털 교육 기업"] },
+  { id:"org_it",      label:"IT 교육기관",        icon:"🖥️", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0", keywords:["IT 교육기관","코딩 교육","개발자 교육","부트캠프","SW 교육기관"] },
+  { id:"org_special", label:"전문교육기관",        icon:"📐", color:"#92400e", bg:"#fffbeb", border:"#fde68a", keywords:["전문교육기관","자격증 교육","직무교육","전문 훈련기관","기술교육"] },
 ];
-
-// 동향 유형별
 const TREND_GROUPS = [
-  { id:"trend_course",  label:"과정 개설",    icon:"📚", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe",
-    keywords:["훈련과정 개설","신규 과정","교육과정 신설","훈련 프로그램 출시","부트캠프 신규"] },
-  { id:"trend_project", label:"공모 참여",    icon:"📢", color:"#dc2626", bg:"#fef2f2", border:"#fecaca",
-    keywords:["공모사업 선정","훈련기관 공모","교육기관 선정","사업 참여","훈련기관 선정"] },
-  { id:"trend_mou",     label:"협약·제휴",   icon:"🤝", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0",
-    keywords:["협약 체결","MOU","산학협력","기업 연계","취업 연계 협약"] },
-  { id:"trend_digital", label:"디지털 확대",  icon:"🚀", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe",
-    keywords:["AI 훈련","디지털 교육 확대","신기술 교육","클라우드 교육","데이터 교육"] },
+  { id:"trend_course",  label:"과정 개설",   icon:"📚", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe", keywords:["훈련과정 개설","신규 과정","교육과정 신설","훈련 프로그램 출시","부트캠프 신규"] },
+  { id:"trend_project", label:"공모 참여",   icon:"📢", color:"#dc2626", bg:"#fef2f2", border:"#fecaca", keywords:["공모사업 선정","훈련기관 공모","교육기관 선정","사업 참여","훈련기관 선정"] },
+  { id:"trend_mou",     label:"협약·제휴",  icon:"🤝", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0", keywords:["협약 체결","MOU","산학협력","기업 연계","취업 연계 협약"] },
+  { id:"trend_digital", label:"디지털 확대", icon:"🚀", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe", keywords:["AI 훈련","디지털 교육 확대","신기술 교육","클라우드 교육","데이터 교육"] },
 ];
-
-// 분야별
 const FIELD_GROUPS = [
-  { id:"field_ai",      label:"AI·인공지능",  icon:"🤖", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe",
-    keywords:["AI 개발자 교육","인공지능 훈련과정","AI 부트캠프","LLM 교육","생성형AI 교육"] },
-  { id:"field_semi",    label:"반도체",        icon:"⚡", color:"#dc2626", bg:"#fef2f2", border:"#fecaca",
-    keywords:["반도체 교육","반도체 훈련","반도체 인력양성","반도체 설계 교육"] },
-  { id:"field_content", label:"콘텐츠·게임",  icon:"🎮", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe",
-    keywords:["콘텐츠 제작 교육","게임 개발 교육","디지털 콘텐츠 훈련","영상 교육","웹툰 교육"] },
-  { id:"field_smart",   label:"스마트제조",    icon:"🏭", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0",
-    keywords:["스마트제조 교육","스마트팩토리 훈련","제조 디지털화","PLC 교육","자동화 교육"] },
-  { id:"field_data",    label:"데이터·클라우드", icon:"☁️", color:"#0369a1", bg:"#f0f9ff", border:"#bae6fd",
-    keywords:["데이터 분석 교육","클라우드 교육","빅데이터 훈련","AWS 교육","데이터엔지니어"] },
-  { id:"field_security",label:"보안",           icon:"🔒", color:"#92400e", bg:"#fffbeb", border:"#fde68a",
-    keywords:["정보보안 교육","사이버보안 훈련","보안 자격증","네트워크 보안 교육"] },
+  { id:"field_ai",      label:"AI·인공지능",    icon:"🤖", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe", keywords:["AI 개발자 교육","인공지능 훈련과정","AI 부트캠프","LLM 교육","생성형AI 교육"] },
+  { id:"field_semi",    label:"반도체",          icon:"⚡", color:"#dc2626", bg:"#fef2f2", border:"#fecaca", keywords:["반도체 교육","반도체 훈련","반도체 인력양성","반도체 설계 교육"] },
+  { id:"field_content", label:"콘텐츠·게임",    icon:"🎮", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe", keywords:["콘텐츠 제작 교육","게임 개발 교육","디지털 콘텐츠 훈련","영상 교육","웹툰 교육"] },
+  { id:"field_smart",   label:"스마트제조",      icon:"🏭", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0", keywords:["스마트제조 교육","스마트팩토리 훈련","제조 디지털화","PLC 교육","자동화 교육"] },
+  { id:"field_data",    label:"데이터·클라우드", icon:"☁️", color:"#0369a1", bg:"#f0f9ff", border:"#bae6fd", keywords:["데이터 분석 교육","클라우드 교육","빅데이터 훈련","AWS 교육","데이터엔지니어"] },
+  { id:"field_security",label:"보안",            icon:"🔒", color:"#92400e", bg:"#fffbeb", border:"#fde68a", keywords:["정보보안 교육","사이버보안 훈련","보안 자격증","네트워크 보안 교육"] },
 ];
-
 const ALL_GROUPS = [...ORG_GROUPS, ...TREND_GROUPS, ...FIELD_GROUPS];
 
 const URGENCY = {
@@ -253,7 +220,7 @@ let tickerTimer  = null;
 let tickerIdx    = 0;
 
 function getCurrentGroups() {
-  return activeTabGrp==="org" ? ORG_GROUPS : activeTabGrp==="trend" ? TREND_GROUPS : FIELD_GROUPS;
+  return activeTabGrp==="org"?ORG_GROUPS:activeTabGrp==="trend"?TREND_GROUPS:FIELD_GROUPS;
 }
 
 function init() {
@@ -264,21 +231,20 @@ function init() {
 }
 
 function setTabGroup(grp) {
-  activeTabGrp = grp;
-  ["org","trend","field"].forEach(g => {
-    const btn = document.getElementById("tabgrp-"+g);
-    btn.style.background = g===grp ? "#eff6ff" : "white";
-    btn.style.color      = g===grp ? "#1e40af" : "#64748b";
-    btn.style.borderColor= g===grp ? "#bfdbfe" : "#e2e8f0";
-    btn.style.fontWeight = g===grp ? "700" : "600";
+  activeTabGrp=grp;
+  ["org","trend","field"].forEach(g=>{
+    const btn=document.getElementById("tabgrp-"+g);
+    btn.style.background=g===grp?"#eff6ff":"white";
+    btn.style.color=g===grp?"#1e40af":"#64748b";
+    btn.style.borderColor=g===grp?"#bfdbfe":"#e2e8f0";
+    btn.style.fontWeight=g===grp?"700":"600";
   });
-  activeGroup = getCurrentGroups()[0].id;
+  activeGroup=getCurrentGroups()[0].id;
   renderGroupTabs(); renderKeywordPanel();
 }
 
 function renderGroupTabs() {
-  const groups = getCurrentGroups();
-  document.getElementById("group-tabs").innerHTML = groups.map(g => {
+  document.getElementById("group-tabs").innerHTML=getCurrentGroups().map(g=>{
     const cnt=(selectedKws[g.id]||[]).length, active=g.id===activeGroup;
     return `<button class="group-tab ${active?"active":""}" onclick="setActiveGroup('${g.id}')"
       style="${active?`background:${g.color};`:""}">
@@ -354,7 +320,7 @@ async function runSearch(){
         <span style="font-size:13px;color:#1e40af;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
         <span style="font-size:14px;font-weight:800;color:#1e293b;">${pct}%</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${pct===100?"background:linear-gradient(90deg,#1e40af,#3b82f6)":""}"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${steps.map(s=>{
           const isCur=s.status==="running";
@@ -367,11 +333,9 @@ async function runSearch(){
             <span style="font-size:12px;color:${isCur?"#1e40af":s.status==="done"?"#059669":s.status==="error"?"#dc2626":"#94a3b8"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
             ${isCur?`<span style="font-size:10px;color:#1e40af;padding:2px 8px;background:#dbeafe;border-radius:4px;font-weight:600;">수집 중</span>`:""}
             ${s.status==="done"&&s.id!=="__done__"?`<span style="font-size:11px;color:#059669;font-weight:600;">${(allResults[s.id]||[]).length}건</span>`:""}
-            ${s.status==="error"?`<span style="font-size:11px;color:#dc2626;">없음</span>`:""}
           </div>`;
         }).join("")}
       </div>
-      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}
     `;
   };
 
@@ -399,12 +363,8 @@ async function runSearch(){
           return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url:item.link||"",date,urgency,tags:[group.label]};
         });
         steps[gi].status="done";
-      } else {
-        allResults[group.id]=[]; steps[gi].status="error";
-      }
-    }catch(e){
-      allResults[group.id]=[]; steps[gi].status="error";
-    }
+      } else { allResults[group.id]=[]; steps[gi].status="error"; }
+    }catch(e){ allResults[group.id]=[]; steps[gi].status="error"; }
     renderProgress(Math.round(((gi+1)/total)*100),steps);
   }
   steps[activeGroups.length].status="done";
@@ -510,7 +470,7 @@ async function analyzeNews(id){
       headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
       body:JSON.stringify({
         model:"claude-sonnet-4-6",max_tokens:900,
-        messages:[{role:"user",content:`대한민국 직업훈련 시장 전문가로서 훈련기관 운영자 관점의 경쟁 대응 전략을 분석합니다.\n분석 초점: 경쟁기관 전략 파악, 차별화 포인트 도출, 우리 기관 대응 방안\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})\n카테고리: ${news.groupLabel}`}]
+        messages:[{role:"user",content:`대한민국 직업훈련 시장 전문가로서 훈련기관 운영자 관점의 경쟁 대응 전략을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})\n카테고리: ${news.groupLabel}`}]
       })
     });
     const data=await res.json();
@@ -553,7 +513,7 @@ function openDetail(id){
           ${ai&&!ai.error&&!ai.loading?`<span style="font-size:12px;color:#059669;font-weight:600;">✅ 완료</span><button onclick="delete analysisMap['${id}'];openDetail('${id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #e2e8f0;border-radius:5px;color:#64748b;cursor:pointer;">↩ 재분석</button>`:""}
         </div>
       </div>
-      ${!ai?`<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;"><div style="font-size:36px;margin-bottom:10px;">🔍</div>경쟁기관 전략 파악 및 차별화 포인트를 분석합니다.</div>`:""}
+      ${!ai?`<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;">🔍 분석 실행 버튼으로 경쟁기관 대응 전략을 분석합니다.</div>`:""}
       ${ai?.loading?`<div style="text-align:center;padding:30px;color:#1e40af;font-size:13px;">⏳ 분석 중...</div>`:""}
       ${ai?.error?`<div style="color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:6px;">⚠️ ${ai.error}</div>`:""}
       ${ai&&!ai.error&&!ai.loading?`
