@@ -6,59 +6,63 @@
 <title>직업훈련 뉴스 인텔리전스</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#e2e8f0; min-height:100vh; }
-  .header { background:linear-gradient(90deg,#05091a,#0b1535,#05091a); borderBottom:1px solid rgba(99,179,237,0.10); padding:0 20px; height:54px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
-  .logo { width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:16px; }
-  .header-title { font-size:14px; font-weight:800; color:#f1f5f9; line-height:1; }
-  .header-sub { font-size:10px; color:#334155; }
+  body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#1e293b; min-height:100vh; }
+  .header { background:#1e40af; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+  .logo { width:36px; height:36px; border-radius:8px; background:white; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
+  .header-sub { font-size:10px; color:#93c5fd; }
+  .ticker-wrap { flex:1; overflow:hidden; margin:0 16px; border-left:1px solid rgba(255,255,255,0.25); padding-left:14px; display:none; }
   .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
-  .nav-link { font-size:12px; color:#93c5fd; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.20); border-radius:6px; white-space:nowrap; }
-  .nav-link:hover { background:rgba(255,255,255,0.08); color:white; }
-  .ticker-wrap { flex:1; overflow:hidden; margin:0 10px; border-left:1px solid rgba(255,255,255,0.06); padding-left:12px; display:none; }
-  .layout { display:flex; flex:1; overflow:hidden; height:calc(100vh - 54px); }
-  .sidebar { width:205px; background:#09111f; border-right:1px solid rgba(255,255,255,0.05); display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
-  .sidebar-inner { padding:14px 10px 8px; }
-  .sidebar-label { font-size:9px; color:#1e3a5f; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; }
-  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:7px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#4b5563; font-size:13px; font-weight:500; text-align:left; transition:all 0.12s; font-family:inherit; }
-  .sidebar-btn.active { background:rgba(59,130,246,0.15); color:#93c5fd; font-weight:700; }
-  .sidebar-btn:hover:not(.active) { background:rgba(255,255,255,0.03); }
-  .badge { font-size:10px; padding:1px 6px; border-radius:10px; background:rgba(255,255,255,0.07); color:#6b7280; font-weight:700; }
-  .badge.active { background:#3b82f6; color:white; }
-  .divider { height:1px; background:rgba(255,255,255,0.04); margin:6px 0; }
-  .src-box { padding:7px 9px; border-radius:6px; margin-bottom:5px; }
-  .main { flex:1; overflow-y:auto; padding:20px 24px; background:#070d1f; color:#e2e8f0; }
-  .hero { background:linear-gradient(135deg,rgba(59,130,246,0.09),rgba(139,92,246,0.09)); border:1px solid rgba(59,130,246,0.18); border-radius:16px; padding:20px 24px; margin-bottom:14px; }
-  .card { background:#0d1526; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:18px; margin-bottom:14px; }
-  .kw-chip { padding:6px 13px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#374151; transition:all 0.12s; margin:3px; display:inline-block; }
+  .nav-link { font-size:12px; color:#93c5fd; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
+  .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
+  .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
+  .layout { display:flex; height:calc(100vh - 56px); }
+  .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; box-shadow:2px 0 6px rgba(0,0,0,0.04); }
+  .sidebar-inner { padding:16px 12px 8px; }
+  .sidebar-label { font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; margin-top:8px; }
+  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#64748b; font-size:13px; text-align:left; transition:all 0.12s; font-family:inherit; }
+  .sidebar-btn.active { background:#eff6ff; color:#1e40af; font-weight:700; }
+  .sidebar-btn:hover:not(.active) { background:#f8fafc; }
+  .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
+  .badge.active { background:#1e40af; color:white; }
+  .divider { height:1px; background:#f1f5f9; margin:8px 0; }
+  .src-box { padding:8px 10px; border-radius:8px; margin-bottom:6px; }
+  .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
+  .hero { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+  .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .kw-chip { padding:5px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; transition:all 0.12s; margin:3px; display:inline-block; }
   .kw-chip.on { font-weight:600; }
-  .btn-primary { width:100%; padding:13px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#3b82f6,#8b5cf6); transition:all 0.2s; }
-  .btn-primary:disabled { background:rgba(100,116,139,0.22); cursor:not-allowed; }
-  .progress-bar { background:rgba(255,255,255,0.06); border-radius:999px; height:10px; overflow:hidden; margin-bottom:12px; }
-  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#3b82f6,#8b5cf6); }
-  .news-card { background:#0d1526; border-radius:11px; overflow:hidden; margin-bottom:9px; }
-  .news-header { padding:8px 14px; display:flex; justify-content:space-between; align-items:center; }
-  .news-body { padding:11px 14px; }
-  .news-title { font-size:13px; font-weight:700; color:#f1f5f9; margin-bottom:5px; line-height:1.45; }
-  .news-title a { color:#f1f5f9; text-decoration:none; }
-  .news-title a:hover { color:#93c5fd; }
-  .news-summary { font-size:12px; color:#64748b; line-height:1.6; margin-bottom:8px; }
-  .tag { font-size:10px; padding:2px 7px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:4px; color:#374151; margin-right:4px; }
-  .urgency-badge { font-size:10px; padding:2px 7px; border-radius:4px; font-weight:700; }
-  .ai-result { background:rgba(139,92,246,0.05); border:1px solid rgba(139,92,246,0.18); border-radius:8px; padding:10px 12px; margin-top:8px; }
+  .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#1e40af,#3b82f6); transition:all 0.2s; box-shadow:0 4px 12px rgba(30,64,175,0.25); }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
+  .btn-primary:disabled { background:#cbd5e1; cursor:not-allowed; box-shadow:none; }
+  .progress-bar { background:#f1f5f9; border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
+  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#1e40af,#3b82f6); }
+  .news-card { background:white; border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); border:1px solid #e2e8f0; transition:box-shadow 0.15s; }
+  .news-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.10); }
+  .news-header { padding:9px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; }
+  .news-body { padding:14px 16px; }
+  .news-title { font-size:14px; font-weight:700; color:#1e293b; margin-bottom:6px; line-height:1.5; }
+  .news-title a { color:#1e293b; text-decoration:none; }
+  .news-title a:hover { color:#1e40af; text-decoration:underline; }
+  .news-summary { font-size:12px; color:#64748b; line-height:1.7; margin-bottom:8px; }
+  .tag { font-size:10px; padding:2px 8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:4px; color:#94a3b8; margin-right:4px; }
+  .urgency-badge { font-size:11px; padding:3px 9px; border-radius:5px; font-weight:700; }
+  .ai-result { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 14px; margin-top:10px; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-  .stat-card { border-radius:9px; padding:11px 13px; display:flex; gap:9px; align-items:center; }
-  .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:5px 10px; border-radius:5px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#374151; font-size:11px; text-align:left; font-family:inherit; }
-  .filter-btn.active { background:rgba(59,130,246,0.12); color:#93c5fd; font-weight:600; }
-  .filter-btn:hover:not(.active) { background:rgba(255,255,255,0.02); }
-  .week-range { background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.18); border-radius:8px; padding:7px 14px; margin-bottom:12px; font-size:12px; color:#6ee7b7; font-weight:600; }
-  .group-tab { display:flex; align-items:center; gap:5px; padding:7px 13px; border-radius:8px; flex-shrink:0; font-size:13px; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02); color:#4b5563; white-space:nowrap; transition:all 0.15s; }
+  .stat-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#64748b; font-size:11px; text-align:left; font-family:inherit; }
+  .filter-btn.active { background:#eff6ff; color:#1e40af; font-weight:600; }
+  .filter-btn:hover:not(.active) { background:#f8fafc; }
+  .week-range { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 14px; margin-bottom:14px; font-size:12px; color:#1e40af; font-weight:600; }
+  .group-tab { display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:8px; flex-shrink:0; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid #e2e8f0; background:white; color:#64748b; white-space:nowrap; }
   .group-tab.active { color:white; border-color:transparent; }
   .section-label { font-size:11px; padding:3px 10px; border-radius:5px; font-weight:700; display:inline-block; margin-bottom:8px; }
-  textarea { width:100%; min-height:64px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:9px 12px; color:#e2e8f0; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
-  input[type=text] { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 11px; color:#e2e8f0; font-size:12px; outline:none; font-family:inherit; }
+  textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
+  textarea:focus { border-color:#93c5fd; }
+  input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
 </style>
 </head>
-<body style="background:#070d1f;display:flex;flex-direction:column;">
+<body>
 
 <div class="header">
   <div class="logo">📡</div>
@@ -67,13 +71,13 @@
     <div class="header-sub">네이버 뉴스 실시간 수집 · 최근 7일</div>
   </div>
   <div class="ticker-wrap" id="ticker">
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span style="font-size:9px;padding:2px 5px;background:#3b82f6;color:white;border-radius:3px;font-weight:800;flex-shrink:0;">LIVE</span>
-      <span id="ticker-text" style="font-size:12px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:9px;padding:2px 6px;background:white;color:#1e40af;border-radius:3px;font-weight:800;flex-shrink:0;">LIVE</span>
+      <span id="ticker-text" style="font-size:12px;color:#93c5fd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
   </div>
-  <div id="header-badges" style="display:flex;gap:6px;"></div>
   <div class="nav-links">
+    <a href="/" class="nav-link active">📰 뉴스</a>
     <a href="/policy.html" class="nav-link">📋 정책</a>
     <a href="/market.html" class="nav-link">📊 시장</a>
     <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
@@ -90,13 +94,13 @@
       <button class="sidebar-btn" onclick="showTab('detail')">🤖 AI 심층분석 <span class="badge" id="detail-badge"></span></button>
       <div class="divider"></div>
       <div class="sidebar-label">검색 출처</div>
-      <div class="src-box" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.14);">
-        <div style="font-size:10px;color:#6ee7b7;font-weight:700;margin-bottom:2px;">🏛️ 정부·지자체</div>
-        <div style="font-size:10px;color:#374151;">고용노동부·교육부·과기정통부 외</div>
+      <div class="src-box" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+        <div style="font-size:11px;color:#065f46;font-weight:700;margin-bottom:3px;">🏛️ 정부·지자체</div>
+        <div style="font-size:11px;color:#374151;">고용노동부·교육부·과기정통부 외</div>
       </div>
-      <div class="src-box" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.14);">
-        <div style="font-size:10px;color:#a5b4fc;font-weight:700;margin-bottom:2px;">📰 언론사</div>
-        <div style="font-size:10px;color:#374151;">연합뉴스·매일경제·한겨레 외</div>
+      <div class="src-box" style="background:#eff6ff;border:1px solid #bfdbfe;">
+        <div style="font-size:11px;color:#1d4ed8;font-weight:700;margin-bottom:3px;">📰 언론사</div>
+        <div style="font-size:11px;color:#374151;">연합뉴스·매일경제·한겨레 외</div>
       </div>
       <div class="divider"></div>
       <div id="filter-section" style="display:none;">
@@ -106,25 +110,25 @@
         <div id="filter-urgency"></div>
       </div>
     </div>
-    <div style="margin-top:auto;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.04);font-size:10px;color:#334155;line-height:1.8;">
-      <div>📦 키워드 <span id="stat-kw">12</span>개</div>
-      <div>📊 수집 <span id="stat-news">0</span>건</div>
-      <div style="color:#10b981;">🤖 분석 <span id="stat-analyzed">0</span>건</div>
+    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;line-height:1.9;">
+      <div>📦 키워드 <strong style="color:#1e293b;" id="stat-kw">12</strong>개</div>
+      <div>📊 수집 <strong style="color:#1e293b;" id="stat-news">0</strong>건</div>
+      <div>🤖 분석 <strong style="color:#1e40af;" id="stat-analyzed">0</strong>건</div>
     </div>
   </div>
 
   <div class="main">
     <div id="tab-search">
       <div class="hero">
-        <div style="font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:5px;">🔍 실시간 뉴스 수집</div>
-        <p style="font-size:12px;color:#475569;line-height:1.7;margin-bottom:12px;">키워드를 선택하면 <strong style="color:#6ee7b7;">네이버 뉴스</strong>에서 최근 7일 실제 기사를 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#c4b5fd;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
+        <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">🔍 실시간 뉴스 수집</h1>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:14px;">키워드를 선택하면 <strong style="color:#1e40af;">네이버 뉴스</strong>에서 최근 7일 실제 기사를 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#3b82f6;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
         <div style="display:flex;gap:7px;flex-wrap:wrap;" id="group-summary"></div>
       </div>
       <div class="week-range" id="week-range"></div>
-      <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;overflow-x:auto;" id="group-tabs"></div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;overflow-x:auto;" id="group-tabs"></div>
       <div id="keyword-panel"></div>
       <div class="card">
-        <div style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:7px;">➕ 추가 키워드</div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;">➕ 추가 키워드</div>
         <textarea id="custom-kw" placeholder="쉼표·줄바꿈으로 구분&#10;예: 스마트제조 훈련, 반도체 교육..."></textarea>
       </div>
       <button class="btn-primary" id="search-btn" onclick="runSearch()">🌐 수집 시작</button>
@@ -132,29 +136,29 @@
     </div>
 
     <div id="tab-results" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
-          <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:2px;">📋 수집 결과 — 최근 7일</div>
-          <div style="font-size:11px;color:#374151;" id="result-meta"></div>
+          <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:3px;">📋 수집 결과 — 최근 7일</div>
+          <div style="font-size:12px;color:#94a3b8;" id="result-meta"></div>
         </div>
-        <div style="display:flex;gap:7px;">
-          <input type="text" id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="width:150px;">
-          <button onclick="showTab('search')" style="padding:6px 13px;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.28);border-radius:7px;color:#93c5fd;font-size:12px;cursor:pointer;">🔄 재수집</button>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="width:160px;">
+          <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e40af;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
         </div>
       </div>
-      <div id="error-log" style="display:none;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
-      <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;"></div>
-      <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.16);border-radius:8px;padding:7px 14px;margin-bottom:12px;font-size:12px;color:#c4b5fd;">
+      <div id="error-log" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
+      <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#1e40af;">
         💡 카드의 <strong>🤖 AI 분석</strong>으로 필요한 항목만 개별 분석 · 🔗 링크로 원문 확인
       </div>
       <div id="news-list"></div>
     </div>
 
     <div id="tab-detail" style="display:none;">
-      <div id="detail-content" style="text-align:center;padding:70px 20px;">
-        <div style="font-size:44px;margin-bottom:12px;">🤖</div>
-        <div style="font-size:14px;color:#374151;">카드의 <strong style="color:#c4b5fd;">상세 →</strong> 버튼을 클릭하세요</div>
-        <button onclick="showTab('results')" style="margin-top:14px;padding:8px 20px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:7px;color:#93c5fd;font-size:13px;cursor:pointer;">결과 목록으로 →</button>
+      <div id="detail-content" style="text-align:center;padding:80px 20px;">
+        <div style="font-size:48px;margin-bottom:14px;">🤖</div>
+        <div style="font-size:15px;color:#64748b;">카드의 <strong style="color:#3b82f6;">상세 →</strong> 버튼을 클릭하세요</div>
+        <button onclick="showTab('results')" style="margin-top:16px;padding:9px 22px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e40af;font-size:13px;cursor:pointer;font-weight:600;">결과 목록으로 →</button>
       </div>
     </div>
   </div>
@@ -165,21 +169,21 @@ const NEWS_API   = "https://yongho-s-repository-git-main-2ndnameians-projects.ve
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
 
 const GROUPS = [
-  { id:"vocational", label:"직업훈련 정책", icon:"🏛️", color:"59,130,246",
+  { id:"vocational", label:"직업훈련 정책", icon:"🏛️", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe",
     keywords:["직업훈련","국비훈련","고용노동부 직업훈련","KDT","KDC","직업능력개발훈련","훈련기관 평가","HRD-Net","훈련비 지원","재직자 훈련","청년 직업훈련","기업맞춤형 훈련"] },
-  { id:"education", label:"교육 동향", icon:"📚", color:"139,92,246",
+  { id:"education", label:"교육 동향", icon:"📚", color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe",
     keywords:["AI 인재양성","디지털 교육","에듀테크","평생교육","마이크로디그리","소프트웨어 교육","AI 교육","데이터 교육","융합교육","산학협력 교육","교육부 정책","미래교육"] },
-  { id:"industry", label:"산업 동향", icon:"🏭", color:"16,185,129",
+  { id:"industry", label:"산업 동향", icon:"🏭", color:"#065f46", bg:"#f0fdf4", border:"#bbf7d0",
     keywords:["AI 산업","반도체 산업","로봇 산업","디지털 전환","IT 인력 부족","개발자 채용","AI 투자","기업 AI 전략","디지털 인력 수요","데이터 산업"] },
-  { id:"competitor", label:"경쟁기관 레이더", icon:"🎯", color:"245,158,11",
+  { id:"competitor", label:"경쟁기관 레이더", icon:"🎯", color:"#b45309", bg:"#fffbeb", border:"#fde68a",
     keywords:["직업훈련기관","IT 교육기관","코딩 교육","AI 교육기관","부트캠프","취업연계 교육","훈련기관 신규 과정","교육기관 확장","훈련기관 투자","교육기관 MOU"] },
 ];
 
 const URGENCY = {
-  critical:{ label:"긴급", color:"#ef4444", bg:"rgba(239,68,68,0.10)", border:"rgba(239,68,68,0.30)" },
-  high:    { label:"주의", color:"#f59e0b", bg:"rgba(245,158,11,0.09)", border:"rgba(245,158,11,0.30)" },
-  medium:  { label:"보통", color:"#3b82f6", bg:"rgba(59,130,246,0.08)", border:"rgba(59,130,246,0.25)" },
-  low:     { label:"참고", color:"#64748b", bg:"rgba(100,116,139,0.07)", border:"rgba(100,116,139,0.18)" },
+  critical:{ label:"긴급", color:"#dc2626", bg:"#fef2f2", border:"#fecaca", text:"#991b1b" },
+  high:    { label:"주의", color:"#d97706", bg:"#fffbeb", border:"#fde68a", text:"#92400e" },
+  medium:  { label:"보통", color:"#2563eb", bg:"#eff6ff", border:"#bfdbfe", text:"#1e40af" },
+  low:     { label:"참고", color:"#64748b", bg:"#f8fafc", border:"#e2e8f0", text:"#475569" },
 };
 
 let selectedKws  = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
@@ -200,19 +204,20 @@ function init() {
 }
 
 function renderGroupTabs() {
-  const summary = document.getElementById("group-summary");
-  if(summary) summary.innerHTML = GROUPS.map(g=>{
+  const summary=document.getElementById("group-summary");
+  if(summary) summary.innerHTML=GROUPS.map(g=>{
     const cnt=(selectedKws[g.id]||[]).length;
-    return `<div style="display:flex;align-items:center;gap:5px;background:rgba(${g.color},0.08);border:1px solid rgba(${g.color},0.22);border-radius:7px;padding:4px 10px;">
-      <span>${g.icon}</span><span style="font-size:12px;color:rgb(${g.color});font-weight:600;">${g.label}</span><span style="font-size:11px;color:rgba(${g.color},0.55);">${cnt}/${g.keywords.length}</span>
+    return `<div style="display:flex;align-items:center;gap:5px;background:${g.bg};border:1px solid ${g.border};border-radius:7px;padding:4px 10px;">
+      <span>${g.icon}</span><span style="font-size:12px;color:${g.color};font-weight:600;">${g.label}</span>
+      <span style="font-size:11px;color:${g.color};opacity:0.6;">${cnt}/${g.keywords.length}</span>
     </div>`;
   }).join("");
-  document.getElementById("group-tabs").innerHTML = GROUPS.map(g=>{
-    const active=g.id===activeGroup, cnt=(selectedKws[g.id]||[]).length;
+  document.getElementById("group-tabs").innerHTML=GROUPS.map(g=>{
+    const cnt=(selectedKws[g.id]||[]).length, active=g.id===activeGroup;
     return `<button class="group-tab ${active?"active":""}" onclick="setActiveGroup('${g.id}')"
-      style="${active?`background:rgba(${g.color},0.12);border-color:rgba(${g.color},0.45);color:rgb(${g.color});`:""}">
+      style="${active?`background:${g.color};`:""}">
       ${g.icon} ${g.label}
-      <span style="font-size:11px;padding:0 5px;border-radius:8px;background:${active?`rgba(${g.color},0.2)`:"rgba(255,255,255,0.06)"};color:${active?`rgb(${g.color})`:"#6b7280"};">${cnt}</span>
+      <span style="font-size:11px;padding:0 5px;border-radius:8px;background:${active?"rgba(255,255,255,0.25)":"#f1f5f9"};color:${active?"white":"#94a3b8"};">${cnt}</span>
     </button>`;
   }).join("");
 }
@@ -222,16 +227,16 @@ function renderKeywordPanel() {
   document.getElementById("keyword-panel").innerHTML=`
     <div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;color:#f1f5f9;">${g.icon} ${g.label} <span style="font-size:11px;color:#4b5563;font-weight:400;">${sel.length}/${g.keywords.length}개</span></div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b;">${g.icon} ${g.label} <span style="font-size:11px;color:#94a3b8;font-weight:400;">${sel.length}/${g.keywords.length}개 선택</span></div>
         <div style="display:flex;gap:6px;">
-          <button onclick="clearGroup('${g.id}')" style="font-size:11px;padding:3px 9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:5px;color:#4b5563;cursor:pointer;">해제</button>
-          <button onclick="selectAllGroup('${g.id}')" style="font-size:11px;padding:3px 9px;background:rgba(${g.color},0.08);border:1px solid rgba(${g.color},0.25);border-radius:5px;color:rgb(${g.color});cursor:pointer;">전체</button>
+          <button onclick="clearGroup('${g.id}')" style="font-size:11px;padding:4px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;color:#64748b;cursor:pointer;">해제</button>
+          <button onclick="selectAllGroup('${g.id}')" style="font-size:11px;padding:4px 10px;background:${g.bg};border:1px solid ${g.border};border-radius:5px;color:${g.color};cursor:pointer;font-weight:600;">전체 선택</button>
         </div>
       </div>
       <div>${g.keywords.map(kw=>{
         const on=sel.includes(kw);
         return `<span class="kw-chip ${on?"on":""}" onclick="toggleKw('${g.id}','${kw}')"
-          style="${on?`background:rgba(${g.color},0.15);border-color:rgba(${g.color},0.45);color:rgb(${g.color});`:""}">
+          style="${on?`background:${g.bg};border-color:${g.border};color:${g.color};`:""}">
           ${on?"✓ ":""}${kw}</span>`;
       }).join("")}</div>
     </div>`;
@@ -280,26 +285,27 @@ async function runSearch(){
   const renderProgress=(pct,steps)=>{
     panel.innerHTML=`
       <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:13px;color:#93c5fd;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
-        <span style="font-size:13px;font-weight:800;color:#f1f5f9;">${pct}%</span>
+        <span style="font-size:13px;color:#1e40af;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
+        <span style="font-size:14px;font-weight:800;color:#1e293b;">${pct}%</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${pct===100?"background:linear-gradient(90deg,#10b981,#34d399)":""}"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${pct===100?"background:linear-gradient(90deg,#3b82f6,#06b6d4)":""}"></div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${steps.map(s=>{
           const isCur=s.status==="running";
-          const bgMap={pending:"rgba(255,255,255,0.02)",running:"rgba(59,130,246,0.10)",done:"rgba(16,185,129,0.06)",error:"rgba(239,68,68,0.06)"};
-          const borderMap={pending:"rgba(255,255,255,0.05)",running:"rgba(59,130,246,0.30)",done:"rgba(16,185,129,0.20)",error:"rgba(239,68,68,0.20)"};
-          const colorMap={pending:"#334155",running:"#3b82f6",done:"#10b981",error:"#ef4444"};
+          const bgMap={pending:"#f8fafc",running:"#eff6ff",done:"#f0fdf4",error:"#fef2f2"};
+          const borderMap={pending:"#e2e8f0",running:"#bfdbfe",done:"#bbf7d0",error:"#fecaca"};
+          const colorMap={pending:"#94a3b8",running:"#1e40af",done:"#059669",error:"#dc2626"};
           const iconMap={pending:"○",running:"◉",done:"✓",error:"✕"};
-          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;background:${bgMap[s.status]};border:1px solid ${borderMap[s.status]};">
-            <span style="color:${colorMap[s.status]};font-weight:700;width:16px;text-align:center;">${iconMap[s.status]}</span>
-            <span style="font-size:12px;color:${isCur?"#93c5fd":s.status==="done"?"#6ee7b7":s.status==="error"?"#f87171":"#4b5563"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
-            ${isCur?`<span style="font-size:10px;color:#3b82f6;padding:2px 8px;background:rgba(59,130,246,0.12);border-radius:4px;">검색 중</span>`:""}
-            ${s.status==="done"&&s.id!=="__done__"?`<span style="font-size:10px;color:#10b981;">${(allResults[s.id]||[]).length}건</span>`:""}
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${bgMap[s.status]};border:1px solid ${borderMap[s.status]};">
+            <span style="font-size:14px;color:${colorMap[s.status]};font-weight:700;width:16px;text-align:center;">${iconMap[s.status]}</span>
+            <span style="font-size:12px;color:${isCur?"#1e40af":s.status==="done"?"#059669":s.status==="error"?"#dc2626":"#94a3b8"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
+            ${isCur?`<span style="font-size:10px;color:#1e40af;padding:2px 8px;background:#dbeafe;border-radius:4px;font-weight:600;">수집 중</span>`:""}
+            ${s.status==="done"&&s.id!=="__done__"?`<span style="font-size:11px;color:#059669;font-weight:600;">${(allResults[s.id]||[]).length}건</span>`:""}
+            ${s.status==="error"?`<span style="font-size:11px;color:#dc2626;">없음</span>`:""}
           </div>`;
         }).join("")}
       </div>
-      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:8px 12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.18);border-radius:8px;font-size:12px;color:#6ee7b7;">📥 현재까지 수집: <strong>${Object.values(allResults).flat().length}건</strong></div>`:""}
+      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}
     `;
   };
 
@@ -321,10 +327,9 @@ async function runSearch(){
           const summary=(item.description||"").replace(/<[^>]+>/g,"");
           let source="네이버뉴스";
           try{source=new URL(item.originallink||item.link).hostname.replace("www.","");}catch{}
-          let date="";
-          try{const d=new Date(item.pubDate);if(!isNaN(d))date=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{}
+          const date=(()=>{try{const d=new Date(item.pubDate);return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{return "";}})();
           const urgency=title.includes("긴급")||title.includes("폐지")||title.includes("중단")?"critical":title.includes("확대")||title.includes("개편")||title.includes("신규")?"high":title.includes("모집")||title.includes("공고")?"medium":"low";
-          return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,title,summary,source,url:item.link||"",date,urgency,tags:[group.label]};
+          return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url:item.link||"",date,urgency,tags:[group.label]};
         });
         steps[gi].status="done";
       } else { allResults[group.id]=[]; steps[gi].status="error"; }
@@ -350,29 +355,29 @@ function renderResults(){
   const high=allNews.filter(n=>n.urgency==="high").length;
   const analyzed=Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error&&!analysisMap[k]?.loading).length;
   document.getElementById("stats-row").innerHTML=[
-    {label:"전체",count:allNews.length,col:"99,102,241",icon:"📋"},
-    {label:"긴급",count:crit,col:"239,68,68",icon:"🔴"},
-    {label:"주의",count:high,col:"245,158,11",icon:"🟡"},
-    {label:"분석완료",count:analyzed,col:"16,185,129",icon:"🤖"},
-  ].map(s=>`<div class="stat-card" style="background:rgba(${s.col},0.07);border:1px solid rgba(${s.col},0.20);">
-    <span style="font-size:18px;">${s.icon}</span>
-    <div><div style="font-size:19px;font-weight:800;color:rgb(${s.col});line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
+    {label:"전체",count:allNews.length,bg:"#eff6ff",border:"#bfdbfe",color:"#1e40af",icon:"📋"},
+    {label:"긴급",count:crit,bg:"#fef2f2",border:"#fecaca",color:"#dc2626",icon:"🔴"},
+    {label:"주의",count:high,bg:"#fffbeb",border:"#fde68a",color:"#d97706",icon:"🟡"},
+    {label:"분석완료",count:analyzed,bg:"#f0fdf4",border:"#bbf7d0",color:"#059669",icon:"🤖"},
+  ].map(s=>`<div class="stat-card" style="background:${s.bg};border-color:${s.border};">
+    <span style="font-size:22px;">${s.icon}</span>
+    <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
   </div>`).join("");
 
   const errEl=document.getElementById("error-log");
   const errs=GROUPS.map(g=>allResults[g.id]!==undefined&&allResults[g.id].length===0?`[${g.label}] 결과 없음`:null).filter(Boolean);
-  if(errs.length){errEl.style.display="block";errEl.innerHTML=`<div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:5px;">⚠️ 수집 알림</div>`+errs.map(e=>`<div style="font-size:11px;color:#fde68a;">${e}</div>`).join("");}
+  if(errs.length){errEl.style.display="block";errEl.innerHTML=`<div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px;">⚠️ 수집 알림</div>`+errs.map(e=>`<div style="font-size:12px;color:#78350f;">${e}</div>`).join("");}
   else errEl.style.display="none";
 
   const groups=filterGroup==="all"?GROUPS:GROUPS.filter(g=>g.id===filterGroup);
   document.getElementById("news-list").innerHTML=groups.map(group=>{
     const gNews=filtered.filter(n=>n.groupId===group.id);
     if(!gNews.length) return "";
-    return `<div style="margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
-        <span class="section-label" style="background:rgba(${group.color},0.10);color:rgb(${group.color});border:1px solid rgba(${group.color},0.26);">${group.icon} ${group.label}</span>
-        <span style="font-size:10px;color:#374151;">${gNews.length}건</span>
-        <div style="flex:1;height:1px;background:rgba(255,255,255,0.04);"></div>
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span class="section-label" style="background:${group.bg};color:${group.color};border:1px solid ${group.border};">${group.icon} ${group.label}</span>
+        <span style="font-size:11px;color:#94a3b8;">${gNews.length}건</span>
+        <div style="flex:1;height:1px;background:#e2e8f0;"></div>
       </div>
       ${gNews.map(news=>renderNewsCard(news)).join("")}
     </div>`;
@@ -381,44 +386,42 @@ function renderResults(){
 
 function renderNewsCard(news){
   const u=URGENCY[news.urgency]||URGENCY.medium;
-  const gcol=news.groupColor||"59,130,246";
   const ai=analysisMap[news.id];
-  const isAn=news.id===window._analyzing;
-  return `<div class="news-card" style="border:1px solid ${u.border};">
-    <div class="news-header" style="background:${u.bg};border-bottom:1px solid ${u.border};">
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-        <span style="width:6px;height:6px;border-radius:50%;background:${u.color};flex-shrink:0;display:inline-block;"></span>
-        <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.color};">${u.label}</span>
-        <span style="font-size:10px;color:#475569;">📅 ${news.date} · ${news.source}</span>
+  return `<div class="news-card">
+    <div class="news-header" style="background:${u.bg};">
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
+        <span class="urgency-badge" style="background:white;border:1px solid ${u.border};color:${u.text};">${u.label}</span>
+        <span style="font-size:11px;color:#64748b;">📅 ${news.date}</span>
+        <span style="font-size:11px;color:#94a3b8;">· ${news.source}</span>
       </div>
-      <div style="display:flex;gap:5px;">
-        ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:10px;padding:3px 10px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);border-radius:5px;color:#c4b5fd;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
-        ${ai&&!ai.error&&!ai.loading?`<span style="font-size:10px;color:#10b981;padding:3px 6px;">✅</span>`:""}
-        ${ai?.loading?`<span style="font-size:10px;color:#8b5cf6;padding:3px 8px;">⏳</span>`:""}
-        <button onclick="openDetail('${news.id}')" style="font-size:10px;padding:3px 10px;background:rgba(59,130,246,0.10);border:1px solid rgba(59,130,246,0.28);border-radius:5px;color:#93c5fd;cursor:pointer;">상세 →</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #bfdbfe;border-radius:5px;color:#1e40af;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
+        ${ai&&!ai.error&&!ai.loading?`<span style="font-size:11px;color:#059669;font-weight:600;">✅ 완료</span>`:""}
+        ${ai?.loading?`<span style="font-size:11px;color:#1e40af;">⏳...</span>`:""}
+        <button onclick="openDetail('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #bfdbfe;border-radius:5px;color:#1e40af;cursor:pointer;font-weight:600;">상세 →</button>
       </div>
     </div>
     <div class="news-body">
       <div class="news-title">${news.url?`<a href="${news.url}" target="_blank">${news.title} <span style="font-size:11px;color:#3b82f6;">🔗</span></a>`:news.title}</div>
       <div class="news-summary">${news.summary}</div>
       ${ai&&!ai.error&&!ai.loading?`<div class="ai-result">
-        <div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;">
-          <span style="font-size:10px;color:#8b5cf6;font-weight:700;">🤖 AI 분석</span>
-          <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(139,92,246,0.12);color:${ai.risk_level==="높음"?"#ef4444":ai.risk_level==="보통"?"#f59e0b":"#10b981"};font-weight:700;">위험 ${ai.risk_level}</span>
+        <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px;">
+          <span style="font-size:11px;color:#1e40af;font-weight:700;">🤖 AI 분석 결과</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:white;border:1px solid #bfdbfe;color:${ai.risk_level==="높음"?"#dc2626":ai.risk_level==="보통"?"#d97706":"#059669"};font-weight:700;">위험 ${ai.risk_level}</span>
         </div>
-        <p style="font-size:11px;color:#cbd5e1;line-height:1.55;margin:0 0 6px;">${ai.key_insight}</p>
+        <p style="font-size:12px;color:#374151;line-height:1.6;margin:0 0 8px;">${ai.key_insight}</p>
         <div class="grid2">
-          <div style="background:rgba(239,68,68,0.05);border-radius:5px;padding:5px 8px;">
-            <div style="font-size:10px;color:#f87171;font-weight:700;margin-bottom:2px;">🚨 즉시 조치</div>
-            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="font-size:10px;color:#fca5a5;line-height:1.5;">${i+1}. ${a}</div>`).join("")}
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 10px;">
+            <div style="font-size:11px;color:#dc2626;font-weight:700;margin-bottom:3px;">🚨 즉시 조치</div>
+            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="font-size:11px;color:#7f1d1d;line-height:1.5;">${i+1}. ${a}</div>`).join("")}
           </div>
-          <div style="background:rgba(16,185,129,0.05);border-radius:5px;padding:5px 8px;">
-            <div style="font-size:10px;color:#10b981;font-weight:700;margin-bottom:2px;">✨ 기회</div>
-            <p style="font-size:10px;color:#a7f3d0;margin:0;line-height:1.5;">${ai.opportunity}</p>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:8px 10px;">
+            <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:3px;">✨ 기회 포인트</div>
+            <p style="font-size:11px;color:#14532d;margin:0;line-height:1.5;">${ai.opportunity}</p>
           </div>
         </div>
       </div>`:""}
-      <div style="margin-top:7px;">${(news.tags||[]).slice(0,5).map(t=>`<span class="tag">#${t}</span>`).join("")}</div>
+      <div style="margin-top:8px;">${(news.tags||[]).slice(0,5).map(t=>`<span class="tag">#${t}</span>`).join("")}</div>
     </div>
   </div>`;
 }
@@ -458,59 +461,58 @@ function openDetail(id){
   showTab("detail");
   const ai=analysisMap[id];
   const u=URGENCY[news.urgency]||URGENCY.medium;
-  const gcol=news.groupColor||"59,130,246";
   document.getElementById("detail-content").innerHTML=`
-    <div style="display:flex;gap:7px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
-      <button onclick="showTab('results')" style="padding:4px 11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;">← 목록</button>
-      <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.color};">${u.label}</span>
-      <span style="font-size:10px;padding:2px 8px;background:rgba(${gcol},0.09);border:1px solid rgba(${gcol},0.25);border-radius:4px;color:rgb(${gcol});">${news.groupLabel}</span>
-      <span style="font-size:11px;color:#374151;">${news.date} · ${news.source}</span>
-      ${news.url?`<a href="${news.url}" target="_blank" style="font-size:11px;color:#60a5fa;">🔗 원문</a>`:""}
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="showTab('results')" style="padding:5px 12px;background:white;border:1px solid #e2e8f0;border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;">← 목록</button>
+      <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.text};">${u.label}</span>
+      <span style="font-size:11px;padding:3px 9px;background:${news.groupBg};border:1px solid ${news.groupBorder};border-radius:5px;color:${news.groupColor};font-weight:600;">${news.groupLabel}</span>
+      <span style="font-size:12px;color:#64748b;">${news.date} · ${news.source}</span>
+      ${news.url?`<a href="${news.url}" target="_blank" style="font-size:12px;color:#1e40af;font-weight:600;">🔗 원문보기</a>`:""}
     </div>
     <div class="card" style="margin-bottom:14px;">
-      <div style="font-size:15px;font-weight:800;color:#f1f5f9;line-height:1.45;margin-bottom:9px;">${news.title}</div>
-      <p style="font-size:13px;color:#94a3b8;line-height:1.7;">${news.summary}</p>
+      <div style="font-size:16px;font-weight:800;color:#1e293b;line-height:1.5;margin-bottom:10px;">${news.title}</div>
+      <p style="font-size:13px;color:#475569;line-height:1.7;">${news.summary}</p>
     </div>
-    <div class="card" style="border:1px solid rgba(139,92,246,0.28);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;color:#c4b5fd;">🤖 Claude AI 심층 분석</div>
-        <div style="display:flex;gap:7px;align-items:center;">
-          ${!ai||ai.loading?`<button onclick="analyzeNews('${id}')" style="padding:6px 15px;background:rgba(139,92,246,0.14);border:1px solid rgba(139,92,246,0.38);border-radius:7px;color:#c4b5fd;font-size:12px;font-weight:600;cursor:pointer;">${ai?.loading?"⏳ 분석 중...":"🔍 분석 실행"}</button>`:""}
-          ${ai&&!ai.error&&!ai.loading?`<span style="font-size:11px;color:#10b981;">✅ 완료</span><button onclick="delete analysisMap['${id}'];openDetail('${id}')" style="font-size:10px;padding:3px 8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;color:#4b5563;cursor:pointer;">↩ 재분석</button>`:""}
+    <div class="card" style="border:1px solid #bfdbfe;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:700;color:#1e40af;">🤖 Claude AI 심층 분석</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          ${!ai||ai.loading?`<button onclick="analyzeNews('${id}')" style="padding:7px 16px;background:#1e40af;border:none;border-radius:7px;color:white;font-size:12px;font-weight:600;cursor:pointer;">${ai?.loading?"⏳ 분석 중...":"🔍 분석 실행"}</button>`:""}
+          ${ai&&!ai.error&&!ai.loading?`<span style="font-size:12px;color:#059669;font-weight:600;">✅ 완료</span><button onclick="delete analysisMap['${id}'];openDetail('${id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #e2e8f0;border-radius:5px;color:#64748b;cursor:pointer;">↩ 재분석</button>`:""}
         </div>
       </div>
-      ${!ai?`<div style="text-align:center;padding:24px;color:#374151;font-size:13px;"><div style="font-size:32px;margin-bottom:9px;">🔍</div>분석 실행 버튼으로 훈련기관 관점 대응 방안을 분석합니다.</div>`:""}
-      ${ai?.loading?`<div style="text-align:center;padding:24px;color:#8b5cf6;font-size:13px;">⏳ 분석 중...</div>`:""}
-      ${ai?.error?`<div style="color:#f87171;font-size:12px;padding:10px;">⚠️ ${ai.error}</div>`:""}
+      ${!ai?`<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;"><div style="font-size:36px;margin-bottom:10px;">🔍</div>분석 실행 버튼으로 훈련기관 관점 대응 방안을 분석합니다.</div>`:""}
+      ${ai?.loading?`<div style="text-align:center;padding:30px;color:#1e40af;font-size:13px;">⏳ 분석 중...</div>`:""}
+      ${ai?.error?`<div style="color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:6px;">⚠️ ${ai.error}</div>`:""}
       ${ai&&!ai.error&&!ai.loading?`
-        <div style="display:flex;gap:10px;margin-bottom:10px;">
-          <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:9px;padding:12px 14px;text-align:center;flex-shrink:0;min-width:85px;">
-            <div style="font-size:10px;color:#8b5cf6;font-weight:700;margin-bottom:4px;">위험 수준</div>
-            <div style="font-size:18px;font-weight:800;color:${ai.risk_level==="높음"?"#ef4444":ai.risk_level==="보통"?"#f59e0b":"#10b981"};">${ai.risk_level}</div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;text-align:center;flex-shrink:0;min-width:90px;">
+            <div style="font-size:11px;color:#1e40af;font-weight:700;margin-bottom:6px;">위험 수준</div>
+            <div style="font-size:20px;font-weight:800;color:${ai.risk_level==="높음"?"#dc2626":ai.risk_level==="보통"?"#d97706":"#059669"};">${ai.risk_level}</div>
           </div>
-          <div style="flex:1;background:rgba(255,255,255,0.02);border-radius:9px;padding:11px 13px;">
-            <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">💡 핵심 인사이트</div>
-            <p style="font-size:12px;color:#cbd5e1;line-height:1.65;margin:0;">${ai.key_insight}</p>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">
-          <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.16);border-radius:8px;padding:11px;">
-            <div style="font-size:11px;color:#f87171;font-weight:700;margin-bottom:7px;">🚨 즉시 조치</div>
-            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="display:flex;gap:5px;margin-bottom:4px;"><span style="color:#ef4444;font-size:11px;font-weight:700;">${i+1}.</span><span style="font-size:11px;color:#fca5a5;line-height:1.5;">${a}</span></div>`).join("")}
-          </div>
-          <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.16);border-radius:8px;padding:11px;">
-            <div style="font-size:11px;color:#60a5fa;font-weight:700;margin-bottom:7px;">📅 단기 계획</div>
-            ${(ai.mid_actions||[]).map((a,i)=>`<div style="display:flex;gap:5px;margin-bottom:4px;"><span style="color:#3b82f6;font-size:11px;font-weight:700;">${i+1}.</span><span style="font-size:11px;color:#93c5fd;line-height:1.5;">${a}</span></div>`).join("")}
+          <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+            <div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px;">💡 핵심 인사이트</div>
+            <p style="font-size:13px;color:#1e293b;line-height:1.7;margin:0;">${ai.key_insight}</p>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-          <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.18);border-radius:7px;padding:9px;">
-            <div style="font-size:10px;color:#10b981;font-weight:700;margin-bottom:3px;">✨ 기회 포인트</div>
-            <p style="font-size:11px;color:#a7f3d0;margin:0;line-height:1.5;">${ai.opportunity}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;color:#dc2626;font-weight:700;margin-bottom:8px;">🚨 즉시 조치</div>
+            ${(ai.immediate_actions||[]).map((a,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#dc2626;font-size:12px;font-weight:700;">${i+1}.</span><span style="font-size:12px;color:#7f1d1d;line-height:1.5;">${a}</span></div>`).join("")}
           </div>
-          <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.16);border-radius:7px;padding:9px;">
-            <div style="font-size:10px;color:#ef4444;font-weight:700;margin-bottom:3px;">⚠️ 핵심 리스크</div>
-            <p style="font-size:11px;color:#fca5a5;margin:0;line-height:1.5;">${ai.warning}</p>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;color:#1d4ed8;font-weight:700;margin-bottom:8px;">📅 단기 계획</div>
+            ${(ai.mid_actions||[]).map((a,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#1d4ed8;font-size:12px;font-weight:700;">${i+1}.</span><span style="font-size:12px;color:#1e40af;line-height:1.5;">${a}</span></div>`).join("")}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:4px;">✨ 기회 포인트</div>
+            <p style="font-size:12px;color:#14532d;margin:0;line-height:1.5;">${ai.opportunity}</p>
+          </div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:#dc2626;font-weight:700;margin-bottom:4px;">⚠️ 핵심 리스크</div>
+            <p style="font-size:12px;color:#7f1d1d;margin:0;line-height:1.5;">${ai.warning}</p>
           </div>
         </div>`:""}
     </div>`;
@@ -520,7 +522,7 @@ function renderFilterGroups(){
   document.getElementById("filter-groups").innerHTML=
     [{id:"all",label:"전체",icon:"📋"},...GROUPS.map(g=>({id:g.id,label:g.label,icon:g.icon}))].map(item=>{
       const cnt=item.id==="all"?Object.values(allResults).flat().length:(allResults[item.id]||[]).length;
-      return `<button class="filter-btn ${filterGroup===item.id?"active":""}" onclick="filterGroup='${item.id}';renderFilterGroups();renderFilterUrgency();renderResults();">${item.icon} ${item.label}<span style="font-size:10px;">${cnt}</span></button>`;
+      return `<button class="filter-btn ${filterGroup===item.id?"active":""}" onclick="filterGroup='${item.id}';renderFilterGroups();renderFilterUrgency();renderResults();">${item.icon} ${item.label}<span style="font-size:10px;color:#94a3b8;">${cnt}</span></button>`;
     }).join("");
 }
 
@@ -531,8 +533,8 @@ function renderFilterUrgency(){
       const cfg=u==="all"?{label:"전체",color:"#64748b"}:URGENCY[u];
       const cnt=u==="all"?all.length:all.filter(n=>n.urgency===u).length;
       return `<button class="filter-btn ${filterUrgency===u?"active":""}" onclick="filterUrgency='${u}';renderFilterGroups();renderFilterUrgency();renderResults();">
-        ${u!=="all"?`<span style="width:5px;height:5px;border-radius:50%;background:${cfg.color};flex-shrink:0;display:inline-block;"></span>`:""}
-        <span style="flex:1;">${u==="all"?"전체":cfg.label}</span><span style="font-size:10px;">${cnt}</span>
+        ${u!=="all"?`<span style="width:6px;height:6px;border-radius:50%;background:${cfg.color};flex-shrink:0;display:inline-block;margin-right:2px;"></span>`:""}
+        <span style="flex:1;">${u==="all"?"전체":cfg.label}</span><span style="font-size:10px;color:#94a3b8;">${cnt}</span>
       </button>`;
     }).join("");
 }
