@@ -7,55 +7,56 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#1e293b; min-height:100vh; }
-  .header { background:#1e40af; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+  .header { background:#0f766e; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
   .logo { width:36px; height:36px; border-radius:8px; background:white; display:flex; align-items:center; justify-content:center; font-size:18px; }
   .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
-  .header-sub { font-size:10px; color:#bfdbfe; }
+  .header-sub { font-size:10px; color:#99f6e4; }
   .ticker-wrap { flex:1; overflow:hidden; margin:0 16px; border-left:1px solid rgba(255,255,255,0.25); padding-left:14px; display:none; }
   .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
-  .nav-link { font-size:12px; color:#bfdbfe; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
+  .nav-link { font-size:12px; color:#99f6e4; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
+  .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
   .sidebar-inner { padding:16px 12px 8px; }
   .sidebar-label { font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; margin-top:8px; }
   .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#64748b; font-size:13px; text-align:left; font-family:inherit; transition:all 0.12s; }
-  .sidebar-btn.active { background:#eff6ff; color:#1e40af; font-weight:700; }
+  .sidebar-btn.active { background:#f0fdfa; color:#0f766e; font-weight:700; }
   .sidebar-btn:hover:not(.active) { background:#f8fafc; }
   .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
-  .badge.active { background:#1e40af; color:white; }
+  .badge.active { background:#0f766e; color:white; }
   .divider { height:1px; background:#f1f5f9; margin:8px 0; }
   .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
   .hero { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
   .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
   .kw-chip { padding:5px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; transition:all 0.12s; margin:3px; display:inline-block; }
   .kw-chip.on { font-weight:600; }
-  .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#1e40af,#3b82f6); transition:all 0.2s; box-shadow:0 4px 12px rgba(30,64,175,0.25); }
+  .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#0f766e,#14b8a6); transition:all 0.2s; box-shadow:0 4px 12px rgba(15,118,110,0.25); }
   .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
   .btn-primary:disabled { background:#cbd5e1; cursor:not-allowed; box-shadow:none; }
   .progress-bar { background:#f1f5f9; border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
-  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#1e40af,#3b82f6); }
+  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#0f766e,#14b8a6); }
   .news-card { background:white; border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); border:1px solid #e2e8f0; transition:box-shadow 0.15s; }
   .news-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.10); }
   .news-header { padding:9px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; }
   .news-body { padding:14px 16px; }
   .news-title { font-size:14px; font-weight:700; color:#1e293b; margin-bottom:6px; line-height:1.5; }
   .news-title a { color:#1e293b; text-decoration:none; }
-  .news-title a:hover { color:#1e40af; text-decoration:underline; }
+  .news-title a:hover { color:#0f766e; text-decoration:underline; }
   .news-summary { font-size:12px; color:#64748b; line-height:1.7; margin-bottom:8px; }
   .tag { font-size:10px; padding:2px 8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:4px; color:#94a3b8; margin-right:4px; }
   .urgency-badge { font-size:11px; padding:3px 9px; border-radius:5px; font-weight:700; }
-  .ai-result { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 14px; margin-top:10px; }
+  .ai-result { background:#f0fdfa; border:1px solid #99f6e4; border-radius:10px; padding:12px 14px; margin-top:10px; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
   .stat-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; }
   .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#64748b; font-size:11px; text-align:left; font-family:inherit; }
-  .filter-btn.active { background:#eff6ff; color:#1e40af; font-weight:600; }
+  .filter-btn.active { background:#f0fdfa; color:#0f766e; font-weight:600; }
   .filter-btn:hover:not(.active) { background:#f8fafc; }
   .group-tab { display:flex; align-items:center; gap:5px; padding:7px 13px; border-radius:8px; flex-shrink:0; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #e2e8f0; background:white; color:#64748b; white-space:nowrap; transition:all 0.15s; }
   .group-tab.active { color:white; border-color:transparent; }
   .section-label { font-size:11px; padding:3px 10px; border-radius:5px; font-weight:700; display:inline-block; margin-bottom:8px; }
   textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
-  textarea:focus { border-color:#93c5fd; }
+  textarea:focus { border-color:#99f6e4; }
   input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
 </style>
 </head>
@@ -69,13 +70,14 @@
   </div>
   <div class="ticker-wrap" id="ticker">
     <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:9px;padding:2px 6px;background:white;color:#1e40af;border-radius:3px;font-weight:800;flex-shrink:0;">LIVE</span>
-      <span id="ticker-text" style="font-size:12px;color:#bfdbfe;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      <span style="font-size:9px;padding:2px 6px;background:white;color:#0f766e;border-radius:3px;font-weight:800;flex-shrink:0;">LIVE</span>
+      <span id="ticker-text" style="font-size:12px;color:#99f6e4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
   </div>
   <div class="nav-links">
     <a href="/" class="nav-link">📰 뉴스</a>
     <a href="/policy.html" class="nav-link">📋 정책</a>
+    <a href="/market.html" class="nav-link active">📊 시장</a>
     <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
     <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
   </div>
@@ -113,7 +115,7 @@
     <div style="margin-top:auto;padding:12px 16px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;line-height:1.9;">
       <div>📦 키워드 <strong style="color:#1e293b;" id="stat-kw">0</strong>개</div>
       <div>📊 수집 <strong style="color:#1e293b;" id="stat-news">0</strong>건</div>
-      <div>🤖 분석 <strong style="color:#1e40af;" id="stat-analyzed">0</strong>건</div>
+      <div>🤖 분석 <strong style="color:#0f766e;" id="stat-analyzed">0</strong>건</div>
     </div>
   </div>
 
@@ -121,17 +123,17 @@
     <div id="tab-search">
       <div class="hero">
         <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">📊 시장동향 수집</h1>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:10px;">훈련시장 경쟁기관의 <strong style="color:#1e40af;">신규 과정·공모참여·협약·디지털 확대</strong> 동향을 최근 7일 기준으로 수집합니다.</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:10px;">훈련시장 경쟁기관의 <strong style="color:#0f766e;">신규 과정·공모참여·협약·디지털 확대</strong> 동향을 최근 7일 기준으로 수집합니다.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <div style="padding:5px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;color:#1e40af;font-weight:600;">🎯 경쟁기관 전략 파악</div>
+          <div style="padding:5px 12px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:6px;font-size:12px;color:#0f766e;font-weight:600;">🎯 경쟁기관 전략 파악</div>
           <div style="padding:5px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#065f46;font-weight:600;">🔍 신규 훈련 아이템 포착</div>
           <div style="padding:5px 12px;background:#fdf2f8;border:1px solid #f0abfc;border-radius:6px;font-size:12px;color:#86198f;font-weight:600;">📌 공모참여 패턴 분석</div>
           <div style="padding:5px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e;font-weight:600;">🤝 산학협력 사례 수집</div>
         </div>
       </div>
-      <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;" id="week-range"></div>
+      <div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:#0f766e;font-weight:600;" id="week-range"></div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button onclick="setTabGroup('org')" id="tabgrp-org" style="padding:6px 14px;border-radius:7px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;font-weight:700;cursor:pointer;">🏢 기관 유형별</button>
+        <button onclick="setTabGroup('org')"   id="tabgrp-org"   style="padding:6px 14px;border-radius:7px;border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;font-size:12px;font-weight:700;cursor:pointer;">🏢 기관 유형별</button>
         <button onclick="setTabGroup('trend')" id="tabgrp-trend" style="padding:6px 14px;border-radius:7px;border:1px solid #e2e8f0;background:white;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;">📌 동향 유형별</button>
         <button onclick="setTabGroup('field')" id="tabgrp-field" style="padding:6px 14px;border-radius:7px;border:1px solid #e2e8f0;background:white;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;">💡 분야별</button>
       </div>
@@ -153,12 +155,12 @@
         </div>
         <div style="display:flex;gap:8px;">
           <input type="text" id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="width:160px;">
-          <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e40af;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
+          <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#0f766e;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
         </div>
       </div>
       <div id="error-log" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
       <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#1e40af;">
+      <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#0f766e;">
         💡 카드의 <strong>🤖 AI 분석</strong>으로 경쟁기관 전략을 분석하고 차별화 포인트를 도출하세요
       </div>
       <div id="news-list"></div>
@@ -167,8 +169,8 @@
     <div id="tab-detail" style="display:none;">
       <div id="detail-content" style="text-align:center;padding:80px 20px;">
         <div style="font-size:48px;margin-bottom:14px;">🤖</div>
-        <div style="font-size:15px;color:#64748b;">수집 결과에서 <strong style="color:#3b82f6;">상세 →</strong> 버튼을 클릭하세요</div>
-        <button onclick="showTab('results')" style="margin-top:16px;padding:9px 22px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e40af;font-size:13px;cursor:pointer;font-weight:600;">결과 목록으로 →</button>
+        <div style="font-size:15px;color:#64748b;">수집 결과에서 <strong style="color:#0f766e;">상세 →</strong> 버튼을 클릭하세요</div>
+        <button onclick="showTab('results')" style="margin-top:16px;padding:9px 22px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#0f766e;font-size:13px;cursor:pointer;font-weight:600;">결과 목록으로 →</button>
       </div>
     </div>
   </div>
@@ -204,7 +206,7 @@ const ALL_GROUPS = [...ORG_GROUPS, ...TREND_GROUPS, ...FIELD_GROUPS];
 const URGENCY = {
   critical:{ label:"긴급", color:"#dc2626", bg:"#fef2f2", border:"#fecaca", text:"#991b1b" },
   high:    { label:"주의", color:"#d97706", bg:"#fffbeb", border:"#fde68a", text:"#92400e" },
-  medium:  { label:"보통", color:"#2563eb", bg:"#eff6ff", border:"#bfdbfe", text:"#1e40af" },
+  medium:  { label:"보통", color:"#0f766e", bg:"#f0fdfa", border:"#99f6e4", text:"#134e4a" },
   low:     { label:"참고", color:"#64748b", bg:"#f8fafc", border:"#e2e8f0", text:"#475569" },
 };
 
@@ -234,10 +236,11 @@ function setTabGroup(grp) {
   activeTabGrp=grp;
   ["org","trend","field"].forEach(g=>{
     const btn=document.getElementById("tabgrp-"+g);
-    btn.style.background=g===grp?"#eff6ff":"white";
-    btn.style.color=g===grp?"#1e40af":"#64748b";
-    btn.style.borderColor=g===grp?"#bfdbfe":"#e2e8f0";
-    btn.style.fontWeight=g===grp?"700":"600";
+    const active=g===grp;
+    btn.style.background=active?"#f0fdfa":"white";
+    btn.style.color=active?"#0f766e":"#64748b";
+    btn.style.borderColor=active?"#99f6e4":"#e2e8f0";
+    btn.style.fontWeight=active?"700":"600";
   });
   activeGroup=getCurrentGroups()[0].id;
   renderGroupTabs(); renderKeywordPanel();
@@ -317,25 +320,27 @@ async function runSearch(){
   const renderProgress=(pct,steps)=>{
     panel.innerHTML=`
       <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:13px;color:#1e40af;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
+        <span style="font-size:13px;color:#0f766e;font-weight:600;">${steps.find(s=>s.status==="running")?.label||"수집 중..."}</span>
         <span style="font-size:14px;font-weight:800;color:#1e293b;">${pct}%</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${pct===100?"background:linear-gradient(90deg,#059669,#10b981)":""}"></div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${steps.map(s=>{
           const isCur=s.status==="running";
-          const bgMap={pending:"#f8fafc",running:"#eff6ff",done:"#f0fdf4",error:"#fef2f2"};
-          const borderMap={pending:"#e2e8f0",running:"#bfdbfe",done:"#bbf7d0",error:"#fecaca"};
-          const colorMap={pending:"#94a3b8",running:"#1e40af",done:"#059669",error:"#dc2626"};
+          const bgMap={pending:"#f8fafc",running:"#f0fdfa",done:"#f0fdf4",error:"#fef2f2"};
+          const borderMap={pending:"#e2e8f0",running:"#99f6e4",done:"#bbf7d0",error:"#fecaca"};
+          const colorMap={pending:"#94a3b8",running:"#0f766e",done:"#059669",error:"#dc2626"};
           const iconMap={pending:"○",running:"◉",done:"✓",error:"✕"};
           return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${bgMap[s.status]};border:1px solid ${borderMap[s.status]};">
             <span style="font-size:14px;color:${colorMap[s.status]};font-weight:700;width:16px;text-align:center;">${iconMap[s.status]}</span>
-            <span style="font-size:12px;color:${isCur?"#1e40af":s.status==="done"?"#059669":s.status==="error"?"#dc2626":"#94a3b8"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
-            ${isCur?`<span style="font-size:10px;color:#1e40af;padding:2px 8px;background:#dbeafe;border-radius:4px;font-weight:600;">수집 중</span>`:""}
+            <span style="font-size:12px;color:${isCur?"#0f766e":s.status==="done"?"#059669":s.status==="error"?"#dc2626":"#94a3b8"};flex:1;font-weight:${isCur?700:400};">${s.label}</span>
+            ${isCur?`<span style="font-size:10px;color:#0f766e;padding:2px 8px;background:#ccfbf1;border-radius:4px;font-weight:600;">수집 중</span>`:""}
             ${s.status==="done"&&s.id!=="__done__"?`<span style="font-size:11px;color:#059669;font-weight:600;">${(allResults[s.id]||[]).length}건</span>`:""}
+            ${s.status==="error"?`<span style="font-size:11px;color:#dc2626;">없음</span>`:""}
           </div>`;
         }).join("")}
       </div>
+      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;font-size:12px;color:#0f766e;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}
     `;
   };
 
@@ -386,10 +391,10 @@ function renderResults(){
   const medium=allNews.filter(n=>n.urgency==="medium").length;
   const analyzed=Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error&&!analysisMap[k]?.loading).length;
   document.getElementById("stats-row").innerHTML=[
-    {label:"전체",count:allNews.length,bg:"#eff6ff",border:"#bfdbfe",color:"#1e40af",icon:"📊"},
-    {label:"주의",count:high,bg:"#fffbeb",border:"#fde68a",color:"#d97706",icon:"🟡"},
-    {label:"보통",count:medium,bg:"#f0f9ff",border:"#bae6fd",color:"#0369a1",icon:"🔵"},
-    {label:"분석완료",count:analyzed,bg:"#f0fdf4",border:"#bbf7d0",color:"#059669",icon:"🤖"},
+    {label:"전체",    count:allNews.length, bg:"#f0fdfa", border:"#99f6e4", color:"#0f766e", icon:"📊"},
+    {label:"주의",    count:high,           bg:"#fffbeb", border:"#fde68a", color:"#d97706", icon:"🟡"},
+    {label:"보통",    count:medium,         bg:"#f0f9ff", border:"#bae6fd", color:"#0369a1", icon:"🔵"},
+    {label:"분석완료",count:analyzed,       bg:"#f0fdf4", border:"#bbf7d0", color:"#059669", icon:"🤖"},
   ].map(s=>`<div class="stat-card" style="background:${s.bg};border-color:${s.border};">
     <span style="font-size:22px;">${s.icon}</span>
     <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#64748b;">${s.label}</div></div>
@@ -427,19 +432,19 @@ function renderNewsCard(news){
         <span style="font-size:11px;color:#94a3b8;">· ${news.source}</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #bfdbfe;border-radius:5px;color:#1e40af;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
+        ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #99f6e4;border-radius:5px;color:#0f766e;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
         ${ai&&!ai.error&&!ai.loading?`<span style="font-size:11px;color:#059669;font-weight:600;">✅ 완료</span>`:""}
-        ${ai?.loading?`<span style="font-size:11px;color:#1e40af;">⏳...</span>`:""}
-        <button onclick="openDetail('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #bfdbfe;border-radius:5px;color:#1e40af;cursor:pointer;font-weight:600;">상세 →</button>
+        ${ai?.loading?`<span style="font-size:11px;color:#0f766e;">⏳...</span>`:""}
+        <button onclick="openDetail('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #99f6e4;border-radius:5px;color:#0f766e;cursor:pointer;font-weight:600;">상세 →</button>
       </div>
     </div>
     <div class="news-body">
-      <div class="news-title">${news.url?`<a href="${news.url}" target="_blank">${news.title} <span style="font-size:11px;color:#1e40af;">🔗</span></a>`:news.title}</div>
+      <div class="news-title">${news.url?`<a href="${news.url}" target="_blank">${news.title} <span style="font-size:11px;color:#0f766e;">🔗</span></a>`:news.title}</div>
       <div class="news-summary">${news.summary}</div>
       ${ai&&!ai.error&&!ai.loading?`<div class="ai-result">
         <div style="display:flex;gap:7px;align-items:center;margin-bottom:7px;">
-          <span style="font-size:11px;color:#1e40af;font-weight:700;">🤖 AI 분석</span>
-          <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:white;border:1px solid #bfdbfe;color:${ai.risk_level==="높음"?"#dc2626":ai.risk_level==="보통"?"#d97706":"#059669"};font-weight:700;">위험 ${ai.risk_level}</span>
+          <span style="font-size:11px;color:#0f766e;font-weight:700;">🤖 AI 분석</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:white;border:1px solid #99f6e4;color:${ai.risk_level==="높음"?"#dc2626":ai.risk_level==="보통"?"#d97706":"#059669"};font-weight:700;">위험 ${ai.risk_level}</span>
         </div>
         <p style="font-size:12px;color:#374151;line-height:1.6;margin:0 0 8px;">${ai.key_insight}</p>
         <div class="grid2">
@@ -499,27 +504,27 @@ function openDetail(id){
       <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.text};">${u.label}</span>
       <span style="font-size:11px;padding:3px 9px;background:${news.groupBg};border:1px solid ${news.groupBorder};border-radius:5px;color:${news.groupColor};font-weight:600;">${news.groupLabel}</span>
       <span style="font-size:12px;color:#64748b;">${news.date} · ${news.source}</span>
-      ${news.url?`<a href="${news.url}" target="_blank" style="font-size:12px;color:#1e40af;font-weight:600;">🔗 원문보기</a>`:""}
+      ${news.url?`<a href="${news.url}" target="_blank" style="font-size:12px;color:#0f766e;font-weight:600;">🔗 원문보기</a>`:""}
     </div>
     <div class="card" style="margin-bottom:14px;">
       <div style="font-size:16px;font-weight:800;color:#1e293b;line-height:1.5;margin-bottom:10px;">${news.title}</div>
       <p style="font-size:13px;color:#475569;line-height:1.7;">${news.summary}</p>
     </div>
-    <div class="card" style="border:1px solid #bfdbfe;">
+    <div class="card" style="border:1px solid #99f6e4;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div style="font-size:14px;font-weight:700;color:#1e40af;">🤖 Claude AI 경쟁 분석</div>
+        <div style="font-size:14px;font-weight:700;color:#0f766e;">🤖 Claude AI 경쟁 분석</div>
         <div style="display:flex;gap:8px;align-items:center;">
-          ${!ai||ai.loading?`<button onclick="analyzeNews('${id}')" style="padding:7px 16px;background:#1e40af;border:none;border-radius:7px;color:white;font-size:12px;font-weight:600;cursor:pointer;">${ai?.loading?"⏳ 분석 중...":"🔍 분석 실행"}</button>`:""}
+          ${!ai||ai.loading?`<button onclick="analyzeNews('${id}')" style="padding:7px 16px;background:#0f766e;border:none;border-radius:7px;color:white;font-size:12px;font-weight:600;cursor:pointer;">${ai?.loading?"⏳ 분석 중...":"🔍 분석 실행"}</button>`:""}
           ${ai&&!ai.error&&!ai.loading?`<span style="font-size:12px;color:#059669;font-weight:600;">✅ 완료</span><button onclick="delete analysisMap['${id}'];openDetail('${id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #e2e8f0;border-radius:5px;color:#64748b;cursor:pointer;">↩ 재분석</button>`:""}
         </div>
       </div>
-      ${!ai?`<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;">🔍 분석 실행 버튼으로 경쟁기관 대응 전략을 분석합니다.</div>`:""}
-      ${ai?.loading?`<div style="text-align:center;padding:30px;color:#1e40af;font-size:13px;">⏳ 분석 중...</div>`:""}
+      ${!ai?`<div style="text-align:center;padding:30px;color:#94a3b8;font-size:13px;"><div style="font-size:36px;margin-bottom:10px;">🔍</div>분석 실행 버튼으로 경쟁기관 대응 전략을 분석합니다.</div>`:""}
+      ${ai?.loading?`<div style="text-align:center;padding:30px;color:#0f766e;font-size:13px;">⏳ 분석 중...</div>`:""}
       ${ai?.error?`<div style="color:#dc2626;font-size:12px;padding:10px;background:#fef2f2;border-radius:6px;">⚠️ ${ai.error}</div>`:""}
       ${ai&&!ai.error&&!ai.loading?`
         <div style="display:flex;gap:10px;margin-bottom:12px;">
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;text-align:center;flex-shrink:0;min-width:90px;">
-            <div style="font-size:11px;color:#1e40af;font-weight:700;margin-bottom:6px;">위험 수준</div>
+          <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:14px 16px;text-align:center;flex-shrink:0;min-width:90px;">
+            <div style="font-size:11px;color:#0f766e;font-weight:700;margin-bottom:6px;">위험 수준</div>
             <div style="font-size:20px;font-weight:800;color:${ai.risk_level==="높음"?"#dc2626":ai.risk_level==="보통"?"#d97706":"#059669"};">${ai.risk_level}</div>
           </div>
           <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
@@ -532,9 +537,9 @@ function openDetail(id){
             <div style="font-size:12px;color:#dc2626;font-weight:700;margin-bottom:8px;">🚨 대응 전략</div>
             ${(ai.immediate_actions||[]).map((a,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#dc2626;font-size:12px;font-weight:700;">${i+1}.</span><span style="font-size:12px;color:#7f1d1d;line-height:1.5;">${a}</span></div>`).join("")}
           </div>
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;">
-            <div style="font-size:12px;color:#1e40af;font-weight:700;margin-bottom:8px;">📅 단기 계획</div>
-            ${(ai.mid_actions||[]).map((a,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#1e40af;font-size:12px;font-weight:700;">${i+1}.</span><span style="font-size:12px;color:#1e40af;line-height:1.5;">${a}</span></div>`).join("")}
+          <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;color:#0f766e;font-weight:700;margin-bottom:8px;">📅 단기 계획</div>
+            ${(ai.mid_actions||[]).map((a,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#0f766e;font-size:12px;font-weight:700;">${i+1}.</span><span style="font-size:12px;color:#134e4a;line-height:1.5;">${a}</span></div>`).join("")}
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
