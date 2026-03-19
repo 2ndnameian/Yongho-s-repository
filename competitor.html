@@ -1,633 +1,391 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>경쟁기관 동향 모니터링</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Noto Sans KR', -apple-system, sans-serif;
-      background: #f0f4f8;
-      color: #1e293b;
-      min-height: 100vh;
-    }
-
-    /* ── 상단 헤더 ── */
-    header {
-      background: #fff;
-      border-bottom: 2px solid #e2e8f0;
-      padding: 0 28px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .header-logo {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-    .header-title { font-size: 15px; font-weight: 700; color: #1e293b; }
-    .header-sub   { font-size: 11px; color: #94a3b8; margin-top: 1px; }
-    .header-nav   { display: flex; gap: 6px; }
-    .nav-btn {
-      padding: 6px 14px;
-      border-radius: 7px;
-      border: 1px solid #e2e8f0;
-      background: #f8fafc;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.15s;
-    }
-    .nav-btn:hover  { background: #eff6ff; border-color: #bfdbfe; color: #3b82f6; }
-    .nav-btn.active { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; font-weight: 700; }
-
-    /* ── 메인 레이아웃 ── */
-    .layout {
-      display: flex;
-      min-height: calc(100vh - 56px);
-    }
-
-    /* ── 사이드바 ── */
-    aside {
-      width: 230px;
-      background: #fff;
-      border-right: 1px solid #e2e8f0;
-      padding: 20px 12px;
-      flex-shrink: 0;
-      overflow-y: auto;
-    }
-    .side-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 0 8px;
-      margin-bottom: 8px;
-      margin-top: 16px;
-    }
-    .side-section-title:first-child { margin-top: 0; }
-
-    .category-btn {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 13px;
-      color: #475569;
-      text-align: left;
-      transition: all 0.15s;
-      margin-bottom: 2px;
-    }
-    .category-btn:hover  { background: #f1f5f9; color: #1e293b; }
-    .category-btn.active { background: #eff6ff; color: #3b82f6; font-weight: 700; }
-    .category-btn .cat-icon { font-size: 15px; flex-shrink: 0; }
-    .category-btn .cat-label { flex: 1; }
-    .category-btn .cat-count {
-      font-size: 10px;
-      background: #e2e8f0;
-      color: #64748b;
-      border-radius: 10px;
-      padding: 1px 6px;
-      font-weight: 700;
-    }
-    .category-btn.active .cat-count { background: #bfdbfe; color: #3b82f6; }
-
-    /* ── 본문 ── */
-    main {
-      flex: 1;
-      padding: 24px 28px;
-      overflow-y: auto;
-    }
-
-    /* ── 컨트롤 바 ── */
-    .control-bar {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .control-bar h2 { font-size: 15px; font-weight: 700; color: #1e293b; flex: 1; }
-    .fetch-btn {
-      padding: 9px 20px;
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .fetch-btn:hover    { opacity: 0.88; }
-    .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status-badge {
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
-    .status-badge.idle    { background: #f1f5f9; color: #94a3b8; }
-    .status-badge.loading { background: #fef9c3; color: #92400e; }
-    .status-badge.done    { background: #dcfce7; color: #166534; }
-    .status-badge.error   { background: #fee2e2; color: #991b1b; }
-
-    /* ── 진행 바 ── */
-    .progress-wrap {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 18px;
-      display: none;
-    }
-    .progress-wrap.show { display: block; }
-    .progress-label { font-size: 12px; color: #64748b; margin-bottom: 8px; }
-    .progress-bar-bg {
-      background: #e2e8f0;
-      border-radius: 999px;
-      height: 8px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #6366f1);
-      border-radius: 999px;
-      transition: width 0.4s ease;
-      width: 0%;
-    }
-
-    /* ── 기관 카드 그리드 ── */
-    .org-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
-    }
-
-    .org-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      overflow: hidden;
-      transition: box-shadow 0.15s;
-    }
-    .org-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-
-    .org-card-header {
-      padding: 13px 16px;
-      border-bottom: 1px solid #f1f5f9;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #f8fafc;
-    }
-    .org-avatar {
-      width: 36px; height: 36px;
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .org-name   { font-size: 14px; font-weight: 700; color: #1e293b; }
-    .org-type   { font-size: 11px; color: #94a3b8; margin-top: 1px; }
-    .org-badge  {
-      margin-left: auto;
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-    .badge-corp    { background: #eff6ff; color: #3b82f6; }
-    .badge-univ    { background: #faf5ff; color: #7c3aed; }
-    .badge-edu     { background: #f0fdf4; color: #16a34a; }
-
-    .org-card-body { padding: 12px 16px; }
-    .news-item {
-      padding: 10px 0;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .news-item:last-child { border-bottom: none; }
-    .news-item a {
-      font-size: 13px;
-      color: #334155;
-      text-decoration: none;
-      line-height: 1.55;
-      display: block;
-      margin-bottom: 4px;
-    }
-    .news-item a:hover { color: #3b82f6; text-decoration: underline; }
-    .news-meta {
-      font-size: 11px;
-      color: #94a3b8;
-      display: flex;
-      gap: 8px;
-    }
-    .news-empty {
-      font-size: 12px;
-      color: #cbd5e1;
-      padding: 16px 0;
-      text-align: center;
-    }
-    .news-count-badge {
-      display: inline-block;
-      font-size: 10px;
-      background: #eff6ff;
-      color: #3b82f6;
-      border-radius: 10px;
-      padding: 1px 7px;
-      font-weight: 700;
-      margin-left: 6px;
-    }
-
-    /* ── 빈 상태 ── */
-    .empty-state {
-      text-align: center;
-      padding: 80px 20px;
-      color: #94a3b8;
-    }
-    .empty-state .empty-icon { font-size: 52px; margin-bottom: 16px; }
-    .empty-state .empty-title { font-size: 16px; font-weight: 600; color: #64748b; margin-bottom: 6px; }
-    .empty-state .empty-sub   { font-size: 13px; color: #94a3b8; }
-
-    /* ── 요약 바 ── */
-    .summary-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-    .summary-chip {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12px;
-      color: #475569;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .summary-chip strong { color: #1e293b; font-size: 14px; }
-
-    @media (max-width: 700px) {
-      aside { display: none; }
-      main  { padding: 16px; }
-      .org-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경쟁기관 동향 모니터링</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#1e293b; min-height:100vh; }
+  .header { background:#92400e; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+  .logo { width:36px; height:36px; border-radius:8px; background:white; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
+  .header-sub { font-size:10px; color:#fcd34d; }
+  .ticker-wrap { flex:1; overflow:hidden; margin:0 16px; border-left:1px solid rgba(255,255,255,0.25); padding-left:14px; display:none; }
+  .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
+  .nav-link { font-size:12px; color:#fcd34d; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
+  .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
+  .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
+  .layout { display:flex; height:calc(100vh - 56px); }
+  .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; box-shadow:2px 0 6px rgba(0,0,0,0.04); }
+  .sidebar-inner { padding:16px 12px 8px; }
+  .sidebar-label { font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; margin-top:8px; }
+  .sidebar-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; border:none; cursor:pointer; margin-bottom:2px; background:transparent; color:#64748b; font-size:13px; text-align:left; transition:all 0.12s; font-family:inherit; }
+  .sidebar-btn.active { background:#fffbeb; color:#92400e; font-weight:700; }
+  .sidebar-btn:hover:not(.active) { background:#f8fafc; }
+  .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
+  .badge.active { background:#92400e; color:white; }
+  .divider { height:1px; background:#f1f5f9; margin:8px 0; }
+  .src-box { padding:8px 10px; border-radius:8px; margin-bottom:6px; }
+  .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
+  .hero { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+  .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .btn-primary { width:100%; padding:14px; border-radius:10px; border:none; font-size:14px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#92400e,#b45309); transition:all 0.2s; box-shadow:0 4px 12px rgba(146,64,14,0.25); }
+  .btn-primary:hover:not(:disabled) { transform:translateY(-1px); }
+  .btn-primary:disabled { background:#cbd5e1; cursor:not-allowed; box-shadow:none; }
+  .progress-bar { background:#f1f5f9; border-radius:999px; height:10px; overflow:hidden; margin-bottom:16px; }
+  .progress-fill { height:100%; border-radius:999px; transition:width 0.6s ease; background:linear-gradient(90deg,#92400e,#b45309); }
+  .org-card { background:white; border-radius:12px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); border:1px solid #e2e8f0; transition:box-shadow 0.15s; }
+  .org-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.10); }
+  .org-header { padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; }
+  .org-body { padding:12px 16px; }
+  .news-item { padding:8px 0; border-bottom:1px solid #f1f5f9; }
+  .news-item:last-child { border-bottom:none; }
+  .news-item a { font-size:13px; color:#1e293b; text-decoration:none; line-height:1.55; display:block; margin-bottom:3px; }
+  .news-item a:hover { color:#92400e; text-decoration:underline; }
+  .news-meta { font-size:11px; color:#94a3b8; }
+  .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#64748b; font-size:11px; text-align:left; font-family:inherit; }
+  .filter-btn.active { background:#fffbeb; color:#92400e; font-weight:600; }
+  .filter-btn:hover:not(.active) { background:#f8fafc; }
+  .week-range { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 14px; margin-bottom:14px; font-size:12px; color:#92400e; font-weight:600; }
+  .stat-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .org-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; }
+</style>
 </head>
 <body>
 
-<!-- ── 헤더 ── -->
-<header>
-  <div class="header-left">
-    <div class="header-logo">🎯</div>
-    <div>
-      <div class="header-title">직업훈련 인텔리전스</div>
-      <div class="header-sub">Vocational Training Intelligence Platform</div>
+<div class="header">
+  <div class="logo">🎯</div>
+  <div>
+    <div class="header-title">경쟁기관 동향 모니터링</div>
+    <div class="header-sub">31개 기관 최신 뉴스 수집 · 최근 7일</div>
+  </div>
+  <div class="ticker-wrap" id="ticker">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:9px;padding:2px 6px;background:white;color:#92400e;border-radius:3px;font-weight:800;flex-shrink:0;">LIVE</span>
+      <span id="ticker-text" style="font-size:12px;color:#fcd34d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
   </div>
-  <nav class="header-nav">
-    <a href="index.html"      class="nav-btn">📰 뉴스</a>
-    <a href="policy.html"     class="nav-btn">📋 정책</a>
-    <a href="market.html"     class="nav-btn">📈 시장동향</a>
-    <a href="competitor.html" class="nav-btn active">🏛️ 경쟁기관</a>
-    <a href="dashboard.html"  class="nav-btn">🤖 AI 분석</a>
-  </nav>
-</header>
+  <div class="nav-links">
+    <a href="/" class="nav-link">📰 뉴스</a>
+    <a href="/policy.html" class="nav-link">📋 정책</a>
+    <a href="/market.html" class="nav-link">📊 시장</a>
+    <a href="/competitor.html" class="nav-link active">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
+  </div>
+</div>
 
-<!-- ── 레이아웃 ── -->
 <div class="layout">
-
-  <!-- ── 사이드바 ── -->
-  <aside>
-    <div class="side-section-title">카테고리</div>
-    <button class="category-btn active" onclick="filterCategory('all')">
-      <span class="cat-icon">🏛️</span>
-      <span class="cat-label">전체 기관</span>
-      <span class="cat-count" id="cnt-all">0</span>
-    </button>
-    <button class="category-btn" onclick="filterCategory('corp')">
-      <span class="cat-icon">🏢</span>
-      <span class="cat-label">대형 훈련기관</span>
-      <span class="cat-count" id="cnt-corp">0</span>
-    </button>
-    <button class="category-btn" onclick="filterCategory('univ')">
-      <span class="cat-icon">🎓</span>
-      <span class="cat-label">대학·공공기관</span>
-      <span class="cat-count" id="cnt-univ">0</span>
-    </button>
-    <button class="category-btn" onclick="filterCategory('edu')">
-      <span class="cat-icon">💻</span>
-      <span class="cat-label">에듀테크</span>
-      <span class="cat-count" id="cnt-edu">0</span>
-    </button>
-
-    <div class="side-section-title" style="margin-top:20px;">기관 목록</div>
-    <div id="org-list-nav"></div>
-  </aside>
-
-  <!-- ── 본문 ── -->
-  <main>
-    <!-- 컨트롤 바 -->
-    <div class="control-bar">
-      <h2>🏛️ 경쟁기관 동향 모니터링</h2>
-      <span class="status-badge idle" id="status-badge">대기 중</span>
-      <button class="fetch-btn" id="fetch-btn" onclick="fetchAll()">🔍 전체 수집</button>
+  <div class="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-label">메뉴</div>
+      <button class="sidebar-btn active" onclick="showTab('search')">🎯 수집 설정 <span class="badge active" id="kw-count">31개</span></button>
+      <button class="sidebar-btn" onclick="showTab('results')">📋 수집 결과 <span class="badge" id="result-count"></span></button>
+      <div class="divider"></div>
+      <div class="sidebar-label">기관 유형 필터</div>
+      <button class="filter-btn active" id="fb-all"  onclick="setFilter('all')">🏛️ 전체 기관 <span id="cnt-all">0</span></button>
+      <button class="filter-btn"        id="fb-corp" onclick="setFilter('corp')">🏢 대형 훈련기관 <span id="cnt-corp">0</span></button>
+      <button class="filter-btn"        id="fb-univ" onclick="setFilter('univ')">🎓 대학·공공기관 <span id="cnt-univ">0</span></button>
+      <button class="filter-btn"        id="fb-edu"  onclick="setFilter('edu')">💻 에듀테크 <span id="cnt-edu">0</span></button>
+      <div class="divider"></div>
+      <div id="org-nav"></div>
     </div>
+    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;line-height:1.9;">
+      <div>🏛️ 모니터링 <strong style="color:#1e293b;">31</strong>개 기관</div>
+      <div>📰 수집 <strong style="color:#1e293b;" id="stat-news">0</strong>건</div>
+    </div>
+  </div>
 
-    <!-- 진행 바 -->
-    <div class="progress-wrap" id="progress-wrap">
-      <div class="progress-label" id="progress-label">수집 중...</div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progress-fill"></div>
+  <div class="main">
+
+    <!-- 수집 설정 탭 -->
+    <div id="tab-search">
+      <div class="hero">
+        <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">🎯 경쟁기관 동향 수집</h1>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:14px;">
+          대형 훈련기관·대학·에듀테크 <strong style="color:#92400e;">31개 기관</strong>의 최근 7일 뉴스를 자동 수집합니다.<br>
+          신규 과정·공모참여·협약·디지털 확대 동향을 파악하세요.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:4px 12px;font-size:12px;color:#92400e;font-weight:600;">🏢 대형 훈련기관 13개</div>
+          <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:7px;padding:4px 12px;font-size:12px;color:#6d28d9;font-weight:600;">🎓 대학·공공기관 4개</div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:4px 12px;font-size:12px;color:#065f46;font-weight:600;">💻 에듀테크 14개</div>
+        </div>
       </div>
-    </div>
+      <div class="week-range" id="week-range"></div>
 
-    <!-- 요약 바 -->
-    <div class="summary-bar" id="summary-bar" style="display:none;">
-      <div class="summary-chip">📰 수집 기사 <strong id="s-total">0</strong>건</div>
-      <div class="summary-chip">🏛️ 조회 기관 <strong id="s-orgs">0</strong>곳</div>
-      <div class="summary-chip">📅 기준 <strong id="s-date">-</strong></div>
-    </div>
-
-    <!-- 카드 그리드 -->
-    <div class="org-grid" id="org-grid">
-      <div class="empty-state">
-        <div class="empty-icon">🏛️</div>
-        <div class="empty-title">경쟁기관 동향을 수집해보세요</div>
-        <div class="empty-sub">상단 "전체 수집" 버튼을 누르면<br>31개 기관의 최신 뉴스를 자동으로 불러옵니다</div>
+      <div class="card" style="margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">🏢 대형 훈련기관 <span style="font-size:11px;color:#94a3b8;font-weight:400;">13개</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-corp"></div>
       </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">🎓 대학·공공기관 <span style="font-size:11px;color:#94a3b8;font-weight:400;">4개</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-univ"></div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">💻 에듀테크 <span style="font-size:11px;color:#94a3b8;font-weight:400;">14개</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-edu"></div>
+      </div>
+
+      <button class="btn-primary" id="search-btn" onclick="runSearch()">🎯 전체 수집 시작 — 31개 기관</button>
+      <div id="progress-panel" style="display:none;margin-top:14px;" class="card"></div>
     </div>
-  </main>
+
+    <!-- 수집 결과 탭 -->
+    <div id="tab-results" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:3px;">🎯 경쟁기관 동향 — 최근 7일</div>
+          <div style="font-size:12px;color:#94a3b8;" id="result-meta"></div>
+        </div>
+        <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#92400e;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
+      </div>
+      <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#92400e;">
+        💡 기관 카드의 🔗 링크로 원문 확인 · 좌측 필터로 기관 유형별 조회
+      </div>
+      <div id="org-grid" class="org-grid"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   경쟁기관 마스터 데이터
-══════════════════════════════════════════ */
+const NEWS_API = "https://yongho-s-repository-git-main-2ndnameians-projects.vercel.app/api/news";
+
 const ORGS = [
-  // 🏢 대형 훈련기관
-  { id:"greenit",     name:"그린컴퓨터아카데미",    type:"corp", icon:"🟢", label:"대형 훈련기관" },
-  { id:"thejoeun",    name:"더조은컴퓨터아카데미",   type:"corp", icon:"🔵", label:"대형 훈련기관" },
-  { id:"kh",          name:"KH정보교육원",           type:"corp", icon:"🔷", label:"대형 훈련기관" },
-  { id:"sbs",         name:"SBS아카데미컴퓨터아트",  type:"corp", icon:"🟡", label:"대형 훈련기관" },
-  { id:"megait",      name:"메가스터디IT",           type:"corp", icon:"🟠", label:"대형 훈련기관" },
-  { id:"ezenac",      name:"이젠아카데미",           type:"corp", icon:"🟣", label:"대형 훈련기관" },
-  { id:"mbc",         name:"MBC아카데미",            type:"corp", icon:"🔴", label:"대형 훈련기관" },
-  { id:"kd",          name:"KD아카데미",             type:"corp", icon:"⚫", label:"대형 훈련기관" },
-  { id:"kovjob",      name:"한국직업전문학교",        type:"corp", icon:"🏫", label:"대형 훈련기관" },
-  { id:"bitcamp",     name:"비트캠프",               type:"corp", icon:"💾", label:"대형 훈련기관" },
-  { id:"itbank",      name:"아이티뱅크",             type:"corp", icon:"🏦", label:"대형 훈련기관" },
-  { id:"ssangyong",   name:"쌍용교육센터",           type:"corp", icon:"🐉", label:"대형 훈련기관" },
-  { id:"kookbi",      name:"국비닷컴",              type:"corp", icon:"🌐", label:"대형 훈련기관" },
-
-  // 🎓 대학·공공기관
-  { id:"polytech",    name:"한국폴리텍대학",         type:"univ", icon:"🏛️", label:"대학·공공기관" },
-  { id:"ssafy",       name:"SSAFY(삼성청년SW)",      type:"univ", icon:"💙", label:"대학·공공기관" },
-  { id:"samsungaxi",  name:"삼성AXI",               type:"univ", icon:"⬛", label:"대학·공공기관" },
-  { id:"multicampus", name:"멀티캠퍼스",             type:"univ", icon:"🎯", label:"대학·공공기관" },
-
-  // 💻 에듀테크
-  { id:"fastcampus",  name:"패스트캠퍼스",           type:"edu",  icon:"⚡", label:"에듀테크" },
-  { id:"codestates",  name:"코드스테이츠",           type:"edu",  icon:"🟩", label:"에듀테크" },
-  { id:"elice",       name:"엘리스",                type:"edu",  icon:"🐇", label:"에듀테크" },
-  { id:"modulabs",    name:"모두의연구소",           type:"edu",  icon:"🔬", label:"에듀테크" },
-  { id:"codeit",      name:"코드잇",                type:"edu",  icon:"💡", label:"에듀테크" },
-  { id:"hitecher",    name:"하이테커",               type:"edu",  icon:"🚀", label:"에듀테크" },
-  { id:"teamspartа",  name:"팀스파르타",             type:"edu",  icon:"⚔️", label:"에듀테크" },
-  { id:"alpaco",      name:"알파코",                type:"edu",  icon:"🤖", label:"에듀테크" },
-  { id:"elice2",      name:"엘리스그룹",             type:"edu",  icon:"🐰", label:"에듀테크" },
-  { id:"zerobase",    name:"제로베이스",             type:"edu",  icon:"0️⃣", label:"에듀테크" },
-  { id:"innovation",  name:"이노베이션아카데미",     type:"edu",  icon:"💎", label:"에듀테크" },
-  { id:"wooa",        name:"우아한테크코스",         type:"edu",  icon:"🍕", label:"에듀테크" },
-  { id:"hanghe",      name:"항해99",                type:"edu",  icon:"⚓", label:"에듀테크" },
-  { id:"boostcamp",   name:"부스트캠프",             type:"edu",  icon:"🏕️", label:"에듀테크" },
+  {id:"greenit",     name:"그린컴퓨터아카데미",      type:"corp", icon:"🟢"},
+  {id:"thejoeun",    name:"더조은컴퓨터아카데미",     type:"corp", icon:"🔵"},
+  {id:"kh",          name:"KH정보교육원",             type:"corp", icon:"🔷"},
+  {id:"sbs",         name:"SBS아카데미컴퓨터아트",    type:"corp", icon:"🟡"},
+  {id:"megait",      name:"메가스터디IT",             type:"corp", icon:"🟠"},
+  {id:"ezenac",      name:"이젠아카데미",             type:"corp", icon:"🟣"},
+  {id:"mbc",         name:"MBC아카데미",              type:"corp", icon:"🔴"},
+  {id:"kd",          name:"KD아카데미",               type:"corp", icon:"⚫"},
+  {id:"kovjob",      name:"한국직업전문학교",          type:"corp", icon:"🏫"},
+  {id:"bitcamp",     name:"비트캠프",                 type:"corp", icon:"💾"},
+  {id:"itbank",      name:"아이티뱅크",               type:"corp", icon:"🏦"},
+  {id:"ssangyong",   name:"쌍용교육센터",             type:"corp", icon:"🐉"},
+  {id:"kookbi",      name:"국비닷컴",                type:"corp", icon:"🌐"},
+  {id:"polytech",    name:"한국폴리텍대학",           type:"univ", icon:"🏛️"},
+  {id:"ssafy",       name:"SSAFY(삼성청년SW아카데미)",type:"univ", icon:"💙"},
+  {id:"samsungaxi",  name:"삼성AXI",                 type:"univ", icon:"⬛"},
+  {id:"multicampus", name:"멀티캠퍼스",               type:"univ", icon:"🎯"},
+  {id:"fastcampus",  name:"패스트캠퍼스",             type:"edu",  icon:"⚡"},
+  {id:"codestates",  name:"코드스테이츠",             type:"edu",  icon:"🟩"},
+  {id:"elice",       name:"엘리스",                  type:"edu",  icon:"🐇"},
+  {id:"modulabs",    name:"모두의연구소",             type:"edu",  icon:"🔬"},
+  {id:"codeit",      name:"코드잇",                  type:"edu",  icon:"💡"},
+  {id:"hitecher",    name:"하이테커",                 type:"edu",  icon:"🚀"},
+  {id:"teamspart",   name:"팀스파르타",               type:"edu",  icon:"⚔️"},
+  {id:"alpaco",      name:"알파코",                  type:"edu",  icon:"🤖"},
+  {id:"elice2",      name:"엘리스그룹",               type:"edu",  icon:"🐰"},
+  {id:"zerobase",    name:"제로베이스",               type:"edu",  icon:"0️⃣"},
+  {id:"innovation",  name:"이노베이션아카데미",       type:"edu",  icon:"💎"},
+  {id:"wooa",        name:"우아한테크코스",           type:"edu",  icon:"🍕"},
+  {id:"hanghe",      name:"항해99",                  type:"edu",  icon:"⚓"},
+  {id:"boostcamp",   name:"부스트캠프",               type:"edu",  icon:"🏕️"},
 ];
 
-const BADGE = { corp:"badge-corp", univ:"badge-univ", edu:"badge-edu" };
-const BADGE_LABEL = { corp:"대형 훈련기관", univ:"대학·공공기관", edu:"에듀테크" };
+const TS = {
+  corp:{label:"대형 훈련기관", bg:"#fffbeb", border:"#fde68a", color:"#92400e", hbg:"#fef9c3"},
+  univ:{label:"대학·공공기관", bg:"#faf5ff", border:"#ddd6fe", color:"#6d28d9", hbg:"#f3e8ff"},
+  edu: {label:"에듀테크",     bg:"#f0fdf4", border:"#bbf7d0", color:"#065f46", hbg:"#dcfce7"},
+};
 
-let allResults = {};   // { orgId: [{title, link, pubDate, description}] }
-let currentCat = "all";
+let allResults={}, currentFilter="all", tickerTimer=null, tickerIdx=0;
 
-/* ── 날짜 파싱 ── */
-function parseDate(str) {
-  try { return new Date(str); } catch(_) { return new Date(0); }
+function init(){
+  const now=new Date(), ago=new Date(now-7*24*60*60*1000);
+  const fmt=d=>d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
+  document.getElementById("week-range").innerHTML=`📅 수집 기간: <strong>${fmt(ago)}</strong> ~ <strong>${fmt(now)}</strong>`;
+  ["corp","univ","edu"].forEach(t=>{
+    const el=document.getElementById("list-"+t);
+    if(el) el.innerHTML=ORGS.filter(o=>o.type===t).map(o=>{
+      const s=TS[t];
+      return `<span style="font-size:11px;padding:3px 9px;background:${s.bg};border:1px solid ${s.border};border-radius:5px;color:${s.color};">${o.icon} ${o.name}</span>`;
+    }).join("");
+  });
+  renderOrgNav();
 }
-function fmt(str) {
-  const d = parseDate(str);
-  if (!d || d.getTime() === 0) return "-";
-  return d.toLocaleDateString("ko-KR", { month:"short", day:"numeric" });
+
+function renderOrgNav(){
+  const nav=document.getElementById("org-nav");
+  if(!nav) return;
+  const vis=currentFilter==="all"?ORGS:ORGS.filter(o=>o.type===currentFilter);
+  nav.innerHTML=`<div class="sidebar-label" style="margin-top:4px;">기관 목록</div>`+vis.map(o=>{
+    const cnt=(allResults[o.id]||[]).length;
+    const s=TS[o.type];
+    return `<button class="filter-btn" onclick="scrollToOrg('${o.id}')" style="font-size:11px;">
+      <span style="margin-right:3px;">${o.icon}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.name}</span>
+      ${cnt>0?`<span style="font-size:10px;padding:1px 5px;background:${s.bg};border:1px solid ${s.border};border-radius:4px;color:${s.color};font-weight:700;">${cnt}</span>`:""}
+    </button>`;
+  }).join("");
 }
 
-/* ── 7일 이내 필터 ── */
-function isRecent(pubDate) {
-  const d = parseDate(pubDate);
-  if (!d || d.getTime() === 0) return true;
-  return (Date.now() - d.getTime()) < 7 * 24 * 60 * 60 * 1000;
+function setFilter(f){
+  currentFilter=f;
+  ["all","corp","univ","edu"].forEach(t=>document.getElementById("fb-"+t).classList.toggle("active",t===f));
+  renderOrgNav();
+  if(Object.keys(allResults).length>0) renderGrid();
 }
 
-/* ── 단일 기관 뉴스 fetch ── */
-async function fetchOrg(org) {
-  try {
-    const res = await fetch(`/api/news?q=${encodeURIComponent(org.name)}&display=10`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items = (data.items || [])
-      .filter(it => isRecent(it.pubDate))
-      .slice(0, 5)
-      .map(it => ({
-        title: it.title.replace(/<[^>]+>/g, ""),
-        link:  it.link  || it.originallink,
-        pub:   fmt(it.pubDate),
-        desc:  (it.description || "").replace(/<[^>]+>/g, "").slice(0, 80),
+function scrollToOrg(id){
+  const el=document.getElementById("org-"+id);
+  if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function showTab(id){
+  ["search","results"].forEach(t=>document.getElementById("tab-"+t).style.display=t===id?"block":"none");
+  const btns=document.querySelectorAll(".sidebar-btn");
+  btns[0].classList.toggle("active",id==="search");
+  btns[0].querySelector(".badge").classList.toggle("active",id==="search");
+  btns[1].classList.toggle("active",id==="results");
+  btns[1].querySelector(".badge").classList.toggle("active",id==="results");
+  if(id==="results"&&Object.keys(allResults).length>0) renderGrid();
+}
+
+function fmtDate(str){
+  try{ const d=new Date(str); return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`; }catch{return "";}
+}
+function isRecent(pub){
+  try{ const d=new Date(pub); return isNaN(d)||((Date.now()-d.getTime())<7*24*60*60*1000); }catch{return true;}
+}
+
+async function fetchOrg(org){
+  try{
+    const res=await fetch(`${NEWS_API}?keywords=${encodeURIComponent(org.name)}&display=10`);
+    if(!res.ok) return [];
+    const data=await res.json();
+    return (Array.isArray(data)?data:[])
+      .filter(it=>isRecent(it.pubDate))
+      .slice(0,5)
+      .map(it=>({
+        title:(it.title||"").replace(/<[^>]+>/g,""),
+        link: it.link||it.originallink||"",
+        pub:  fmtDate(it.pubDate),
+        desc: (it.description||"").replace(/<[^>]+>/g,"").slice(0,80),
       }));
-    return items;
-  } catch(_) {
-    return [];
-  }
+  }catch{return [];}
 }
 
-/* ── 전체 수집 ── */
-async function fetchAll() {
-  const btn = document.getElementById("fetch-btn");
-  const badge = document.getElementById("status-badge");
-  const wrap = document.getElementById("progress-wrap");
-  const fill = document.getElementById("progress-fill");
-  const label = document.getElementById("progress-label");
+async function runSearch(){
+  const btn=document.getElementById("search-btn");
+  btn.disabled=true; btn.textContent="⏳ 수집 중...";
+  allResults={};
+  const panel=document.getElementById("progress-panel");
+  panel.style.display="block";
+  const total=ORGS.length;
+  let done=0;
 
-  btn.disabled = true;
-  badge.className = "status-badge loading";
-  badge.textContent = "수집 중...";
-  wrap.classList.add("show");
-  document.getElementById("summary-bar").style.display = "none";
-  allResults = {};
-
-  const total = ORGS.length;
-  let done = 0;
-  let totalArticles = 0;
-
-  for (const org of ORGS) {
-    label.textContent = `🔍 ${org.name} 수집 중... (${done + 1}/${total})`;
-    fill.style.width = (done / total * 100) + "%";
-
-    const items = await fetchOrg(org);
-    allResults[org.id] = items;
-    totalArticles += items.length;
+  for(const org of ORGS){
+    const pct=Math.round((done/total)*100);
+    panel.innerHTML=`
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:13px;color:#92400e;font-weight:600;">🔍 ${org.name} (${done+1}/${total})</span>
+        <span style="font-size:14px;font-weight:800;color:#1e293b;">${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div style="margin-top:10px;padding:9px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;font-weight:600;">
+        📥 현재까지 수집: ${Object.values(allResults).flat().length}건
+      </div>`;
+    allResults[org.id]=await fetchOrg(org);
     done++;
-
-    // 300ms 간격으로 API 부하 방지
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r=>setTimeout(r,300));
   }
 
-  fill.style.width = "100%";
-  label.textContent = `✅ 수집 완료 — ${total}개 기관 / ${totalArticles}건 기사`;
+  const totalNews=Object.values(allResults).flat().length;
+  panel.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:13px;color:#059669;font-weight:600;">✅ 수집 완료</span>
+      <span style="font-size:14px;font-weight:800;color:#1e293b;">100%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,#059669,#10b981);"></div></div>
+    <div style="margin-top:10px;padding:9px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#059669;font-weight:600;">
+      ✅ ${total}개 기관 · 총 ${totalNews}건 수집 완료
+    </div>`;
 
-  badge.className = "status-badge done";
-  badge.textContent = "수집 완료";
-  btn.disabled = false;
-
-  // 요약 바
-  document.getElementById("s-total").textContent = totalArticles;
-  document.getElementById("s-orgs").textContent = total;
-  document.getElementById("s-date").textContent =
-    new Date().toLocaleDateString("ko-KR", { month:"long", day:"numeric" }) + " 기준";
-  document.getElementById("summary-bar").style.display = "flex";
-
+  document.getElementById("stat-news").textContent=totalNews;
+  document.getElementById("result-count").textContent=totalNews+"건";
   updateCounts();
-  renderGrid(currentCat);
-  renderSideNav();
-
-  setTimeout(() => { wrap.classList.remove("show"); }, 3000);
+  renderOrgNav();
+  startTicker();
+  btn.disabled=false; btn.textContent="🎯 재수집";
+  setTimeout(()=>showTab("results"),700);
 }
 
-/* ── 카운트 업데이트 ── */
-function updateCounts() {
-  const cats = ["all","corp","univ","edu"];
-  cats.forEach(cat => {
-    const orgs = cat === "all" ? ORGS : ORGS.filter(o => o.type === cat);
-    const count = orgs.reduce((acc, o) => acc + (allResults[o.id] || []).length, 0);
-    const el = document.getElementById("cnt-" + cat);
-    if (el) el.textContent = count;
+function updateCounts(){
+  let allCnt=0;
+  ["corp","univ","edu"].forEach(t=>{
+    const cnt=ORGS.filter(o=>o.type===t).reduce((a,o)=>a+(allResults[o.id]||[]).length,0);
+    const el=document.getElementById("cnt-"+t);
+    if(el) el.textContent=cnt;
+    allCnt+=cnt;
   });
+  const el=document.getElementById("cnt-all");
+  if(el) el.textContent=allCnt;
 }
 
-/* ── 사이드 기관 목록 ── */
-function renderSideNav() {
-  const nav = document.getElementById("org-list-nav");
-  nav.innerHTML = ORGS.map(org => {
-    const cnt = (allResults[org.id] || []).length;
-    return `
-      <button class="category-btn" onclick="scrollToOrg('${org.id}')">
-        <span class="cat-icon">${org.icon}</span>
-        <span class="cat-label" style="font-size:12px;">${org.name}</span>
-        ${cnt > 0 ? `<span class="cat-count">${cnt}</span>` : ""}
-      </button>`;
-  }).join("");
-}
+function renderGrid(){
+  const grid=document.getElementById("org-grid");
+  if(!grid) return;
+  const orgs=currentFilter==="all"?ORGS:ORGS.filter(o=>o.type===currentFilter);
+  const totalNews=Object.values(allResults).flat().length;
+  const active=ORGS.filter(o=>(allResults[o.id]||[]).length>0).length;
+  const noNews=ORGS.length-active;
+  const hot=ORGS.filter(o=>(allResults[o.id]||[]).length>=3).length;
 
-/* ── 카테고리 필터 ── */
-function filterCategory(cat) {
-  currentCat = cat;
-  document.querySelectorAll(".category-btn[onclick^='filterCategory']").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("onclick").includes(`'${cat}'`));
-  });
-  renderGrid(cat);
-}
+  document.getElementById("result-meta").textContent=`총 ${totalNews}건 수집 · ${ORGS.length}개 기관`;
+  document.getElementById("stats-row").innerHTML=[
+    {label:"수집 기사",   count:totalNews, bg:"#fffbeb", border:"#fde68a", color:"#92400e", icon:"📰"},
+    {label:"동향 감지",   count:active,    bg:"#f0fdf4", border:"#bbf7d0", color:"#059669", icon:"🟢"},
+    {label:"기사 없음",   count:noNews,    bg:"#fef2f2", border:"#fecaca", color:"#dc2626", icon:"⚪"},
+    {label:"3건 이상",    count:hot,       bg:"#eff6ff", border:"#bfdbfe", color:"#1e40af", icon:"🔥"},
+  ].map(s=>`<div class="stat-card" style="background:${s.bg};border-color:${s.border};">
+    <span style="font-size:22px;">${s.icon}</span>
+    <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
+  </div>`).join("");
 
-/* ── 해당 기관으로 스크롤 ── */
-function scrollToOrg(id) {
-  const el = document.getElementById("org-" + id);
-  if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
-}
+  grid.innerHTML=orgs.map(org=>{
+    const items=allResults[org.id]||[];
+    const s=TS[org.type];
+    const newsHtml=items.length===0
+      ?`<div style="font-size:12px;color:#cbd5e1;padding:14px 0;text-align:center;">최근 7일 내 기사 없음</div>`
+      :items.map(it=>`
+        <div class="news-item">
+          <a href="${it.link}" target="_blank" rel="noopener">${it.title} <span style="font-size:10px;color:#92400e;">🔗</span></a>
+          <div class="news-meta">📅 ${it.pub}${it.desc?` · ${it.desc}`:""}</div>
+        </div>`).join("");
 
-/* ── 그리드 렌더 ── */
-function renderGrid(cat) {
-  const grid = document.getElementById("org-grid");
-  const orgs = cat === "all" ? ORGS : ORGS.filter(o => o.type === cat);
-
-  if (Object.keys(allResults).length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <div class="empty-icon">🏛️</div>
-        <div class="empty-title">경쟁기관 동향을 수집해보세요</div>
-        <div class="empty-sub">상단 "전체 수집" 버튼을 누르면<br>31개 기관의 최신 뉴스를 자동으로 불러옵니다</div>
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = orgs.map(org => {
-    const items = allResults[org.id] || [];
-    const newsHtml = items.length === 0
-      ? `<div class="news-empty">최근 7일 내 기사 없음</div>`
-      : items.map(it => `
-          <div class="news-item">
-            <a href="${it.link}" target="_blank" rel="noopener">${it.title}</a>
-            <div class="news-meta">
-              <span>📅 ${it.pub}</span>
-              ${it.desc ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">${it.desc}</span>` : ""}
-            </div>
-          </div>`).join("");
-
-    return `
-      <div class="org-card" id="org-${org.id}">
-        <div class="org-card-header">
-          <div class="org-avatar" style="background:${avatarBg(org.type)}">${org.icon}</div>
+    return `<div class="org-card" id="org-${org.id}">
+      <div class="org-header" style="background:${s.hbg};">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="width:34px;height:34px;border-radius:8px;background:${s.bg};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${org.icon}</div>
           <div>
-            <div class="org-name">${org.name}</div>
-            <div class="org-type">${org.label}</div>
+            <div style="font-size:13px;font-weight:700;color:#1e293b;">${org.name}</div>
+            <div style="font-size:10px;color:${s.color};font-weight:600;">${s.label}</div>
           </div>
-          <span class="org-badge ${BADGE[org.type]}">${BADGE_LABEL[org.type]}</span>
         </div>
-        <div class="org-card-body">
-          <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
-            최근 7일 기사
-            <span class="news-count-badge">${items.length}건</span>
-          </div>
-          ${newsHtml}
-        </div>
-      </div>`;
+        <span style="font-size:11px;padding:3px 10px;background:${s.bg};border:1px solid ${s.border};border-radius:10px;color:${s.color};font-weight:700;">${items.length}건</span>
+      </div>
+      <div class="org-body">${newsHtml}</div>
+    </div>`;
   }).join("");
 }
 
-function avatarBg(type) {
-  return type === "corp" ? "#eff6ff"
-       : type === "univ" ? "#faf5ff"
-       : "#f0fdf4";
+function startTicker(){
+  const all=Object.values(allResults).flat();
+  if(!all.length) return;
+  document.getElementById("ticker").style.display="block";
+  clearInterval(tickerTimer);
+  tickerTimer=setInterval(()=>{
+    tickerIdx=(tickerIdx+1)%all.length;
+    document.getElementById("ticker-text").textContent=all[tickerIdx]?.title||"";
+  },3800);
 }
 
-/* ── 초기 렌더 ── */
-renderGrid("all");
-updateCounts();
+init();
 </script>
 </body>
 </html>
