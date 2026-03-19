@@ -14,14 +14,12 @@
   .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; }
   .nav-link { font-size:12px; color:#94a3b8; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.08); color:white; }
+  .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.4); }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:240px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; }
   .sidebar-inner { padding:16px 12px 8px; }
   .sidebar-label { font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding-left:8px; margin-bottom:8px; margin-top:8px; }
   .divider { height:1px; background:#f1f5f9; margin:8px 0; }
-  .src-box { padding:8px 10px; border-radius:8px; margin-bottom:6px; cursor:pointer; transition:all 0.15s; }
-  .src-box:hover { opacity:0.85; }
-  .src-box.active { box-shadow:0 0 0 2px #1e293b; }
   .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
   .hero { background:linear-gradient(135deg,#1e293b,#334155); border-radius:16px; padding:28px 32px; margin-bottom:20px; color:white; }
   .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
@@ -29,7 +27,6 @@
   .section-header { padding:14px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f1f5f9; }
   .section-body { padding:18px 20px; }
   .section-body p { font-size:13px; color:#374151; line-height:1.8; }
-  .section-body ul { padding-left:18px; }
   .section-body li { font-size:13px; color:#374151; line-height:1.9; }
   .btn-analyze { width:100%; padding:16px; border-radius:12px; border:none; font-size:15px; font-weight:800; color:white; cursor:pointer; background:linear-gradient(135deg,#1e293b,#334155); transition:all 0.2s; box-shadow:0 4px 14px rgba(30,41,59,0.30); }
   .btn-analyze:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 18px rgba(30,41,59,0.35); }
@@ -37,13 +34,19 @@
   .progress-bar { background:#f1f5f9; border-radius:999px; height:8px; overflow:hidden; margin:8px 0; }
   .progress-fill { height:100%; border-radius:999px; transition:width 0.8s ease; background:linear-gradient(90deg,#f59e0b,#ef4444); }
   .step-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; margin-bottom:5px; transition:all 0.3s; }
-  .badge-tag { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; }
   .priority-item { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:8px; margin-bottom:8px; }
   .priority-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; flex-shrink:0; }
   input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; width:100%; margin-bottom:8px; }
   textarea { width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; min-height:80px; }
-  .loading-dots::after { content:''; animation: dots 1.5s infinite; }
+  textarea:focus { border-color:#94a3b8; }
+  .loading-dots::after { content:'.'; animation:dots 1.5s infinite; }
   @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+  /* 데이터 뱃지 */
+  .data-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+  .data-badge.filled { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+  .data-badge.empty  { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; }
+  /* 불러오기 배너 */
+  .load-banner { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
 </style>
 </head>
 <body>
@@ -59,6 +62,7 @@
     <a href="/policy.html" class="nav-link">📋 정책</a>
     <a href="/market.html" class="nav-link">📊 시장</a>
     <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link active">🧠 종합분석</a>
   </div>
 </div>
 
@@ -66,73 +70,118 @@
   <div class="sidebar">
     <div class="sidebar-inner">
       <div class="sidebar-label">분석 항목</div>
-      <div id="analysis-nav"></div>
+      <div id="analysis-nav">
+        <!-- 결과 생성 전 기본 목록 -->
+        <div id="nav-default">
+          ${['① 정책 방향 분석','② 공모사업 기회','③ 시장 구조','④ 경쟁 대응','⑤ 국비사업 전략','⑥ 공모 우선순위'].map(t=>`
+          <div style="padding:7px 10px;border-radius:7px;margin-bottom:2px;display:flex;align-items:center;gap:7px;font-size:12px;color:#94a3b8;">
+            <span style="font-size:10px;">○</span><span>${t}</span>
+          </div>`).join('')}
+        </div>
+      </div>
       <div class="divider"></div>
       <div class="sidebar-label">수집 데이터 현황</div>
       <div id="data-status"></div>
       <div class="divider"></div>
-      <div class="sidebar-label">분석 설정</div>
+      <div class="sidebar-label">우리 기관 설정</div>
       <div style="padding:0 4px;">
-        <div style="font-size:11px;color:#64748b;margin-bottom:5px;">우리 기관 특성 (선택)</div>
-        <input type="text" id="org-name" placeholder="기관명 (예: ○○아카데미)">
-        <input type="text" id="org-region" placeholder="지역 (예: 서울 강남)">
-        <input type="text" id="org-specialty" placeholder="주력 분야 (예: AI·데이터·클라우드)">
+        <div style="font-size:11px;color:#64748b;margin-bottom:5px;">기관 정보 입력 시 맞춤 분석</div>
+        <input type="text" id="org-name"      placeholder="기관명 (예: ○○아카데미)">
+        <input type="text" id="org-region"    placeholder="지역 (예: 서울 강남)">
+        <input type="text" id="org-specialty" placeholder="주력 분야 (예: AI·데이터)">
       </div>
     </div>
-    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;line-height:1.9;">
-      <div id="sidebar-stats">분석 준비 중...</div>
+    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;line-height:1.9;" id="sidebar-stats">
+      분석 준비 중...
     </div>
   </div>
 
   <div class="main">
+
+    <!-- 히어로 -->
     <div class="hero">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
         <div style="font-size:32px;">🧠</div>
         <div>
           <div style="font-size:20px;font-weight:800;margin-bottom:4px;">직업훈련 종합 전략 분석</div>
           <div style="font-size:13px;color:#94a3b8;">4개 수집창 데이터를 Claude AI가 통합 분석합니다</div>
         </div>
       </div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-        <div style="padding:10px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">📋</div><div style="font-size:11px;color:#6ee7b7;font-weight:600;margin-top:4px;">정책 수집</div></div>
-        <div style="padding:10px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">📰</div><div style="font-size:11px;color:#93c5fd;font-weight:600;margin-top:4px;">뉴스 수집</div></div>
-        <div style="padding:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">📊</div><div style="font-size:11px;color:#fcd34d;font-weight:600;margin-top:4px;">시장동향</div></div>
-        <div style="padding:10px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">🎯</div><div style="font-size:11px;color:#d8b4fe;font-weight:600;margin-top:4px;">경쟁기관</div></div>
-        <div style="padding:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">🤖</div><div style="font-size:11px;color:#fca5a5;font-weight:600;margin-top:4px;">Claude AI</div></div>
-        <div style="padding:10px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.30);border-radius:8px;text-align:center;"><div style="font-size:18px;">🧠</div><div style="font-size:11px;color:white;font-weight:600;margin-top:4px;">종합 전략</div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <div style="padding:10px;background:rgba(6,95,70,0.20);border:1px solid rgba(6,95,70,0.35);border-radius:8px;text-align:center;"><div style="font-size:18px;">📋</div><div style="font-size:11px;color:#6ee7b7;font-weight:600;margin-top:4px;">정책 수집</div></div>
+        <div style="padding:10px;background:rgba(30,64,175,0.20);border:1px solid rgba(30,64,175,0.35);border-radius:8px;text-align:center;"><div style="font-size:18px;">📰</div><div style="font-size:11px;color:#93c5fd;font-weight:600;margin-top:4px;">뉴스 수집</div></div>
+        <div style="padding:10px;background:rgba(15,118,110,0.20);border:1px solid rgba(15,118,110,0.35);border-radius:8px;text-align:center;"><div style="font-size:18px;">📊</div><div style="font-size:11px;color:#5eead4;font-weight:600;margin-top:4px;">시장동향</div></div>
+        <div style="padding:10px;background:rgba(146,64,14,0.20);border:1px solid rgba(146,64,14,0.35);border-radius:8px;text-align:center;"><div style="font-size:18px;">🎯</div><div style="font-size:11px;color:#fcd34d;font-weight:600;margin-top:4px;">경쟁기관</div></div>
+        <div style="padding:10px;background:rgba(239,68,68,0.20);border:1px solid rgba(239,68,68,0.35);border-radius:8px;text-align:center;"><div style="font-size:18px;">🤖</div><div style="font-size:11px;color:#fca5a5;font-weight:600;margin-top:4px;">Claude AI</div></div>
+        <div style="padding:10px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:8px;text-align:center;"><div style="font-size:18px;">🧠</div><div style="font-size:11px;color:white;font-weight:600;margin-top:4px;">종합 전략</div></div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="hero-tags">
-        <span style="padding:5px 12px;background:rgba(245,158,11,0.20);border:1px solid rgba(245,158,11,0.40);border-radius:6px;font-size:12px;color:#fcd34d;font-weight:600;">① 정책 방향 분석</span>
-        <span style="padding:5px 12px;background:rgba(16,185,129,0.20);border:1px solid rgba(16,185,129,0.40);border-radius:6px;font-size:12px;color:#6ee7b7;font-weight:600;">② 공모사업 기회</span>
-        <span style="padding:5px 12px;background:rgba(59,130,246,0.20);border:1px solid rgba(59,130,246,0.40);border-radius:6px;font-size:12px;color:#93c5fd;font-weight:600;">③ 시장 구조</span>
-        <span style="padding:5px 12px;background:rgba(168,85,247,0.20);border:1px solid rgba(168,85,247,0.40);border-radius:6px;font-size:12px;color:#d8b4fe;font-weight:600;">④ 경쟁 대응</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="padding:5px 12px;background:rgba(6,95,70,0.20);border:1px solid rgba(6,95,70,0.40);border-radius:6px;font-size:12px;color:#6ee7b7;font-weight:600;">① 정책 방향 분석</span>
+        <span style="padding:5px 12px;background:rgba(30,64,175,0.20);border:1px solid rgba(30,64,175,0.40);border-radius:6px;font-size:12px;color:#93c5fd;font-weight:600;">② 공모사업 기회</span>
+        <span style="padding:5px 12px;background:rgba(15,118,110,0.20);border:1px solid rgba(15,118,110,0.40);border-radius:6px;font-size:12px;color:#5eead4;font-weight:600;">③ 시장 구조</span>
+        <span style="padding:5px 12px;background:rgba(146,64,14,0.20);border:1px solid rgba(146,64,14,0.40);border-radius:6px;font-size:12px;color:#fcd34d;font-weight:600;">④ 경쟁 대응</span>
         <span style="padding:5px 12px;background:rgba(239,68,68,0.20);border:1px solid rgba(239,68,68,0.40);border-radius:6px;font-size:12px;color:#fca5a5;font-weight:600;">⑤ 국비사업 전략</span>
-        <span style="padding:5px 12px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.30);border-radius:6px;font-size:12px;color:white;font-weight:600;">⑥ 공모 우선순위</span>
+        <span style="padding:5px 12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:6px;font-size:12px;color:white;font-weight:600;">⑥ 공모 우선순위</span>
+      </div>
+    </div>
+
+    <!-- localStorage 불러오기 배너 (데이터 있을 때만 표시) -->
+    <div id="load-banner" class="load-banner" style="display:none;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:3px;">✅ 수집 데이터가 있습니다</div>
+        <div style="font-size:12px;color:#374151;" id="load-banner-desc"></div>
+      </div>
+      <div style="display:flex;gap:7px;flex-shrink:0;">
+        <button onclick="loadFromStorage()" style="padding:7px 14px;background:#065f46;border:none;border-radius:7px;color:white;font-size:12px;font-weight:700;cursor:pointer;">📥 불러오기</button>
+        <button onclick="clearStorage()" style="padding:7px 10px;background:white;border:1px solid #e2e8f0;border-radius:7px;color:#94a3b8;font-size:12px;cursor:pointer;">✕</button>
       </div>
     </div>
 
     <!-- 데이터 입력 -->
     <div class="card" id="input-section">
-      <div style="font-size:15px;font-weight:800;color:#1e293b;margin-bottom:4px;">📥 수집 데이터 입력</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:16px;">각 수집창에서 수집한 주요 내용을 붙여넣거나 직접 입력하세요. 내용이 많을수록 분석 품질이 높아집니다.</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:15px;font-weight:800;color:#1e293b;">📥 수집 데이터 입력</div>
+        <button onclick="clearAllInputs()" style="padding:5px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;color:#94a3b8;font-size:11px;cursor:pointer;">전체 지우기</button>
+      </div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:16px;">
+        각 수집창에서 <strong style="color:#1e293b;">「🧠 분석창으로 보내기」</strong> 버튼을 누르거나, 직접 내용을 붙여넣으세요.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
-          <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="padding:2px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;">📋 정책 수집 내용</span></div>
-          <textarea id="policy-data" placeholder="정책 수집창에서 수집한 주요 정책·공고 내용을 붙여넣으세요&#10;예: KDT 훈련 확대 공고, AI 인재양성 정책 발표..."></textarea>
+          <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="padding:2px 8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;">📋 정책 수집 내용</span>
+            <span class="data-badge empty" id="badge-policy">미입력</span>
+          </div>
+          <textarea id="policy-data" placeholder="정책 수집창 「🧠 보내기」 버튼 클릭 후 자동 입력&#10;또는 직접 붙여넣기&#10;예: KDT 훈련 확대 공고, AI 인재양성 정책..." oninput="onInputChange('policy')"></textarea>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="padding:2px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;">📰 뉴스 수집 내용</span></div>
-          <textarea id="news-data" placeholder="뉴스 수집창에서 수집한 주요 뉴스를 붙여넣으세요&#10;예: 디지털 인재 100만 양성 발표, 반도체 교육 확대..."></textarea>
+          <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="padding:2px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;">📰 뉴스 수집 내용</span>
+            <span class="data-badge empty" id="badge-news">미입력</span>
+          </div>
+          <textarea id="news-data" placeholder="뉴스 수집창 「🧠 보내기」 버튼 클릭 후 자동 입력&#10;또는 직접 붙여넣기&#10;예: 디지털 인재 100만 양성, 반도체 교육 확대..." oninput="onInputChange('news')"></textarea>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="padding:2px 8px;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;">📊 시장동향 내용</span></div>
-          <textarea id="market-data" placeholder="시장동향 수집창에서 수집한 내용을 붙여넣으세요&#10;예: 부트캠프 신규 개설, 에듀테크 투자 확대..."></textarea>
+          <div style="font-size:12px;font-weight:700;color:#0f766e;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="padding:2px 8px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:4px;">📊 시장동향 내용</span>
+            <span class="data-badge empty" id="badge-market">미입력</span>
+          </div>
+          <textarea id="market-data" placeholder="시장동향 수집창 「🧠 보내기」 버튼 클릭 후 자동 입력&#10;또는 직접 붙여넣기&#10;예: 부트캠프 신규 개설, 에듀테크 투자 확대..." oninput="onInputChange('market')"></textarea>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:700;color:#6d28d9;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="padding:2px 8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:4px;">🎯 경쟁기관 동향</span></div>
-          <textarea id="competitor-data" placeholder="경쟁기관 동향 수집창에서 수집한 내용을 붙여넣으세요&#10;예: 패스트캠퍼스 AI 과정 확대, 폴리텍 신규 과정..."></textarea>
+          <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="padding:2px 8px;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;">🎯 경쟁기관 동향</span>
+            <span class="data-badge empty" id="badge-competitor">미입력</span>
+          </div>
+          <textarea id="competitor-data" placeholder="경쟁기관 수집창 「🧠 보내기」 버튼 클릭 후 자동 입력&#10;또는 직접 붙여넣기&#10;예: 패스트캠퍼스 AI 과정 확대, 폴리텍 신규..." oninput="onInputChange('competitor')"></textarea>
         </div>
       </div>
+
+      <!-- 입력 현황 요약 -->
+      <div id="input-summary" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#64748b;">
+        📊 입력 현황: <span id="input-count" style="font-weight:700;color:#1e293b;">0</span>개 / 4개 수집창 데이터 입력됨
+      </div>
+
       <button class="btn-analyze" id="analyze-btn" onclick="runAnalysis()">
         🧠 종합 전략 분석 시작
       </button>
@@ -159,129 +208,154 @@
       </div>
       <div id="analysis-results"></div>
     </div>
+
   </div>
 </div>
 
 <script>
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+const LS_KEYS = { policy:"vti_policy", news:"vti_news", market:"vti_market", competitor:"vti_competitor" };
 
 const ANALYSIS_ITEMS = [
-  { id:"policy",    num:"①", label:"정책 방향 분석",       icon:"📋", color:"#065f46",  bg:"#ecfdf5",  border:"#a7f3d0",  headerBg:"#ecfdf5" },
-  { id:"project",   num:"②", label:"공모사업 기회 분석",   icon:"📢", color:"#1e40af",  bg:"#eff6ff",  border:"#bfdbfe",  headerBg:"#eff6ff" },
-  { id:"market",    num:"③", label:"직업훈련 시장 구조",   icon:"📊", color:"#92400e",  bg:"#fffbeb",  border:"#fde68a",  headerBg:"#fffbeb" },
-  { id:"compete",   num:"④", label:"경쟁기관 대응 전략",   icon:"🎯", color:"#6d28d9",  bg:"#f5f3ff",  border:"#ddd6fe",  headerBg:"#f5f3ff" },
-  { id:"subsidy",   num:"⑤", label:"국비사업 전략",        icon:"💰", color:"#dc2626",  bg:"#fef2f2",  border:"#fecaca",  headerBg:"#fef2f2" },
-  { id:"priority",  num:"⑥", label:"공모사업 우선순위",    icon:"🏆", color:"#1e293b",  bg:"#f8fafc",  border:"#e2e8f0",  headerBg:"#f1f5f9" },
+  { id:"policy",   num:"①", label:"정책 방향 분석",     icon:"📋", color:"#065f46", bg:"#ecfdf5", border:"#a7f3d0", headerBg:"#ecfdf5" },
+  { id:"project",  num:"②", label:"공모사업 기회 분석", icon:"📢", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe", headerBg:"#eff6ff" },
+  { id:"market",   num:"③", label:"직업훈련 시장 구조", icon:"📊", color:"#0f766e", bg:"#f0fdfa", border:"#99f6e4", headerBg:"#f0fdfa" },
+  { id:"compete",  num:"④", label:"경쟁기관 대응 전략", icon:"🎯", color:"#92400e", bg:"#fffbeb", border:"#fde68a", headerBg:"#fffbeb" },
+  { id:"subsidy",  num:"⑤", label:"국비사업 전략",      icon:"💰", color:"#dc2626", bg:"#fef2f2", border:"#fecaca", headerBg:"#fef2f2" },
+  { id:"priority", num:"⑥", label:"공모사업 우선순위",  icon:"🏆", color:"#1e293b", bg:"#f8fafc", border:"#e2e8f0", headerBg:"#f1f5f9" },
 ];
 
 const ANALYSIS_PROMPTS = {
-  policy: (data, orgInfo) => `
-당신은 대한민국 직업훈련 정책 전문 컨설턴트입니다.
-아래 수집 데이터를 분석하여 "정책 방향 분석"을 작성하세요.
-${orgInfo}
+  policy: (data, orgInfo) => `당신은 대한민국 직업훈련 정책 전문 컨설턴트입니다.
+아래 수집 데이터를 분석하여 "정책 방향 분석"을 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 현재 정책 핵심 방향 (3가지)
-2. 훈련기관에 미치는 영향
-3. 단기(3개월) 정책 변화 예측
-4. 훈련기관 대응 방향
 
 JSON으로만 출력 (백틱 금지):
 {"directions":["방향1","방향2","방향3"],"impacts":["영향1","영향2","영향3"],"predictions":["예측1","예측2"],"responses":["대응1","대응2","대응3"],"summary":"핵심요약(2문장)"}`,
 
-  project: (data, orgInfo) => `
-당신은 대한민국 직업훈련 공모사업 전문가입니다.
-아래 수집 데이터를 분석하여 "공모사업 기회 분석"을 작성하세요.
-${orgInfo}
+  project: (data, orgInfo) => `당신은 대한민국 직업훈련 공모사업 전문가입니다.
+아래 수집 데이터를 분석하여 "공모사업 기회 분석"을 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 현재 공모 진행 중이거나 예정된 사업 (3가지)
-2. 각 사업의 기회 수준 (높음/보통/낮음)
-3. 준비 필요 사항
-4. 놓치면 안 되는 핵심 공모
 
 JSON으로만 출력 (백틱 금지):
 {"opportunities":[{"name":"사업명","level":"높음|보통|낮음","deadline":"마감","prep":"준비사항"}],"must_apply":"반드시 참여할 사업","reason":"이유","action":"즉시 해야 할 행동","summary":"핵심요약(2문장)"}`,
 
-  market: (data, orgInfo) => `
-당신은 대한민국 직업훈련 시장 분석 전문가입니다.
-아래 수집 데이터를 분석하여 "직업훈련 시장 구조 분석"을 작성하세요.
-${orgInfo}
+  market: (data, orgInfo) => `당신은 대한민국 직업훈련 시장 분석 전문가입니다.
+아래 수집 데이터를 분석하여 "직업훈련 시장 구조 분석"을 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 현재 훈련시장 주요 트렌드 (3가지)
-2. 수요가 증가하는 분야
-3. 수요가 감소하거나 위험한 분야
-4. 시장 기회 포인트
 
 JSON으로만 출력 (백틱 금지):
 {"trends":["트렌드1","트렌드2","트렌드3"],"growing":["증가분야1","증가분야2","증가분야3"],"declining":["감소분야1","감소분야2"],"opportunities":["기회1","기회2","기회3"],"summary":"핵심요약(2문장)"}`,
 
-  compete: (data, orgInfo) => `
-당신은 대한민국 직업훈련 경쟁 전략 전문가입니다.
-아래 수집 데이터를 분석하여 "경쟁기관 대응 전략"을 작성하세요.
-${orgInfo}
+  compete: (data, orgInfo) => `당신은 대한민국 직업훈련 경쟁 전략 전문가입니다.
+아래 수집 데이터를 분석하여 "경쟁기관 대응 전략"을 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 경쟁기관의 주요 움직임 (3가지)
-2. 위협이 되는 경쟁 요소
-3. 우리 기관의 차별화 포인트
-4. 즉시 대응 전략
 
 JSON으로만 출력 (백틱 금지):
 {"movements":["움직임1","움직임2","움직임3"],"threats":["위협1","위협2","위협3"],"differentiators":["차별화1","차별화2","차별화3"],"strategies":["전략1","전략2","전략3"],"summary":"핵심요약(2문장)"}`,
 
-  subsidy: (data, orgInfo) => `
-당신은 대한민국 국비훈련사업 전략 전문가입니다.
-아래 수집 데이터를 분석하여 "국비사업 전략"을 작성하세요.
-${orgInfo}
+  subsidy: (data, orgInfo) => `당신은 대한민국 국비훈련사업 전략 전문가입니다.
+아래 수집 데이터를 분석하여 "국비사업 전략"을 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 현재 유망한 국비훈련 사업 유형 (3가지)
-2. 과정 개발 우선 분야
-3. 훈련기관 인증·평가 대응
-4. 중장기 국비사업 전략
 
 JSON으로만 출력 (백틱 금지):
 {"promising":["유망사업1","유망사업2","유망사업3"],"course_priorities":["과정1","과정2","과정3"],"cert_actions":["인증대응1","인증대응2"],"long_term":["중장기전략1","중장기전략2","중장기전략3"],"summary":"핵심요약(2문장)"}`,
 
-  priority: (data, orgInfo) => `
-당신은 대한민국 직업훈련 전략기획 전문가입니다.
-아래 수집 데이터를 종합하여 "공모사업 우선순위"를 작성하세요.
-${orgInfo}
+  priority: (data, orgInfo) => `당신은 대한민국 직업훈련 전략기획 전문가입니다.
+아래 수집 데이터를 종합하여 "공모사업 우선순위"를 작성하세요.${orgInfo}
 
 [수집 데이터]
 ${data}
-
-분석 항목:
-1. 즉시 참여해야 할 공모 (1~2개월 내)
-2. 준비하면서 참여할 공모 (3~6개월)
-3. 중장기 준비 필요 사업
-4. 최우선 추천 사업 1개와 이유
-5. 전체 리스크 수준
 
 JSON으로만 출력 (백틱 금지):
 {"immediate":[{"name":"사업명","reason":"이유","action":"해야할일"}],"mid_term":[{"name":"사업명","reason":"이유"}],"long_term":["장기사업1","장기사업2"],"top_pick":{"name":"최우선사업","reason":"선정이유","steps":["단계1","단계2","단계3"]},"risk_level":"높음|보통|낮음","risk_reason":"리스크이유","summary":"최종요약(3문장)"}`,
 };
 
-let analysisResults = {};
-let isAnalyzing = false;
+let analysisResults = {}, isAnalyzing = false;
 
+/* ── localStorage 연동 ── */
+function checkStorage() {
+  const found = Object.entries(LS_KEYS).filter(([k,lk]) => localStorage.getItem(lk));
+  if (found.length === 0) return;
+  const labels = {policy:"정책", news:"뉴스", market:"시장동향", competitor:"경쟁기관"};
+  const names  = found.map(([k]) => labels[k]).join(", ");
+  document.getElementById("load-banner-desc").textContent = `${names} 데이터가 저장되어 있습니다. 불러오면 입력창에 자동으로 채워집니다.`;
+  document.getElementById("load-banner").style.display = "flex";
+}
+
+function loadFromStorage() {
+  Object.entries(LS_KEYS).forEach(([key, lk]) => {
+    const val = localStorage.getItem(lk);
+    if (val) {
+      document.getElementById(key+"-data").value = val;
+      onInputChange(key);
+    }
+  });
+  document.getElementById("load-banner").style.display = "none";
+  updateInputSummary();
+}
+
+function clearStorage() {
+  Object.values(LS_KEYS).forEach(lk => localStorage.removeItem(lk));
+  document.getElementById("load-banner").style.display = "none";
+}
+
+function clearAllInputs() {
+  ["policy","news","market","competitor"].forEach(k => {
+    document.getElementById(k+"-data").value = "";
+    onInputChange(k);
+  });
+}
+
+/* ── 입력 변경 처리 ── */
+function onInputChange(key) {
+  const val  = document.getElementById(key+"-data").value.trim();
+  const badge = document.getElementById("badge-"+key);
+  if (badge) {
+    badge.textContent  = val ? `${Math.round(val.length/10)*10}자` : "미입력";
+    badge.className    = "data-badge " + (val ? "filled" : "empty");
+  }
+  updateInputSummary();
+  updateDataStatus();
+}
+
+function updateInputSummary() {
+  const count = ["policy","news","market","competitor"].filter(k => document.getElementById(k+"-data")?.value.trim()).length;
+  document.getElementById("input-count").textContent = count;
+  const btn = document.getElementById("analyze-btn");
+  if (btn && !isAnalyzing) {
+    btn.textContent = count === 0 ? "🧠 종합 전략 분석 시작" : `🧠 종합 전략 분석 시작 (${count}개 데이터)`;
+  }
+}
+
+function updateDataStatus() {
+  const fields = [
+    {k:"policy",     label:"📋 정책",  color:"#065f46"},
+    {k:"news",       label:"📰 뉴스",  color:"#1e40af"},
+    {k:"market",     label:"📊 시장",  color:"#0f766e"},
+    {k:"competitor", label:"🎯 경쟁",  color:"#92400e"},
+  ];
+  document.getElementById("data-status").innerHTML = fields.map(f => {
+    const val = document.getElementById(f.k+"-data")?.value.trim();
+    const has = val && val.length > 0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${has?"#f0fdf4":"#f8fafc"};">
+      <span style="font-size:11px;color:${has?f.color:"#94a3b8"};">${f.label}</span>
+      <span style="font-size:10px;color:${has?"#059669":"#94a3b8"};">${has?"✓ 입력됨":"미입력"}</span>
+    </div>`;
+  }).join("");
+}
+
+/* ── 분석 로직 ── */
 function getOrgInfo() {
   const name    = document.getElementById("org-name").value.trim();
   const region  = document.getElementById("org-region").value.trim();
@@ -317,13 +391,9 @@ function extractJSON(raw) {
 
 async function callClaude(prompt) {
   const res = await fetch(CLAUDE_API, {
-    method: "POST",
-    headers: { "Content-Type":"application/json", "anthropic-beta":"claude-ai-artifacts" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1500,
-      messages: [{ role:"user", content: prompt }],
-    }),
+    method:"POST",
+    headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
+    body:JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1500, messages:[{role:"user",content:prompt}] }),
   });
   if (!res.ok) throw new Error("API " + res.status);
   const data = await res.json();
@@ -333,37 +403,32 @@ async function callClaude(prompt) {
 async function runAnalysis() {
   if (isAnalyzing) return;
   const allData = getAllData();
-  if (!allData) {
-    alert("최소 하나 이상의 수집 데이터를 입력해 주세요!");
-    return;
-  }
+  if (!allData) { alert("최소 하나 이상의 수집 데이터를 입력해 주세요!"); return; }
 
   isAnalyzing = true;
   analysisResults = {};
-  document.getElementById("input-section").style.display = "none";
-  document.getElementById("result-section").style.display = "none";
-  document.getElementById("progress-section").style.display = "block";
+  document.getElementById("input-section").style.display   = "none";
+  document.getElementById("result-section").style.display  = "none";
+  document.getElementById("progress-section").style.display= "block";
   document.getElementById("analyze-btn").disabled = true;
 
   const orgInfo = getOrgInfo();
   const total   = ANALYSIS_ITEMS.length;
-
-  // 진행 단계 초기화
   const stepsEl = document.getElementById("progress-steps");
-  stepsEl.innerHTML = ANALYSIS_ITEMS.map(item => `
+
+  stepsEl.innerHTML = ANALYSIS_ITEMS.map(item=>`
     <div id="step-${item.id}" class="step-item" style="background:#f8fafc;border:1px solid #e2e8f0;">
       <span style="font-size:13px;color:#94a3b8;font-weight:700;width:20px;">○</span>
       <span style="font-size:12px;color:#94a3b8;flex:1;">${item.num} ${item.label}</span>
     </div>`).join("");
 
-  for (let i = 0; i < ANALYSIS_ITEMS.length; i++) {
+  for (let i=0;i<ANALYSIS_ITEMS.length;i++) {
     const item = ANALYSIS_ITEMS[i];
-    const pct  = Math.round((i / total) * 100);
+    const pct  = Math.round((i/total)*100);
 
     document.getElementById("progress-label").textContent = `🧠 ${item.num} ${item.label} 분석 중...`;
-    document.getElementById("progress-bar").style.width = pct + "%";
+    document.getElementById("progress-bar").style.width   = pct+"%";
 
-    // 현재 단계 강조
     document.getElementById(`step-${item.id}`).innerHTML = `
       <span style="font-size:13px;color:#f59e0b;font-weight:700;width:20px;">◉</span>
       <span style="font-size:12px;color:#f59e0b;flex:1;font-weight:600;">${item.num} ${item.label} <span class="loading-dots"></span></span>
@@ -373,14 +438,14 @@ async function runAnalysis() {
       const prompt = ANALYSIS_PROMPTS[item.id](allData, orgInfo);
       const raw    = await callClaude(prompt);
       const parsed = extractJSON(raw);
-      analysisResults[item.id] = parsed || { error: "파싱 실패", raw };
+      analysisResults[item.id] = parsed || {error:"파싱 실패", raw};
 
       document.getElementById(`step-${item.id}`).innerHTML = `
         <span style="font-size:13px;color:#059669;font-weight:700;width:20px;">✓</span>
         <span style="font-size:12px;color:#059669;flex:1;">${item.num} ${item.label}</span>
         <span style="font-size:10px;color:#059669;font-weight:600;">완료</span>`;
     } catch(e) {
-      analysisResults[item.id] = { error: e.message };
+      analysisResults[item.id] = {error:e.message};
       document.getElementById(`step-${item.id}`).innerHTML = `
         <span style="font-size:13px;color:#dc2626;font-weight:700;width:20px;">✕</span>
         <span style="font-size:12px;color:#dc2626;flex:1;">${item.num} ${item.label}</span>
@@ -390,51 +455,56 @@ async function runAnalysis() {
 
   document.getElementById("progress-bar").style.width = "100%";
   document.getElementById("progress-label").textContent = "✅ 분석 완료!";
-  setTimeout(() => {
-    document.getElementById("progress-section").style.display = "none";
+  setTimeout(()=>{
+    document.getElementById("progress-section").style.display="none";
     renderResults();
   }, 800);
-
   isAnalyzing = false;
 }
 
+/* ── 결과 렌더 ── */
 function renderResults() {
-  document.getElementById("result-section").style.display = "block";
+  document.getElementById("result-section").style.display="block";
   document.getElementById("report-date").textContent = `분석 일시: ${new Date().toLocaleString("ko-KR")}`;
 
-  const container = document.getElementById("analysis-results");
-  container.innerHTML = ANALYSIS_ITEMS.map(item => {
+  document.getElementById("analysis-results").innerHTML = ANALYSIS_ITEMS.map(item=>{
     const data = analysisResults[item.id];
-    if (!data || data.error) {
-      return `<div class="analysis-section">
+    if (!data||data.error) return `
+      <div class="analysis-section">
         <div class="section-header" style="background:${item.headerBg};">
           <span style="font-size:22px;">${item.icon}</span>
           <div><div style="font-size:15px;font-weight:800;color:${item.color};">${item.num} ${item.label}</div></div>
         </div>
         <div class="section-body"><p style="color:#dc2626;">⚠️ 분석 오류: ${data?.error||"알 수 없는 오류"}</p></div>
       </div>`;
-    }
     return renderSection(item, data);
   }).join("");
 
   // 사이드바 네비 업데이트
-  document.getElementById("analysis-nav").innerHTML = ANALYSIS_ITEMS.map(item => `
+  document.getElementById("analysis-nav").innerHTML = ANALYSIS_ITEMS.map(item=>`
     <div onclick="document.getElementById('section-${item.id}').scrollIntoView({behavior:'smooth'})"
       style="padding:7px 10px;border-radius:7px;cursor:pointer;margin-bottom:2px;display:flex;align-items:center;gap:7px;font-size:12px;color:#374151;"
       onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
       <span>${item.icon}</span><span>${item.num} ${item.label}</span>
-      ${analysisResults[item.id]&&!analysisResults[item.id].error?`<span style="margin-left:auto;font-size:10px;color:#059669;">✓</span>`:""}
+      ${analysisResults[item.id]&&!analysisResults[item.id].error?`<span style="margin-left:auto;font-size:10px;color:#059669;font-weight:700;">✓</span>`:""}
     </div>`).join("");
+
+  document.getElementById("sidebar-stats").innerHTML = `
+    <div>✅ 분석 완료</div>
+    <div>${new Date().toLocaleDateString("ko-KR")} 기준</div>`;
 }
 
 function renderSection(item, data) {
   let content = "";
 
-  if (item.id === "policy") {
-    content = `
+  if (item.id==="policy") {
+    content=`
       <div style="margin-bottom:14px;">
         <div style="font-size:12px;font-weight:700;color:${item.color};margin-bottom:8px;">📌 핵심 정책 방향</div>
-        ${(data.directions||[]).map((d,i)=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;"><span style="width:20px;height:20px;border-radius:50%;background:${item.bg};border:1px solid ${item.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${item.color};flex-shrink:0;">${i+1}</span><span style="font-size:13px;color:#374151;line-height:1.6;">${d}</span></div>`).join("")}
+        ${(data.directions||[]).map((d,i)=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;">
+          <span style="width:20px;height:20px;border-radius:50%;background:${item.bg};border:1px solid ${item.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${item.color};flex-shrink:0;">${i+1}</span>
+          <span style="font-size:13px;color:#374151;line-height:1.6;">${d}</span>
+        </div>`).join("")}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div style="background:${item.bg};border:1px solid ${item.border};border-radius:8px;padding:12px;">
@@ -451,23 +521,20 @@ function renderSection(item, data) {
         ${(data.responses||[]).map((d,i)=>`<div style="font-size:12px;color:#e2e8f0;line-height:1.6;margin-bottom:3px;">${i+1}. ${d}</div>`).join("")}
       </div>`;
   }
-
-  else if (item.id === "project") {
-    content = `
+  else if (item.id==="project") {
+    content=`
       <div style="margin-bottom:14px;">
         <div style="font-size:12px;font-weight:700;color:${item.color};margin-bottom:10px;">📢 공모사업 기회 목록</div>
-        ${(data.opportunities||[]).map((o,i)=>{
-          const lvlColor = o.level==="높음"?"#dc2626":o.level==="보통"?"#d97706":"#64748b";
-          const lvlBg    = o.level==="높음"?"#fef2f2":o.level==="보통"?"#fffbeb":"#f8fafc";
-          return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:${lvlBg};border-radius:8px;margin-bottom:8px;border-left:3px solid ${lvlColor};">
-            <div style="flex:1;">
-              <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
-                <span style="font-size:13px;font-weight:700;color:#1e293b;">${o.name||"사업명 미상"}</span>
-                <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:white;border:1px solid ${lvlColor};color:${lvlColor};font-weight:700;">${o.level||"보통"}</span>
-                ${o.deadline?`<span style="font-size:10px;color:#64748b;">📅 ${o.deadline}</span>`:""}
-              </div>
-              <div style="font-size:12px;color:#64748b;">${o.prep||""}</div>
+        ${(data.opportunities||[]).map(o=>{
+          const lc=o.level==="높음"?"#dc2626":o.level==="보통"?"#d97706":"#64748b";
+          const lb=o.level==="높음"?"#fef2f2":o.level==="보통"?"#fffbeb":"#f8fafc";
+          return `<div style="padding:10px 12px;background:${lb};border-radius:8px;margin-bottom:8px;border-left:3px solid ${lc};">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+              <span style="font-size:13px;font-weight:700;color:#1e293b;">${o.name||""}</span>
+              <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:white;border:1px solid ${lc};color:${lc};font-weight:700;">${o.level||""}</span>
+              ${o.deadline?`<span style="font-size:10px;color:#64748b;">📅 ${o.deadline}</span>`:""}
             </div>
+            <div style="font-size:12px;color:#64748b;">${o.prep||""}</div>
           </div>`;
         }).join("")}
       </div>
@@ -478,9 +545,8 @@ function renderSection(item, data) {
         <div style="font-size:12px;padding:8px 10px;background:rgba(255,255,255,0.12);border-radius:6px;">🚨 ${data.action||""}</div>
       </div>`;
   }
-
-  else if (item.id === "market") {
-    content = `
+  else if (item.id==="market") {
+    content=`
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
         <div style="background:${item.bg};border:1px solid ${item.border};border-radius:8px;padding:12px;">
           <div style="font-size:11px;font-weight:700;color:${item.color};margin-bottom:7px;">📈 주요 트렌드</div>
@@ -500,13 +566,15 @@ function renderSection(item, data) {
         ${(data.opportunities||[]).map((d,i)=>`<div style="font-size:12px;color:#e2e8f0;line-height:1.6;margin-bottom:3px;">${i+1}. ${d}</div>`).join("")}
       </div>`;
   }
-
-  else if (item.id === "compete") {
-    content = `
+  else if (item.id==="compete") {
+    content=`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div>
           <div style="font-size:12px;font-weight:700;color:${item.color};margin-bottom:8px;">🏃 경쟁기관 주요 움직임</div>
-          ${(data.movements||[]).map((d,i)=>`<div style="display:flex;gap:7px;margin-bottom:6px;"><span style="width:18px;height:18px;border-radius:50%;background:${item.bg};border:1px solid ${item.border};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${item.color};flex-shrink:0;">${i+1}</span><span style="font-size:12px;color:#374151;line-height:1.5;">${d}</span></div>`).join("")}
+          ${(data.movements||[]).map((d,i)=>`<div style="display:flex;gap:7px;margin-bottom:6px;">
+            <span style="width:18px;height:18px;border-radius:50%;background:${item.bg};border:1px solid ${item.border};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${item.color};flex-shrink:0;">${i+1}</span>
+            <span style="font-size:12px;color:#374151;line-height:1.5;">${d}</span>
+          </div>`).join("")}
         </div>
         <div>
           <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:8px;">⚠️ 위협 요소</div>
@@ -524,13 +592,15 @@ function renderSection(item, data) {
         </div>
       </div>`;
   }
-
-  else if (item.id === "subsidy") {
-    content = `
+  else if (item.id==="subsidy") {
+    content=`
       <div style="margin-bottom:14px;">
         <div style="font-size:12px;font-weight:700;color:${item.color};margin-bottom:8px;">💰 유망 국비훈련 사업</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
-          ${(data.promising||[]).map((d,i)=>`<div style="padding:10px 12px;background:${item.bg};border:1px solid ${item.border};border-radius:8px;text-align:center;"><div style="font-size:20px;font-weight:800;color:${item.color};">${i+1}</div><div style="font-size:12px;color:#374151;margin-top:4px;line-height:1.4;">${d}</div></div>`).join("")}
+          ${(data.promising||[]).map((d,i)=>`<div style="padding:10px 12px;background:${item.bg};border:1px solid ${item.border};border-radius:8px;text-align:center;">
+            <div style="font-size:20px;font-weight:800;color:${item.color};">${i+1}</div>
+            <div style="font-size:12px;color:#374151;margin-top:4px;line-height:1.4;">${d}</div>
+          </div>`).join("")}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
@@ -548,10 +618,11 @@ function renderSection(item, data) {
         ${(data.long_term||[]).map((d,i)=>`<div style="font-size:12px;color:#e2e8f0;line-height:1.6;margin-bottom:3px;">${i+1}. ${d}</div>`).join("")}
       </div>`;
   }
-
-  else if (item.id === "priority") {
-    const riskColor = data.risk_level==="높음"?"#dc2626":data.risk_level==="보통"?"#d97706":"#059669";
-    content = `
+  else if (item.id==="priority") {
+    const rc=data.risk_level==="높음"?"#dc2626":data.risk_level==="보통"?"#d97706":"#059669";
+    const rb=data.risk_level==="높음"?"#fef2f2":data.risk_level==="보통"?"#fffbeb":"#f0fdf4";
+    const rbr=data.risk_level==="높음"?"#fecaca":data.risk_level==="보통"?"#fde68a":"#bbf7d0";
+    content=`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div>
           <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:8px;">🚨 즉시 참여 (1~2개월)</div>
@@ -580,8 +651,8 @@ function renderSection(item, data) {
         </div>
       </div>`:""}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div style="padding:12px 14px;background:${riskColor==="#dc2626"?"#fef2f2":riskColor==="#d97706"?"#fffbeb":"#f0fdf4"};border:1px solid ${riskColor==="#dc2626"?"#fecaca":riskColor==="#d97706"?"#fde68a":"#bbf7d0"};border-radius:8px;">
-          <div style="font-size:11px;font-weight:700;color:${riskColor};margin-bottom:4px;">⚡ 전체 리스크 수준: ${data.risk_level||""}</div>
+        <div style="padding:12px 14px;background:${rb};border:1px solid ${rbr};border-radius:8px;">
+          <div style="font-size:11px;font-weight:700;color:${rc};margin-bottom:4px;">⚡ 전체 리스크: ${data.risk_level||""}</div>
           <div style="font-size:12px;color:#374151;">${data.risk_reason||""}</div>
         </div>
         <div style="padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
@@ -591,9 +662,7 @@ function renderSection(item, data) {
       </div>`;
   }
 
-  // 요약 추가
-  const summary = data.summary || "";
-
+  const summary = data.summary||"";
   return `<div class="analysis-section" id="section-${item.id}">
     <div class="section-header" style="background:${item.headerBg};">
       <span style="font-size:24px;">${item.icon}</span>
@@ -608,40 +677,22 @@ function renderSection(item, data) {
 }
 
 function resetAnalysis() {
-  document.getElementById("result-section").style.display = "none";
-  document.getElementById("input-section").style.display = "block";
+  document.getElementById("result-section").style.display  = "none";
+  document.getElementById("input-section").style.display   = "block";
   document.getElementById("analyze-btn").disabled = false;
   analysisResults = {};
+  document.getElementById("analysis-nav").innerHTML = document.getElementById("nav-default")?.outerHTML||"";
 }
 
-function printReport() {
-  window.print();
-}
+function printReport() { window.print(); }
 
-// 사이드바 데이터 현황
-function updateDataStatus() {
-  const fields = [
-    {id:"policy-data",    label:"📋 정책", color:"#065f46"},
-    {id:"news-data",      label:"📰 뉴스", color:"#1e40af"},
-    {id:"market-data",    label:"📊 시장", color:"#92400e"},
-    {id:"competitor-data",label:"🎯 경쟁", color:"#6d28d9"},
-  ];
-  document.getElementById("data-status").innerHTML = fields.map(f => {
-    const val = document.getElementById(f.id)?.value.trim();
-    const has  = val && val.length > 0;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:${has?"#f0fdf4":"#f8fafc"};">
-      <span style="font-size:11px;color:${has?f.color:"#94a3b8"};">${f.label}</span>
-      <span style="font-size:10px;color:${has?"#059669":"#94a3b8"};">${has?"✓ 입력됨":"미입력"}</span>
-    </div>`;
-  }).join("");
-}
-
-// 입력 변경 시 상태 업데이트
-["policy-data","news-data","market-data","competitor-data"].forEach(id => {
-  document.getElementById(id)?.addEventListener("input", updateDataStatus);
-});
-
+/* ── 초기화 ── */
+checkStorage();
 updateDataStatus();
+updateInputSummary();
+["policy","news","market","competitor"].forEach(k => {
+  document.getElementById(k+"-data")?.addEventListener("input", ()=>onInputChange(k));
+});
 </script>
 </body>
 </html>
