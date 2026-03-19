@@ -16,6 +16,8 @@
   .nav-link { font-size:12px; color:#93c5fd; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
   .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
+  .send-btn { font-size:12px; color:white; padding:5px 12px; border:none; border-radius:6px; background:rgba(245,158,11,0.85); cursor:pointer; font-weight:700; white-space:nowrap; display:none; }
+  .send-btn:hover { background:rgba(245,158,11,1); }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; box-shadow:2px 0 6px rgba(0,0,0,0.04); }
   .sidebar-inner { padding:16px 12px 8px; }
@@ -63,7 +65,6 @@
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="logo">📡</div>
   <div>
@@ -83,6 +84,7 @@
     <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
     <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
   </div>
+  <button class="send-btn" id="send-btn" onclick="sendToAnalysis()">🧠 분석창으로 보내기</button>
 </div>
 
 <div class="layout">
@@ -144,6 +146,7 @@
         <div style="display:flex;gap:8px;">
           <input type="text" id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="width:160px;">
           <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e40af;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
+          <button onclick="sendToAnalysis()" style="padding:7px 14px;background:#f59e0b;border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;font-weight:700;">🧠 분석창으로</button>
         </div>
       </div>
       <div id="error-log" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
@@ -186,15 +189,19 @@ const URGENCY = {
   low:     { label:"참고", color:"#64748b", bg:"#f8fafc", border:"#e2e8f0", text:"#475569" },
 };
 
-let selectedKws  = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
-let activeGroup  = "vocational";
-let allResults   = {};
-let analysisMap  = {};
-let selectedNews = null;
-let filterGroup  = "all";
-let filterUrgency= "all";
-let tickerTimer  = null;
-let tickerIdx    = 0;
+let selectedKws={}, activeGroup="vocational", allResults={}, analysisMap={}, selectedNews=null, filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
+selectedKws = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
+
+/* ── 분석창으로 보내기 ── */
+function sendToAnalysis() {
+  const allNews = Object.values(allResults).flat();
+  if (!allNews.length) { alert("먼저 뉴스를 수집해주세요!"); return; }
+  const text = allNews.map(n => `[${n.groupLabel}] ${n.title}\n${n.summary}`).join("\n\n");
+  localStorage.setItem("vt_news", text);
+  localStorage.setItem("vt_news_ts", new Date().toLocaleString("ko-KR"));
+  alert(`✅ 뉴스 ${allNews.length}건을 분석창에 전달했어요!\n분석창(analysis.html)으로 이동합니다.`);
+  location.href = "/analysis.html";
+}
 
 function init() {
   const now=new Date(), ago=new Date(now-7*24*60*60*1000);
@@ -243,13 +250,9 @@ function renderKeywordPanel() {
 }
 
 function setActiveGroup(id){ activeGroup=id; renderGroupTabs(); renderKeywordPanel(); }
-function toggleKw(gid,kw){
-  const cur=selectedKws[gid]||[];
-  selectedKws[gid]=cur.includes(kw)?cur.filter(k=>k!==kw):[...cur,kw];
-  renderKeywordPanel(); renderGroupTabs(); updateKwCount();
-}
-function clearGroup(gid)     { selectedKws[gid]=[]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
-function selectAllGroup(gid) { selectedKws[gid]=[...GROUPS.find(g=>g.id===gid).keywords]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
+function toggleKw(gid,kw){ const cur=selectedKws[gid]||[]; selectedKws[gid]=cur.includes(kw)?cur.filter(k=>k!==kw):[...cur,kw]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
+function clearGroup(gid){ selectedKws[gid]=[]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
+function selectAllGroup(gid){ selectedKws[gid]=[...GROUPS.find(g=>g.id===gid).keywords]; renderKeywordPanel(); renderGroupTabs(); updateKwCount(); }
 function updateKwCount(){
   const total=Object.values(selectedKws).flat().length;
   document.getElementById("kw-count").textContent=total+"개";
@@ -277,10 +280,7 @@ async function runSearch(){
   const panel=document.getElementById("progress-panel");
   panel.style.display="block";
   const total=activeGroups.length+1;
-  let steps=[
-    ...activeGroups.map(g=>({id:g.id,label:`${g.icon} ${g.label}`,status:"pending"})),
-    {id:"__done__",label:"✅ 수집 완료",status:"pending"},
-  ];
+  let steps=[...activeGroups.map(g=>({id:g.id,label:`${g.icon} ${g.label}`,status:"pending"})),{id:"__done__",label:"✅ 수집 완료",status:"pending"}];
 
   const renderProgress=(pct,steps)=>{
     panel.innerHTML=`
@@ -305,8 +305,7 @@ async function runSearch(){
           </div>`;
         }).join("")}
       </div>
-      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}
-    `;
+      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}`;
   };
 
   for(let gi=0;gi<activeGroups.length;gi++){
@@ -340,6 +339,7 @@ async function runSearch(){
   renderProgress(100,steps);
   document.getElementById("stat-news").textContent=Object.values(allResults).flat().length;
   document.getElementById("result-count").textContent=Object.values(allResults).flat().length+"건";
+  document.getElementById("send-btn").style.display="block";
   startTicker();
   setTimeout(()=>showTab("results"),700);
   btn.disabled=false; btn.textContent="🌐 재수집";
@@ -363,12 +363,10 @@ function renderResults(){
     <span style="font-size:22px;">${s.icon}</span>
     <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
   </div>`).join("");
-
   const errEl=document.getElementById("error-log");
   const errs=GROUPS.map(g=>allResults[g.id]!==undefined&&allResults[g.id].length===0?`[${g.label}] 결과 없음`:null).filter(Boolean);
   if(errs.length){errEl.style.display="block";errEl.innerHTML=`<div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px;">⚠️ 수집 알림</div>`+errs.map(e=>`<div style="font-size:12px;color:#78350f;">${e}</div>`).join("");}
   else errEl.style.display="none";
-
   const groups=filterGroup==="all"?GROUPS:GROUPS.filter(g=>g.id===filterGroup);
   document.getElementById("news-list").innerHTML=groups.map(group=>{
     const gNews=filtered.filter(n=>n.groupId===group.id);
@@ -433,14 +431,9 @@ async function analyzeNews(id){
   if(!news||analysisMap[id]) return;
   analysisMap[id]={loading:true}; renderResults();
   try{
-    const res=await fetch(CLAUDE_API,{
-      method:"POST",
-      headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-6",max_tokens:900,
-        messages:[{role:"user",content:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})`}]
-      })
-    });
+    const res=await fetch(CLAUDE_API,{method:"POST",headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:900,
+        messages:[{role:"user",content:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})`}]})});
     const data=await res.json();
     const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
     let parsed=null;
