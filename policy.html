@@ -437,7 +437,7 @@ async function analyzeNews(id){
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 정책 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})\n카테고리: ${news.groupLabel}`, max_tokens:900})
-    }));
+    });
     const data=await res.json();
     if(data.error) throw new Error(data.error);
     const text=(data.text||"").trim();
