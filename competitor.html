@@ -16,6 +16,8 @@
   .nav-link { font-size:12px; color:#fcd34d; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
   .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
   .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
+  .send-btn { font-size:12px; color:white; padding:5px 12px; border:none; border-radius:6px; background:rgba(245,158,11,0.85); cursor:pointer; font-weight:700; white-space:nowrap; display:none; }
+  .send-btn:hover { background:rgba(245,158,11,1); }
   .layout { display:flex; height:calc(100vh - 56px); }
   .sidebar { width:230px; background:white; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; flex-shrink:0; overflow-y:auto; box-shadow:2px 0 6px rgba(0,0,0,0.04); }
   .sidebar-inner { padding:16px 12px 8px; }
@@ -26,7 +28,6 @@
   .badge { font-size:10px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#94a3b8; font-weight:700; }
   .badge.active { background:#92400e; color:white; }
   .divider { height:1px; background:#f1f5f9; margin:8px 0; }
-  .src-box { padding:8px 10px; border-radius:8px; margin-bottom:6px; }
   .main { flex:1; overflow-y:auto; padding:24px 28px; background:#f1f5f9; }
   .hero { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px 28px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
   .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
@@ -53,7 +54,6 @@
 </style>
 </head>
 <body>
-
 <div class="header">
   <div class="logo">🎯</div>
   <div>
@@ -73,6 +73,7 @@
     <a href="/competitor.html" class="nav-link active">🎯 경쟁</a>
     <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
   </div>
+  <button class="send-btn" id="send-btn" onclick="sendToAnalysis()">🧠 분석창으로 보내기</button>
 </div>
 
 <div class="layout">
@@ -97,8 +98,6 @@
   </div>
 
   <div class="main">
-
-    <!-- 수집 설정 탭 -->
     <div id="tab-search">
       <div class="hero">
         <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">🎯 경쟁기관 동향 수집</h1>
@@ -113,7 +112,6 @@
         </div>
       </div>
       <div class="week-range" id="week-range"></div>
-
       <div class="card" style="margin-bottom:14px;">
         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">🏢 대형 훈련기관 <span style="font-size:11px;color:#94a3b8;font-weight:400;">13개</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-corp"></div>
@@ -126,19 +124,20 @@
         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">💻 에듀테크 <span style="font-size:11px;color:#94a3b8;font-weight:400;">14개</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-edu"></div>
       </div>
-
       <button class="btn-primary" id="search-btn" onclick="runSearch()">🎯 전체 수집 시작 — 31개 기관</button>
       <div id="progress-panel" style="display:none;margin-top:14px;" class="card"></div>
     </div>
 
-    <!-- 수집 결과 탭 -->
     <div id="tab-results" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
           <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:3px;">🎯 경쟁기관 동향 — 최근 7일</div>
           <div style="font-size:12px;color:#94a3b8;" id="result-meta"></div>
         </div>
-        <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#92400e;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#92400e;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
+          <button onclick="sendToAnalysis()" style="padding:7px 14px;background:#f59e0b;border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;font-weight:700;">🧠 분석창으로</button>
+        </div>
       </div>
       <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#92400e;">
@@ -146,7 +145,6 @@
       </div>
       <div id="org-grid" class="org-grid"></div>
     </div>
-
   </div>
 </div>
 
@@ -194,6 +192,22 @@ const TS = {
 };
 
 let allResults={}, currentFilter="all", tickerTimer=null, tickerIdx=0;
+
+/* ── 분석창으로 보내기 ── */
+function sendToAnalysis() {
+  const allNews = Object.values(allResults).flat();
+  if (!allNews.length) { alert("먼저 경쟁기관 동향을 수집해주세요!"); return; }
+  const text = ORGS
+    .filter(o => (allResults[o.id]||[]).length > 0)
+    .map(o => {
+      const items = allResults[o.id];
+      return `[${o.name}]\n` + items.map(it => `• ${it.title} (${it.pub})`).join('\n');
+    }).join('\n\n');
+  localStorage.setItem("vt_competitor", text);
+  localStorage.setItem("vt_competitor_ts", new Date().toLocaleString("ko-KR"));
+  alert(`✅ 경쟁기관 동향 ${allNews.length}건을 분석창에 전달했어요!\n분석창(analysis.html)으로 이동합니다.`);
+  location.href = "/analysis.html";
+}
 
 function init(){
   const now=new Date(), ago=new Date(now-7*24*60*60*1000);
@@ -308,6 +322,7 @@ async function runSearch(){
 
   document.getElementById("stat-news").textContent=totalNews;
   document.getElementById("result-count").textContent=totalNews+"건";
+  document.getElementById("send-btn").style.display="block";
   updateCounts();
   renderOrgNav();
   startTicker();
@@ -338,10 +353,10 @@ function renderGrid(){
 
   document.getElementById("result-meta").textContent=`총 ${totalNews}건 수집 · ${ORGS.length}개 기관`;
   document.getElementById("stats-row").innerHTML=[
-    {label:"수집 기사",   count:totalNews, bg:"#fffbeb", border:"#fde68a", color:"#92400e", icon:"📰"},
-    {label:"동향 감지",   count:active,    bg:"#f0fdf4", border:"#bbf7d0", color:"#059669", icon:"🟢"},
-    {label:"기사 없음",   count:noNews,    bg:"#fef2f2", border:"#fecaca", color:"#dc2626", icon:"⚪"},
-    {label:"3건 이상",    count:hot,       bg:"#eff6ff", border:"#bfdbfe", color:"#1e40af", icon:"🔥"},
+    {label:"수집 기사",  count:totalNews, bg:"#fffbeb", border:"#fde68a", color:"#92400e", icon:"📰"},
+    {label:"동향 감지",  count:active,    bg:"#f0fdf4", border:"#bbf7d0", color:"#059669", icon:"🟢"},
+    {label:"기사 없음",  count:noNews,    bg:"#fef2f2", border:"#fecaca", color:"#dc2626", icon:"⚪"},
+    {label:"3건 이상",   count:hot,       bg:"#eff6ff", border:"#bfdbfe", color:"#1e40af", icon:"🔥"},
   ].map(s=>`<div class="stat-card" style="background:${s.bg};border-color:${s.border};">
     <span style="font-size:22px;">${s.icon}</span>
     <div><div style="font-size:22px;font-weight:800;color:${s.color};line-height:1;">${s.count}</div><div style="font-size:11px;color:#475569;">${s.label}</div></div>
