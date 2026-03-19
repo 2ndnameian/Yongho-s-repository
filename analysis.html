@@ -213,7 +213,7 @@
 </div>
 
 <script>
-const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+const CLAUDE_API = "/api/analyze";
 const LS_KEYS = { policy:"vt_policy", news:"vt_news", market:"vt_market", competitor:"vt_competitor" };
 
 const ANALYSIS_ITEMS = [
@@ -392,12 +392,13 @@ function extractJSON(raw) {
 async function callClaude(prompt) {
   const res = await fetch(CLAUDE_API, {
     method:"POST",
-    headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
-    body:JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1500, messages:[{role:"user",content:prompt}] }),
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ prompt, max_tokens:1500 }),
   });
   if (!res.ok) throw new Error("API " + res.status);
   const data = await res.json();
-  return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+  if (data.error) throw new Error(data.error);
+  return data.text || "";
 }
 
 async function runAnalysis() {
