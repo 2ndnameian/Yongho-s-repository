@@ -181,7 +181,7 @@
 
 <script>
 const MARKET_API = "https://yongho-s-repository-git-main-2ndnameians-projects.vercel.app/api/market";
-const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+const CLAUDE_API = "/api/analyze";
 
 const ORG_GROUPS = [
   { id:"org_large",   label:"대형 직업훈련기관", icon:"🏛️", color:"#1e40af", bg:"#eff6ff", border:"#bfdbfe", keywords:["대형 직업훈련기관","직업훈련기관 신규","훈련기관 확장","훈련기관 협약","직업훈련 과정 개설"] },
@@ -462,11 +462,14 @@ async function analyzeNews(id){
   if(!news||analysisMap[id]) return;
   analysisMap[id]={loading:true}; renderResults();
   try{
-    const res=await fetch(CLAUDE_API,{method:"POST",headers:{"Content-Type":"application/json","anthropic-beta":"claude-ai-artifacts"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:900,
-        messages:[{role:"user",content:`대한민국 직업훈련 시장 전문가로서 훈련기관 운영자 관점의 경쟁 대응 전략을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})\n카테고리: ${news.groupLabel}`}]})});
+    const res=await fetch(CLAUDE_API,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:`대한민국 직업훈련 시장 전문가로서 훈련기관 운영자 관점의 경쟁 대응 전략을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})\n카테고리: ${news.groupLabel}`, max_tokens:900})
+    }));
     const data=await res.json();
-    const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+    if(data.error) throw new Error(data.error);
+    const text=(data.text||"").trim();
     let parsed=null;
     try{parsed=JSON.parse(text);}catch{}
     if(!parsed){try{const a=text.indexOf("{"),b=text.lastIndexOf("}");if(a!==-1&&b>a)parsed=JSON.parse(text.slice(a,b+1));}catch{}}
