@@ -141,7 +141,7 @@
       </div>
       <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:12px;color:#92400e;">
-        💡 기관 카드의 🔗 링크로 원문 확인 · 좌측 필터로 기관 유형별 조회
+        💡 기사 제목 또는 <strong>🔗 원문보기</strong> 클릭 시 언론사 원문이 새 탭으로 열립니다
       </div>
       <div id="org-grid" class="org-grid"></div>
     </div>
@@ -192,6 +192,15 @@ const TS = {
 };
 
 let allResults={}, currentFilter="all", tickerTimer=null, tickerIdx=0;
+
+/* ──────────────────────────────────────────
+   [수정 1] URL 정규화 헬퍼 함수
+   originallink 우선 사용 + &amp; 디코딩
+────────────────────────────────────────── */
+function cleanUrl(originallink, link) {
+  const raw = originallink || link || "";
+  return raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+}
 
 /* ── 분석창으로 보내기 ── */
 function sendToAnalysis() {
@@ -267,6 +276,11 @@ function isRecent(pub){
   try{ const d=new Date(pub); return isNaN(d)||((Date.now()-d.getTime())<7*24*60*60*1000); }catch{return true;}
 }
 
+/* ──────────────────────────────────────────
+   [수정 2] fetchOrg: originallink 우선 + cleanUrl 적용
+   기존: link: it.link||it.originallink||""
+   수정: link: cleanUrl(it.originallink, it.link)
+────────────────────────────────────────── */
 async function fetchOrg(org){
   try{
     const res=await fetch(`${NEWS_API}?keywords=${encodeURIComponent(org.name)}&display=10`);
@@ -277,7 +291,7 @@ async function fetchOrg(org){
       .slice(0,5)
       .map(it=>({
         title:(it.title||"").replace(/<[^>]+>/g,""),
-        link: it.link||it.originallink||"",
+        link: cleanUrl(it.originallink, it.link),   // ← 수정: originallink 우선
         pub:  fmtDate(it.pubDate),
         desc: (it.description||"").replace(/<[^>]+>/g,"").slice(0,80),
       }));
@@ -342,6 +356,12 @@ function updateCounts(){
   if(el) el.textContent=allCnt;
 }
 
+/* ──────────────────────────────────────────
+   [수정 3] renderGrid: 링크 렌더링 개선
+   - link가 있을 때만 <a> 태그 생성
+   - 카드 헤더에 "원문보기" 버튼 추가
+   - 빈 링크("#") 방지
+────────────────────────────────────────── */
 function renderGrid(){
   const grid=document.getElementById("org-grid");
   if(!grid) return;
@@ -365,13 +385,44 @@ function renderGrid(){
   grid.innerHTML=orgs.map(org=>{
     const items=allResults[org.id]||[];
     const s=TS[org.type];
+
     const newsHtml=items.length===0
-      ?`<div style="font-size:12px;color:#cbd5e1;padding:14px 0;text-align:center;">최근 7일 내 기사 없음</div>`
-      :items.map(it=>`
-        <div class="news-item">
-          <a href="${it.link}" target="_blank" rel="noopener">${it.title} <span style="font-size:10px;color:#92400e;">🔗</span></a>
-          <div class="news-meta">📅 ${it.pub}${it.desc?` · ${it.desc}`:""}</div>
-        </div>`).join("");
+      ? `<div style="font-size:12px;color:#cbd5e1;padding:14px 0;text-align:center;">최근 7일 내 기사 없음</div>`
+      : items.map(it=>{
+          /* ── 링크가 있을 때만 <a> 태그, 없으면 텍스트만 ── */
+          const hasLink = it.link && it.link.length > 0;
+          const titleEl = hasLink
+            ? `<a href="${it.link}" target="_blank" rel="noopener noreferrer"
+                  style="font-size:13px;color:#1e293b;text-decoration:none;line-height:1.55;display:block;margin-bottom:3px;"
+                  onmouseover="this.style.color='#92400e';this.style.textDecoration='underline';"
+                  onmouseout="this.style.color='#1e293b';this.style.textDecoration='none';">
+                ${it.title} <span style="font-size:10px;color:#92400e;">🔗</span>
+               </a>`
+            : `<div style="font-size:13px;color:#1e293b;line-height:1.55;margin-bottom:3px;">${it.title}</div>`;
+
+          const linkBtn = hasLink
+            ? `<a href="${it.link}" target="_blank" rel="noopener noreferrer"
+                  style="font-size:10px;color:#92400e;text-decoration:none;padding:1px 6px;
+                         background:#fffbeb;border:1px solid #fde68a;border-radius:3px;margin-left:6px;">
+                 원문보기
+               </a>`
+            : "";
+
+          return `<div class="news-item">
+            ${titleEl}
+            <div class="news-meta">📅 ${it.pub}${it.desc?` · ${it.desc}`:""}${linkBtn}</div>
+          </div>`;
+        }).join("");
+
+    /* 기관 카드 헤더에 "최신기사 원문" 바로가기 추가 (기사가 있고 첫번째 링크가 있을 때) */
+    const firstLink = items.find(it=>it.link)?.link || "";
+    const headerLinkBtn = firstLink
+      ? `<a href="${firstLink}" target="_blank" rel="noopener noreferrer"
+            style="font-size:10px;color:${s.color};text-decoration:none;padding:2px 8px;
+                   background:${s.bg};border:1px solid ${s.border};border-radius:5px;font-weight:600;">
+           🔗 최신기사
+         </a>`
+      : "";
 
     return `<div class="org-card" id="org-${org.id}">
       <div class="org-header" style="background:${s.hbg};">
@@ -382,7 +433,10 @@ function renderGrid(){
             <div style="font-size:10px;color:${s.color};font-weight:600;">${s.label}</div>
           </div>
         </div>
-        <span style="font-size:11px;padding:3px 10px;background:${s.bg};border:1px solid ${s.border};border-radius:10px;color:${s.color};font-weight:700;">${items.length}건</span>
+        <div style="display:flex;align-items:center;gap:7px;">
+          ${headerLinkBtn}
+          <span style="font-size:11px;padding:3px 10px;background:${s.bg};border:1px solid ${s.border};border-radius:10px;color:${s.color};font-weight:700;">${items.length}건</span>
+        </div>
       </div>
       <div class="org-body">${newsHtml}</div>
     </div>`;
