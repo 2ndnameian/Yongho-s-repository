@@ -55,13 +55,21 @@
   .filter-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px; border:none; cursor:pointer; margin-bottom:1px; background:transparent; color:#64748b; font-size:11px; text-align:left; font-family:inherit; }
   .filter-btn.active { background:#eff6ff; color:#1e40af; font-weight:600; }
   .filter-btn:hover:not(.active) { background:#f8fafc; }
-  .week-range { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 14px; margin-bottom:14px; font-size:12px; color:#1e40af; font-weight:600; }
   .group-tab { display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:8px; flex-shrink:0; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid #e2e8f0; background:white; color:#64748b; white-space:nowrap; }
   .group-tab.active { color:white; border-color:transparent; }
   .section-label { font-size:11px; padding:3px 10px; border-radius:5px; font-weight:700; display:inline-block; margin-bottom:8px; }
   textarea { width:100%; min-height:68px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; color:#1e293b; font-size:12px; outline:none; resize:vertical; line-height:1.6; font-family:inherit; }
   textarea:focus { border-color:#93c5fd; }
   input[type=text] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; }
+
+  /* ── 날짜 선택 UI 스타일 ── */
+  .date-range-box { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .date-preset-btn { padding:6px 14px; border-radius:7px; border:1px solid #e2e8f0; background:white; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .date-preset-btn.active { background:#1e40af; color:white; border-color:#1e40af; }
+  .date-preset-btn:hover:not(.active) { background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
+  input[type=date] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:6px 10px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; cursor:pointer; }
+  input[type=date]:focus { border-color:#93c5fd; }
+  .date-range-display { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 14px; font-size:12px; color:#1e40af; font-weight:600; }
 </style>
 </head>
 <body>
@@ -69,7 +77,7 @@
   <div class="logo">📡</div>
   <div>
     <div class="header-title">직업훈련 뉴스 인텔리전스</div>
-    <div class="header-sub">네이버 뉴스 실시간 수집 · 최근 7일</div>
+    <div class="header-sub" id="header-sub">네이버 뉴스 실시간 수집 · 최근 7일</div>
   </div>
   <div class="ticker-wrap" id="ticker">
     <div style="display:flex;align-items:center;gap:8px;">
@@ -123,10 +131,36 @@
     <div id="tab-search">
       <div class="hero">
         <h1 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:6px;">🔍 실시간 뉴스 수집</h1>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:14px;">키워드를 선택하면 <strong style="color:#1e40af;">네이버 뉴스</strong>에서 최근 7일 실제 기사를 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#3b82f6;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:14px;">키워드를 선택하면 <strong style="color:#1e40af;">네이버 뉴스</strong>에서 기간 내 실제 기사를 수집합니다.<br>수집 후 각 카드에서 <strong style="color:#3b82f6;">🤖 AI 분석</strong>을 개별 실행하세요.</p>
         <div style="display:flex;gap:7px;flex-wrap:wrap;" id="group-summary"></div>
       </div>
-      <div class="week-range" id="week-range"></div>
+
+      <!-- ══════════════════════════════
+           📅 수집 기간 설정 UI
+      ══════════════════════════════ -->
+      <div class="date-range-box">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">📅 수집 기간 설정</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="date-preset-btn active" onclick="setDatePreset('7d')"  id="preset-7d">최근 1주일</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('1m')"  id="preset-1m">최근 1개월</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('3m')"  id="preset-3m">최근 3개월</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('custom')" id="preset-custom">📆 기간 직접 선택</button>
+        </div>
+        <!-- 기간 직접 선택 입력 (기본 숨김) -->
+        <div id="custom-date-wrap" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <label style="font-size:12px;color:#64748b;font-weight:600;">시작일</label>
+          <input type="date" id="date-from" onchange="onCustomDateChange()">
+          <span style="font-size:13px;color:#94a3b8;">~</span>
+          <label style="font-size:12px;color:#64748b;font-weight:600;">종료일</label>
+          <input type="date" id="date-to" onchange="onCustomDateChange()">
+          <span style="font-size:11px;color:#94a3b8;">(종료일 포함)</span>
+        </div>
+        <div class="date-range-display" id="date-range-display">
+          📅 수집 기간: 계산 중...
+        </div>
+      </div>
+      <!-- ══════════════════════════════ -->
+
       <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #e2e8f0;padding-bottom:12px;overflow-x:auto;" id="group-tabs"></div>
       <div id="keyword-panel"></div>
       <div class="card">
@@ -140,7 +174,7 @@
     <div id="tab-results" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
-          <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:3px;">📋 수집 결과 — 최근 7일</div>
+          <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:3px;">📋 수집 결과</div>
           <div style="font-size:12px;color:#94a3b8;" id="result-meta"></div>
         </div>
         <div style="display:flex;gap:8px;">
@@ -189,17 +223,99 @@ const URGENCY = {
   low:     { label:"참고", color:"#64748b", bg:"#f8fafc", border:"#e2e8f0", text:"#475569" },
 };
 
-let selectedKws={}, activeGroup="vocational", allResults={}, analysisMap={}, selectedNews=null, filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
+let selectedKws={}, activeGroup="vocational", allResults={}, analysisMap={}, selectedNews=null,
+    filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
+let dateFrom=null, dateTo=null, datePreset="7d"; // ← 날짜 상태
+
 selectedKws = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
 
-/* ──────────────────────────────────────────
-   [수정 1] URL 정규화 헬퍼 함수 추가
-   네이버 API의 &amp; 인코딩 제거 + originallink 우선 사용
-────────────────────────────────────────── */
+/* ── URL 정규화 ── */
 function cleanUrl(originallink, link) {
   const raw = originallink || link || "";
-  return raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+  return raw.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").trim();
 }
+
+/* ══════════════════════════════════════════
+   📅 날짜 관련 함수들
+══════════════════════════════════════════ */
+function toYMD(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function toKoDate(d) {
+  return d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
+}
+function setDatePreset(preset) {
+  datePreset = preset;
+  ["7d","1m","3m","custom"].forEach(p => {
+    document.getElementById("preset-"+p).classList.toggle("active", p===preset);
+  });
+  const wrap = document.getElementById("custom-date-wrap");
+  const now = new Date();
+  now.setHours(23,59,59,999);
+  dateTo = new Date(now);
+
+  if (preset === "7d") {
+    dateFrom = new Date(now); dateFrom.setDate(dateFrom.getDate()-6); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "1m") {
+    dateFrom = new Date(now); dateFrom.setMonth(dateFrom.getMonth()-1); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "3m") {
+    dateFrom = new Date(now); dateFrom.setMonth(dateFrom.getMonth()-3); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "custom") {
+    wrap.style.display = "flex";
+    // 기본값: 최근 7일로 세팅
+    const defTo = new Date(); defTo.setHours(23,59,59,999);
+    const defFrom = new Date(); defFrom.setDate(defFrom.getDate()-6); defFrom.setHours(0,0,0,0);
+    document.getElementById("date-from").value = toYMD(defFrom);
+    document.getElementById("date-to").value   = toYMD(defTo);
+    dateFrom = defFrom; dateTo = defTo;
+  }
+  updateDateDisplay();
+  updateHeaderSub();
+}
+
+function onCustomDateChange() {
+  const fromVal = document.getElementById("date-from").value;
+  const toVal   = document.getElementById("date-to").value;
+  if (!fromVal || !toVal) return;
+  const from = new Date(fromVal); from.setHours(0,0,0,0);
+  const to   = new Date(toVal);   to.setHours(23,59,59,999);
+  if (from > to) {
+    document.getElementById("date-range-display").innerHTML =
+      `<span style="color:#dc2626;">⚠️ 시작일이 종료일보다 늦습니다. 날짜를 다시 확인해주세요.</span>`;
+    dateFrom = null; dateTo = null; return;
+  }
+  dateFrom = from; dateTo = to;
+  updateDateDisplay();
+  updateHeaderSub();
+}
+
+function updateDateDisplay() {
+  const el = document.getElementById("date-range-display");
+  if (!dateFrom || !dateTo) return;
+  const days = Math.round((dateTo-dateFrom)/(1000*60*60*24))+1;
+  const label = datePreset==="7d"?"최근 1주일":datePreset==="1m"?"최근 1개월":datePreset==="3m"?"최근 3개월":"직접 선택";
+  el.innerHTML = `📅 수집 기간: <strong>${toKoDate(dateFrom)}</strong> ~ <strong>${toKoDate(dateTo)}</strong> <span style="font-size:11px;color:#475569;margin-left:4px;">(${label} · ${days}일)</span>`;
+}
+
+function updateHeaderSub() {
+  if (!dateFrom || !dateTo) return;
+  const label = datePreset==="7d"?"최근 1주일":datePreset==="1m"?"최근 1개월":datePreset==="3m"?"최근 3개월":"직접 선택";
+  document.getElementById("header-sub").textContent = `네이버 뉴스 실시간 수집 · ${label}`;
+}
+
+/* 기사 pubDate가 선택 기간 내에 있는지 확인 */
+function isInDateRange(pubDateStr) {
+  if (!dateFrom || !dateTo) return true; // 날짜 미설정 시 전체 허용
+  try {
+    const d = new Date(pubDateStr);
+    if (isNaN(d)) return true;
+    return d >= dateFrom && d <= dateTo;
+  } catch { return true; }
+}
+/* ══════════════════════════════════════════ */
 
 /* ── 분석창으로 보내기 ── */
 function sendToAnalysis() {
@@ -213,9 +329,7 @@ function sendToAnalysis() {
 }
 
 function init() {
-  const now=new Date(), ago=new Date(now-7*24*60*60*1000);
-  const fmt=d=>d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
-  document.getElementById("week-range").innerHTML=`📅 수집 기간: <strong>${fmt(ago)}</strong> ~ <strong>${fmt(now)}</strong>`;
+  setDatePreset("7d"); // 기본값: 최근 1주일
   renderGroupTabs(); renderKeywordPanel(); updateKwCount();
 }
 
@@ -281,6 +395,17 @@ function showTab(id){
 }
 
 async function runSearch(){
+  // 날짜 유효성 검사
+  if (!dateFrom || !dateTo) {
+    alert("수집 기간을 올바르게 설정해주세요.");
+    return;
+  }
+  if (datePreset === "custom") {
+    const fromVal = document.getElementById("date-from").value;
+    const toVal   = document.getElementById("date-to").value;
+    if (!fromVal || !toVal) { alert("시작일과 종료일을 모두 입력해주세요."); return; }
+  }
+
   const activeGroups=GROUPS.filter(g=>(selectedKws[g.id]||[]).length>0);
   if(!activeGroups.length) return;
   const btn=document.getElementById("search-btn");
@@ -314,7 +439,7 @@ async function runSearch(){
           </div>`;
         }).join("")}
       </div>
-      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집: ${Object.values(allResults).flat().length}건</div>`:""}`;
+      ${Object.values(allResults).flat().length>0?`<div style="margin-top:12px;padding:9px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;font-weight:600;">📥 현재까지 수집(기간 필터 적용): ${Object.values(allResults).flat().length}건</div>`:""}`;
   };
 
   for(let gi=0;gi<activeGroups.length;gi++){
@@ -326,23 +451,19 @@ async function runSearch(){
     steps[gi].status="running";
     renderProgress(Math.round((gi/total)*100),steps);
     try{
-      const res=await fetch(`${NEWS_API}?keywords=${encodeURIComponent(allKws.join(","))}`);
+      // 네이버 API는 display=100으로 최대 수집 후 프론트에서 날짜 필터링
+      const res=await fetch(`${NEWS_API}?keywords=${encodeURIComponent(allKws.join(","))}&display=100`);
       if(!res.ok) throw new Error("HTTP "+res.status);
       const items=await res.json();
       if(Array.isArray(items)&&items.length>0){
-        allResults[group.id]=items.slice(0,6).map((item,i)=>{
+        // ★ 날짜 범위 필터링 적용
+        const filtered = items.filter(item => isInDateRange(item.pubDate));
+        allResults[group.id]=filtered.slice(0,10).map((item,i)=>{
           const title=(item.title||"").replace(/<[^>]+>/g,"");
           const summary=(item.description||"").replace(/<[^>]+>/g,"");
-
-          /* ──────────────────────────────────────────
-             [수정 2] URL: originallink 우선 사용 + &amp; 디코딩
-             네이버 API는 link(네이버 내부)와 originallink(언론사 원문) 두 가지를 줌.
-             originallink가 실제 기사 원문으로 연결되므로 이것을 우선 사용.
-          ────────────────────────────────────────── */
           const url = cleanUrl(item.originallink, item.link);
-
           let source="네이버뉴스";
-          try{ source=new URL(url || item.link).hostname.replace("www.",""); }catch{}
+          try{source=new URL(url||item.link).hostname.replace("www.","");}catch{}
           const date=(()=>{try{const d=new Date(item.pubDate);return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{return "";}})();
           const urgency=title.includes("긴급")||title.includes("폐지")||title.includes("중단")?"critical":title.includes("확대")||title.includes("개편")||title.includes("신규")?"high":title.includes("모집")||title.includes("공고")?"medium":"low";
           return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url,date,urgency,tags:[group.label]};
@@ -367,7 +488,11 @@ function renderResults(){
   const q=document.getElementById("search-filter")?.value||"";
   const filtered=allNews.filter(n=>(filterGroup==="all"||n.groupId===filterGroup)&&(filterUrgency==="all"||n.urgency===filterUrgency)&&(!q||n.title.includes(q)||n.summary.includes(q)));
   const el=document.getElementById("result-meta");
-  if(el) el.textContent=`총 ${allNews.length}건 수집됨`;
+
+  // 기간 표시 문구 생성
+  const label = datePreset==="7d"?"최근 1주일":datePreset==="1m"?"최근 1개월":datePreset==="3m"?"최근 3개월":"직접 선택";
+  if(el) el.textContent=`총 ${allNews.length}건 수집됨 (${label})`;
+
   const crit=allNews.filter(n=>n.urgency==="critical").length;
   const high=allNews.filter(n=>n.urgency==="high").length;
   const analyzed=Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error&&!analysisMap[k]?.loading).length;
@@ -402,12 +527,6 @@ function renderResults(){
 function renderNewsCard(news){
   const u=URGENCY[news.urgency]||URGENCY.medium;
   const ai=analysisMap[news.id];
-
-  /* ──────────────────────────────────────────
-     [수정 3] 카드 링크: url이 있을 때만 <a> 태그 생성
-     제목 클릭 = 새 탭에서 원문 열기
-     "원문보기" 버튼도 별도 추가
-  ────────────────────────────────────────── */
   const titleHtml = news.url
     ? `<a href="${news.url}" target="_blank" rel="noopener noreferrer"
           style="color:#1e293b;text-decoration:none;"
@@ -416,19 +535,13 @@ function renderNewsCard(news){
          ${news.title} <span style="font-size:11px;color:#3b82f6;">🔗</span>
        </a>`
     : news.title;
-
   return `<div class="news-card">
     <div class="news-header" style="background:${u.bg};">
       <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
         <span class="urgency-badge" style="background:white;border:1px solid ${u.border};color:${u.text};">${u.label}</span>
         <span style="font-size:11px;color:#64748b;">📅 ${news.date}</span>
         <span style="font-size:11px;color:#94a3b8;">· ${news.source}</span>
-        ${news.url
-          ? `<a href="${news.url}" target="_blank" rel="noopener noreferrer"
-                style="font-size:11px;color:#1e40af;font-weight:600;text-decoration:none;padding:2px 8px;background:white;border:1px solid #bfdbfe;border-radius:5px;">
-               🔗 원문보기
-             </a>`
-          : ""}
+        ${news.url?`<a href="${news.url}" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:#1e40af;font-weight:600;text-decoration:none;padding:2px 8px;background:white;border:1px solid #bfdbfe;border-radius:5px;">🔗 원문보기</a>`:""}
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
         ${!ai?`<button onclick="analyzeNews('${news.id}')" style="font-size:11px;padding:4px 10px;background:white;border:1px solid #bfdbfe;border-radius:5px;color:#1e40af;cursor:pointer;font-weight:600;">🤖 AI 분석</button>`:""}
@@ -469,11 +582,8 @@ async function analyzeNews(id){
   if(!news||analysisMap[id]) return;
   analysisMap[id]={loading:true}; renderResults();
   try{
-    const res=await fetch(CLAUDE_API,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})`, max_tokens:900})
-    });
+    const res=await fetch(CLAUDE_API,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:`대한민국 직업훈련 정책 전문 컨설턴트로서 훈련기관 운영자 관점의 대응 방안을 분석합니다.\nJSON만 출력(백틱 금지): {"risk_level":"높음|보통|낮음","key_insight":"","immediate_actions":["","",""],"mid_actions":["",""],"opportunity":"","warning":""}\n\n제목: ${news.title}\n요약: ${news.summary}\n출처: ${news.source} (${news.date})`,max_tokens:900})});
     const data=await res.json();
     if(data.error) throw new Error(data.error);
     const text=(data.text||"").trim();
@@ -501,27 +611,12 @@ function openDetail(id){
       <span class="urgency-badge" style="background:${u.bg};border:1px solid ${u.border};color:${u.text};">${u.label}</span>
       <span style="font-size:11px;padding:3px 9px;background:${news.groupBg};border:1px solid ${news.groupBorder};border-radius:5px;color:${news.groupColor};font-weight:600;">${news.groupLabel}</span>
       <span style="font-size:12px;color:#64748b;">${news.date} · ${news.source}</span>
-      ${news.url
-        ? `<a href="${news.url}" target="_blank" rel="noopener noreferrer"
-              style="font-size:12px;color:white;font-weight:700;text-decoration:none;
-                     padding:5px 14px;background:#1e40af;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
-             🔗 원문 바로가기
-           </a>`
-        : `<span style="font-size:12px;color:#94a3b8;">원문 링크 없음</span>`}
+      ${news.url?`<a href="${news.url}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:white;font-weight:700;text-decoration:none;padding:5px 14px;background:#1e40af;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">🔗 원문 바로가기</a>`:`<span style="font-size:12px;color:#94a3b8;">원문 링크 없음</span>`}
     </div>
     <div class="card" style="margin-bottom:14px;">
       <div style="font-size:16px;font-weight:800;color:#1e293b;line-height:1.5;margin-bottom:10px;">${news.title}</div>
       <p style="font-size:13px;color:#475569;line-height:1.7;">${news.summary}</p>
-      ${news.url
-        ? `<div style="margin-top:12px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
-             <span style="font-size:12px;color:#1e40af;font-weight:600;">📰 출처: ${news.source}</span>
-             <a href="${news.url}" target="_blank" rel="noopener noreferrer"
-                style="font-size:12px;color:#1e40af;font-weight:700;text-decoration:none;
-                       padding:4px 12px;background:white;border:1px solid #bfdbfe;border-radius:5px;">
-               🔗 원문 열기 →
-             </a>
-           </div>`
-        : ""}
+      ${news.url?`<div style="margin-top:12px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:#1e40af;font-weight:600;">📰 출처: ${news.source}</span><a href="${news.url}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#1e40af;font-weight:700;text-decoration:none;padding:4px 12px;background:white;border:1px solid #bfdbfe;border-radius:5px;">🔗 원문 열기 →</a></div>`:""}
     </div>
     <div class="card" style="border:1px solid #bfdbfe;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
