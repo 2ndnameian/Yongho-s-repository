@@ -51,6 +51,15 @@
   .week-range { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 14px; margin-bottom:14px; font-size:12px; color:#92400e; font-weight:600; }
   .stat-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
   .org-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; }
+
+  /* ── 날짜 선택 UI 스타일 ── */
+  .date-range-box { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .date-preset-btn { padding:6px 14px; border-radius:7px; border:1px solid #e2e8f0; background:white; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .date-preset-btn.active { background:#92400e; color:white; border-color:#92400e; }
+  .date-preset-btn:hover:not(.active) { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+  input[type=date] { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:6px 10px; color:#1e293b; font-size:12px; outline:none; font-family:inherit; cursor:pointer; }
+  input[type=date]:focus { border-color:#fde68a; }
+  .date-range-display { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 14px; font-size:12px; color:#92400e; font-weight:600; }
 </style>
 </head>
 <body>
@@ -112,6 +121,30 @@
         </div>
       </div>
       <div class="week-range" id="week-range"></div>
+
+      <!-- ══════════════════════════════
+           📅 수집 기간 설정 UI
+      ══════════════════════════════ -->
+      <div class="date-range-box">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">📅 수집 기간 설정</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="date-preset-btn active" onclick="setDatePreset('7d')"     id="preset-7d">최근 1주일</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('1m')"     id="preset-1m">최근 1개월</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('3m')"     id="preset-3m">최근 3개월</button>
+          <button class="date-preset-btn"        onclick="setDatePreset('custom')" id="preset-custom">📆 기간 직접 선택</button>
+        </div>
+        <div id="custom-date-wrap" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <label style="font-size:12px;color:#64748b;font-weight:600;">시작일</label>
+          <input type="date" id="date-from" onchange="onCustomDateChange()">
+          <span style="font-size:13px;color:#94a3b8;">~</span>
+          <label style="font-size:12px;color:#64748b;font-weight:600;">종료일</label>
+          <input type="date" id="date-to"   onchange="onCustomDateChange()">
+          <span style="font-size:11px;color:#94a3b8;">(종료일 포함)</span>
+        </div>
+        <div class="date-range-display" id="date-range-display">📅 수집 기간: 계산 중...</div>
+      </div>
+      <!-- ══════════════════════════════ -->
+
       <div class="card" style="margin-bottom:14px;">
         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">🏢 대형 훈련기관 <span style="font-size:11px;color:#94a3b8;font-weight:400;">13개</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;" id="list-corp"></div>
@@ -191,6 +224,73 @@ const TS = {
   edu: {label:"에듀테크",     bg:"#f0fdf4", border:"#bbf7d0", color:"#065f46", hbg:"#dcfce7"},
 };
 
+
+/* ══════════════════════════════════════════
+   📅 날짜 관련 함수
+══════════════════════════════════════════ */
+let dateFrom=null, dateTo=null, datePreset="7d";
+
+function toYMD(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function toKoDate(d) {
+  return d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
+}
+function setDatePreset(preset) {
+  datePreset = preset;
+  ["7d","1m","3m","custom"].forEach(p => {
+    document.getElementById("preset-"+p).classList.toggle("active", p===preset);
+  });
+  const wrap = document.getElementById("custom-date-wrap");
+  const now = new Date(); now.setHours(23,59,59,999);
+  dateTo = new Date(now);
+  if (preset === "7d") {
+    dateFrom = new Date(now); dateFrom.setDate(dateFrom.getDate()-6); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "1m") {
+    dateFrom = new Date(now); dateFrom.setMonth(dateFrom.getMonth()-1); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "3m") {
+    dateFrom = new Date(now); dateFrom.setMonth(dateFrom.getMonth()-3); dateFrom.setHours(0,0,0,0);
+    wrap.style.display = "none";
+  } else if (preset === "custom") {
+    wrap.style.display = "flex";
+    const defTo = new Date(); defTo.setHours(23,59,59,999);
+    const defFrom = new Date(); defFrom.setDate(defFrom.getDate()-6); defFrom.setHours(0,0,0,0);
+    document.getElementById("date-from").value = toYMD(defFrom);
+    document.getElementById("date-to").value   = toYMD(defTo);
+    dateFrom = defFrom; dateTo = defTo;
+  }
+  updateDateDisplay();
+}
+function onCustomDateChange() {
+  const fromVal = document.getElementById("date-from").value;
+  const toVal   = document.getElementById("date-to").value;
+  if (!fromVal || !toVal) return;
+  const from = new Date(fromVal); from.setHours(0,0,0,0);
+  const to   = new Date(toVal);   to.setHours(23,59,59,999);
+  if (from > to) {
+    document.getElementById("date-range-display").innerHTML =
+      `<span style="color:#dc2626;">⚠️ 시작일이 종료일보다 늦습니다. 날짜를 다시 확인해주세요.</span>`;
+    dateFrom = null; dateTo = null; return;
+  }
+  dateFrom = from; dateTo = to;
+  updateDateDisplay();
+}
+function updateDateDisplay() {
+  const el = document.getElementById("date-range-display");
+  if (!dateFrom || !dateTo) return;
+  const days = Math.round((dateTo-dateFrom)/(1000*60*60*24))+1;
+  const label = datePreset==="7d"?"최근 1주일":datePreset==="1m"?"최근 1개월":datePreset==="3m"?"최근 3개월":"직접 선택";
+  el.innerHTML = `📅 수집 기간: <strong>${toKoDate(dateFrom)}</strong> ~ <strong>${toKoDate(dateTo)}</strong> <span style="font-size:11px;color:#475569;margin-left:4px;">($경쟁 · ${days}일)</span>`;
+}
+function isInDateRange(pubDateStr) {
+  if (!dateFrom || !dateTo) return true;
+  try { const d = new Date(pubDateStr); if (isNaN(d)) return true; return d >= dateFrom && d <= dateTo; }
+  catch { return true; }
+}
+/* ══════════════════════════════════════════ */
+
 let allResults={}, currentFilter="all", tickerTimer=null, tickerIdx=0;
 
 /* ──────────────────────────────────────────
@@ -219,6 +319,7 @@ function sendToAnalysis() {
 }
 
 function init(){
+  setDatePreset("7d");
   const now=new Date(), ago=new Date(now-7*24*60*60*1000);
   const fmt=d=>d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"});
   document.getElementById("week-range").innerHTML=`📅 수집 기간: <strong>${fmt(ago)}</strong> ~ <strong>${fmt(now)}</strong>`;
@@ -287,7 +388,7 @@ async function fetchOrg(org){
     if(!res.ok) return [];
     const data=await res.json();
     return (Array.isArray(data)?data:[])
-      .filter(it=>isRecent(it.pubDate))
+      .filter(it=>isInDateRange(it.pubDate))
       .slice(0,5)
       .map(it=>({
         title:(it.title||"").replace(/<[^>]+>/g,""),
