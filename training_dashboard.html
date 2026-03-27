@@ -193,10 +193,14 @@
         </select>
       </div>
       <div class="filter-group">
-        <label>국기직종명</label>
-        <select id="kdcFilter" onchange="applyFilters()">
-          <option value="">전체</option>
-        </select>
+        <label>국기직종명 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택)</span></label>
+        <div style="position:relative;">
+          <input type="text" id="kdcSearchInput" placeholder="직종명 입력..."
+            style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;box-sizing:border-box;"
+            oninput="renderKdcDropdown()" onfocus="showKdcDropdown()">
+          <div id="kdcDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+        </div>
+        <div id="kdcSelected" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:4px;"></div>
       </div>
       <div class="filter-group">
         <label>NCS 코드 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택 · 검색)</span></label>
@@ -293,6 +297,10 @@
       <button id="subtab-btn-region" onclick="switchSubtab('region')"
         style="padding:8px 18px;border-radius:7px;border:1px solid #e2e8f0;font-size:13px;font-weight:600;cursor:pointer;background:#ffffff;color:#64748b;">
         🏢 지역별 기관 상세
+      </button>
+      <button id="subtab-btn-yoy" onclick="switchSubtab('yoy')"
+        style="padding:8px 18px;border-radius:7px;border:1px solid #e2e8f0;font-size:13px;font-weight:600;cursor:pointer;background:#ffffff;color:#64748b;">
+        📈 직종별 전년 대비
       </button>
       <button onclick="exportAnalysis2Excel()"
         style="margin-left:auto;padding:8px 18px;border-radius:7px;border:1px solid var(--accent2);font-size:13px;font-weight:600;cursor:pointer;background:#f0fdf4;color:var(--accent2);display:flex;align-items:center;gap:6px;">
@@ -394,6 +402,48 @@
           </table>
         </div>
         <div class="pagination" id="pag-region"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ★ 직종별 전년 대비 서브탭 -->
+  <div id="subtab-yoy" style="display:none;">
+    <!-- 25년 기준 파일 업로드 + 기간 설정 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:0 0 auto;">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;letter-spacing:.04em;">기준연도(전년) 파일 업로드</div>
+        <label style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:#f0fdf4;border:1px solid var(--accent2);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--accent2);">
+          📂 엑셀 선택
+          <input type="file" id="yoyFileInput" accept=".xlsx" style="display:none" onchange="handleYoyFile(this.files[0])">
+        </label>
+        <span id="yoyFileName" style="font-size:11px;color:var(--text3);margin-left:8px;"></span>
+      </div>
+      <div style="flex:1;min-width:260px;">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;letter-spacing:.04em;">기준연도 표시명</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="yoyLabelPrev" value="25년" placeholder="예: 25년"
+            style="width:72px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
+          <span style="color:var(--text3);">→ 비교연도:</span>
+          <input type="text" id="yoyLabelCurr" value="26년" placeholder="예: 26년"
+            style="width:72px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
+          <button class="btn btn-primary" onclick="renderYoY()" style="font-size:12px;padding:7px 14px;">🔄 분석 실행</button>
+          <button onclick="exportYoyExcel()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--accent2);font-size:12px;font-weight:600;cursor:pointer;background:#f0fdf4;color:var(--accent2);">📥 엑셀 다운로드</button>
+        </div>
+      </div>
+      <div id="yoyStatus" style="font-size:12px;color:var(--text3);align-self:flex-end;"></div>
+    </div>
+
+    <!-- 전년 대비 테이블 -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h4 id="yoyTitle">직종별 운영기관 성과 평균 현황 · 전년 대비</h4>
+        <span class="count" id="yoyCount"></span>
+      </div>
+      <div class="table-scroll" id="yoyTableScroll">
+        <table id="yoyTable">
+          <thead id="yoyThead"></thead>
+          <tbody id="yoyTbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -552,9 +602,10 @@ function initUI() {
   sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
 
   const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(v => v != null && v !== ''))].sort();
-  const kf = document.getElementById('kdcFilter');
-  kf.innerHTML = '<option value="">전체</option>';
-  kdcNames.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kf.appendChild(o); });
+  window.KDC_LIST = kdcNames;
+  window.selectedKdcNames = new Set();
+  renderKdcDropdown();
+  renderKdcSelected();
 
   const ncsMap = {};
   RAW.forEach(r => {
@@ -575,10 +626,409 @@ function initUI() {
   document.addEventListener('click', e => {
     if (!e.target.closest('.filter-group')) {
       document.getElementById('ncsDropdown').style.display = 'none';
+      document.getElementById('kdcDropdown').style.display = 'none';
     }
   });
 
   applyFilters();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 국기직종명 다중선택 드롭다운
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function showKdcDropdown() {
+  document.getElementById('kdcDropdown').style.display = 'block';
+  renderKdcDropdown();
+}
+
+function renderKdcDropdown() {
+  const q    = (document.getElementById('kdcSearchInput').value || '').toLowerCase().trim();
+  const list = window.KDC_LIST || [];
+  const sel  = window.selectedKdcNames || new Set();
+  const filtered = q ? list.filter(n => n.toLowerCase().includes(q)) : list;
+  const dd = document.getElementById('kdcDropdown');
+  dd.style.display = 'block';
+  if (!filtered.length) {
+    dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
+    return;
+  }
+  const hdr = `<div style="padding:6px 12px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;background:#f8fafc;">
+    <span style="font-size:11px;color:var(--text3);">${filtered.length}개</span>
+    <button onclick="selectAllKdc()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
+    <button onclick="clearAllKdc()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
+  </div>`;
+  const items = filtered.map(n => {
+    const checked = sel.has(n);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;background:${checked?'rgba(79,142,247,.1)':'transparent'};"
+      onmouseover="this.style.background='${checked?'rgba(79,142,247,.18)':'var(--surface2)'}'"
+      onmouseout="this.style.background='${checked?'rgba(79,142,247,.1)':'transparent'}'">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleKdc('${n.replace(/'/g,"\\'")}',this.checked)"
+        style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <span style="font-size:12px;color:${checked?'var(--accent)':'var(--text)'};">${n}</span>
+    </label>`;
+  }).join('');
+  dd.innerHTML = hdr + `<div style="max-height:180px;overflow-y:auto;">${items}</div>`;
+}
+
+function selectAllKdc() {
+  const q = (document.getElementById('kdcSearchInput').value||'').toLowerCase().trim();
+  const list = window.KDC_LIST||[];
+  (q ? list.filter(n=>n.toLowerCase().includes(q)) : list).forEach(n => window.selectedKdcNames.add(n));
+  renderKdcDropdown(); renderKdcSelected(); applyFilters();
+}
+function clearAllKdc() {
+  const q = (document.getElementById('kdcSearchInput').value||'').toLowerCase().trim();
+  const list = window.KDC_LIST||[];
+  (q ? list.filter(n=>n.toLowerCase().includes(q)) : list).forEach(n => window.selectedKdcNames.delete(n));
+  renderKdcDropdown(); renderKdcSelected(); applyFilters();
+}
+function toggleKdc(name, checked) {
+  if (!window.selectedKdcNames) window.selectedKdcNames = new Set();
+  if (checked) window.selectedKdcNames.add(name); else window.selectedKdcNames.delete(name);
+  renderKdcDropdown(); renderKdcSelected(); applyFilters();
+}
+function removeKdc(name) {
+  window.selectedKdcNames && window.selectedKdcNames.delete(name);
+  renderKdcDropdown(); renderKdcSelected(); applyFilters();
+}
+function renderKdcSelected() {
+  const sel = window.selectedKdcNames || new Set();
+  const el  = document.getElementById('kdcSelected');
+  if (!el) return;
+  if (sel.size === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = [...sel].map(n =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(5,150,105,.12);
+      border:1px solid rgba(5,150,105,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent2);">
+      ${n}
+      <span onclick="removeKdc('${n.replace(/'/g,"\\'")}'')" style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
+    </span>`
+  ).join('');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 전년 대비 (YoY) 기능
+// YOY_PREV: [{region, ncs, score, cnt, sat, recruit, complete, employ, emp_rate, comp_rate}]
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let YOY_PREV = [];
+
+// ── 전년 고정값 파일 파서 (요약본 구조) ──────────────────
+function handleYoyFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      // 시트 우선순위: '직종별 현황' 포함 시트 → 첫 번째 시트
+      const sheetName = wb.SheetNames.find(s => s.includes('직종별')) || wb.SheetNames[0];
+      const ws   = wb.Sheets[sheetName];
+      const raw  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+      // 헤더 행 탐지 (순번·지역·직종명 포함 행)
+      let dataStart = -1;
+      for (let i = 0; i < raw.length; i++) {
+        const row = raw[i].map(v => (v||'').toString());
+        if (row.some(v => v.includes('직종명')) && row.some(v => v.includes('지역'))) {
+          dataStart = i + 2; // 헤더 2행(대분류+소분류) 건너뜀
+          break;
+        }
+      }
+      if (dataStart < 0) dataStart = 4; // 폴백: 행4부터
+
+      // 컬럼 인덱스 자동 탐지
+      // 구조: [순번, 연번, 지역, 직종명, 승인24, 승인25, 성과배점, 개설수, 만족도, 모집, 수료, 취업, 수료율, 취업률]
+      YOY_PREV = [];
+      for (let i = dataStart; i < raw.length; i++) {
+        const row = raw[i];
+        if (!row || row.every(v => v == null || v === '')) continue;
+        const seq = row[0];
+        if (seq == null || isNaN(parseFloat(seq))) continue; // 순번 없으면 데이터 행 아님
+
+        const region   = (row[2] || '').toString().trim();
+        // ★ 직종명 정규화: HTML 엔티티·전각/반각 공백·줄바꿈 등 제거
+        const ncs      = normalizeNcsName((row[3] || '').toString());
+        if (!region || !ncs) continue;
+
+        const score    = parseFloat(row[6])  || null;
+        const cnt      = parseFloat(row[7])  || null;
+        const sat      = parseFloat(row[8])  || null;
+        const recruit  = parseFloat(row[9])  || null;
+        const complete = parseFloat(row[10]) || null;
+        const employ   = parseFloat(row[11]) || null;
+        const comp_rate= parseFloat(row[12]) || null;
+        const emp_rate = parseFloat(row[13]) || null;
+
+        YOY_PREV.push({ region, ncs, score, cnt, sat, recruit, complete, employ, comp_rate, emp_rate });
+      }
+
+      document.getElementById('yoyFileName').textContent =
+        `✅ ${file.name}  |  ${sheetName}  |  ${YOY_PREV.length}개 지역·직종`;
+      document.getElementById('yoyStatus').textContent = '';
+      renderYoY();
+    } catch(err) {
+      document.getElementById('yoyFileName').textContent = `❌ 오류: ${err.message}`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── 현재 FILTERED 데이터를 지역+직종 단위로 집계 ──────────
+// 직종명 정규화: 양쪽 공백, HTML 엔티티(&amp; → &), 전각공백 제거
+function normalizeNcsName(s) {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g,  '<')
+    .replace(/&gt;/g,  '>')
+    .replace(/\u00a0|\u3000/g, ' ')  // 전각·넌브레이킹 공백
+    .replace(/\s+/g, ' ')            // 연속 공백 통일
+    .trim();
+}
+
+function buildCurrMap() {
+  // 키: "지역|||직종명(정규화)"
+  const map = {};
+  const keys = [...new Set(FILTERED.map(r => `${r.sido}|||${normalizeNcsName(r.ncs_name)}`))];
+  keys.forEach(k => {
+    const sep  = k.indexOf('|||');
+    const sido = k.slice(0, sep);
+    const ncs  = k.slice(sep + 3);
+    const rs   = FILTERED.filter(r => r.sido === sido && normalizeNcsName(r.ncs_name) === ncs);
+    const agg  = calcAggByInst(rs);
+    map[k] = agg;
+  });
+  return map;
+}
+
+// ── 전년 데이터를 직종명으로 매칭 (지역 포함) ────────────
+function buildPrevKey(r) { return `${r.region}|||${r.ncs}`; }
+
+function renderYoY() {
+  const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
+  const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
+
+  const hasPrev = YOY_PREV.length > 0;
+  const hasCurr = FILTERED.length > 0;
+
+  if (!hasPrev) {
+    document.getElementById('yoyTbody').innerHTML =
+      '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">📂 위에서 전년(25년) 기준 파일을 업로드하세요</td></tr>';
+    return;
+  }
+  if (!hasCurr) {
+    document.getElementById('yoyTbody').innerHTML =
+      '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">상단 필터를 적용해 비교 데이터를 선택하세요</td></tr>';
+    return;
+  }
+
+  const currMap = buildCurrMap(); // 지역+직종 → 집계값
+
+  // 전년 기준으로 행 구성 (전년에 있는 지역·직종 기준)
+  // 현재 필터의 시·도 범위와 교집합만 표시
+  const currSidos = new Set(FILTERED.map(r => r.sido));
+
+  const rows = YOY_PREV
+    .filter(p => currSidos.has(p.region))  // 현재 필터 지역 교집합
+    .map(p => {
+      const currKey = `${p.region}|||${normalizeNcsName(p.ncs)}`;
+      const curr = currMap[currKey] || null;
+      return { sido: p.region, ncs: p.ncs, prev: p, curr };
+    })
+    .sort((a, b) => {
+      if (a.sido !== b.sido) return a.sido.localeCompare(b.sido, 'ko');
+      return a.ncs.localeCompare(b.ncs, 'ko');
+    });
+
+  // ── 헤더 ──────────────────────────────────────
+  document.getElementById('yoyThead').innerHTML = `
+    <tr>
+      <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;white-space:nowrap;min-width:52px;position:sticky;left:0;z-index:5;">시·도</th>
+      <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;min-width:150px;">직종명</th>
+      <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} 운영 성과 <span style="font-size:10px;opacity:.85;">(고정값)</span></th>
+      <th colspan="5" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} 운영 성과 <span style="font-size:10px;opacity:.85;">(현재 필터)</span></th>
+      <th colspan="2" style="background:#065f46;color:#fff;text-align:center;border-left:2px solid #fff;">전년 대비</th>
+    </tr>
+    <tr>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;">성과배점</th>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;">개설수</th>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;">만족도</th>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;">수료</th>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;">취업</th>
+      <th style="background:#fef3c7;color:#78350f;font-size:11px;text-align:right;min-width:68px;border-right:2px solid #d97706;">취업률</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">성과배점</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">개설수</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">만족도</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">수료</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;min-width:68px;border-right:2px solid #1e40af;">취업률</th>
+      <th style="background:#d1fae5;color:#065f46;font-size:11px;text-align:center;min-width:72px;">▲▼ 성과배점</th>
+      <th style="background:#d1fae5;color:#065f46;font-size:11px;text-align:center;min-width:72px;">▲▼ 취업률</th>
+    </tr>`;
+
+  document.getElementById('yoyTitle').textContent =
+    `직종별 운영기관 성과 평균 현황 · ${labelPrev} → ${labelCurr} 전년 대비`;
+  document.getElementById('yoyCount').textContent = `${rows.length}개 지역·직종`;
+
+  // ── 바디 ──────────────────────────────────────
+  const sidoCounts = {};
+  rows.forEach(r => { sidoCounts[r.sido] = (sidoCounts[r.sido]||0)+1; });
+  const sidoDone = new Set();
+
+  const fmtDiff = (v, isPct) => {
+    if (v == null || Math.abs(v) < 0.0001) return '<span style="color:#94a3b8;">-</span>';
+    const abs = isPct ? Math.abs(v*100).toFixed(2)+'%p' : Math.abs(v).toFixed(2);
+    // 감소=▼파랑, 증가=▲빨강
+    if (v < 0) return `<span style="color:#1e40af;font-weight:700;">▼${abs}</span>`;
+    return `<span style="color:#dc2626;font-weight:700;">▲${abs}</span>`;
+  };
+
+  const cv = v => v != null && !isNaN(v) ? Math.round(v).toLocaleString() : '-';
+  const cf = v => v != null && !isNaN(v) ? parseFloat(v).toFixed(1) : '-';
+  const cp = v => v != null && !isNaN(v) ? (parseFloat(v)*100).toFixed(1)+'%' : '-';
+
+  document.getElementById('yoyTbody').innerHTML = rows.map(r => {
+    const p = r.prev, c = r.curr;
+
+    // 전년: 파일에서 직접 읽은 값
+    const pScore = p.score;
+    const pCnt   = p.cnt;
+    const pSat   = p.sat;
+    const pComp  = p.complete;
+    const pEmp   = p.employ;
+    const pEmpR  = p.emp_rate;
+
+    // 당년: calcAggByInst 결과
+    const cScore = c ? c.score    : null;
+    const cCnt   = c ? c.cnt      : null;
+    const cSat   = c ? c.sat      : null;
+    const cComp  = c ? c.complete : null;
+    const cEmp   = c ? c.employ   : null;
+    const cEmpR  = c ? c.emp_rate : null;
+
+    const diffScore = (pScore != null && cScore != null) ? cScore - pScore : null;
+    const diffEmpR  = (pEmpR  != null && cEmpR  != null) ? cEmpR  - pEmpR  : null;
+
+    const sidoCell = !sidoDone.has(r.sido)
+      ? `<td rowspan="${sidoCounts[r.sido]}"
+           style="text-align:center;font-weight:700;font-size:12px;
+                  background:#fffbeb;border-right:2px solid #d97706;
+                  white-space:nowrap;position:sticky;left:0;z-index:2;">${r.sido}</td>`
+      : '';
+    sidoDone.add(r.sido);
+
+    // 당년 데이터 없으면 행 흐리게
+    const noData = !c;
+    const rowStyle = noData ? 'opacity:.5;' : '';
+
+    return `<tr style="border-bottom:1px solid #e2e8f0;${rowStyle}">
+      ${sidoCell}
+      <td style="font-size:12px;white-space:nowrap;">${r.ncs}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;font-weight:600;">${cf(pScore)}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;">${cv(pCnt)}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;">${cf(pSat)}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;">${cv(pComp)}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;">${cv(pEmp)}</td>
+      <td style="text-align:right;background:#fffde7;font-size:12px;font-weight:600;border-right:2px solid #d97706;">${cp(pEmpR)}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;font-weight:600;">${c ? cf(cScore) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cCnt) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cf(cSat) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cComp) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;font-weight:600;border-right:2px solid #1e40af;">${c ? cp(cEmpR) : '-'}</td>
+      <td style="text-align:center;background:#ecfdf5;font-size:12px;">${fmtDiff(diffScore, false)}</td>
+      <td style="text-align:center;background:#ecfdf5;font-size:12px;">${fmtDiff(diffEmpR, true)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── YoY 엑셀 다운로드 ────────────────────────────────────
+function exportYoyExcel() {
+  if (!YOY_PREV.length) { alert('전년 파일을 먼저 업로드하세요.'); return; }
+  if (!FILTERED.length) { alert('현재 필터 데이터가 없습니다.'); return; }
+
+  const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
+  const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
+  const today     = fmtDate(new Date());
+  const wb        = XLSX.utils.book_new();
+
+  const currMap   = buildCurrMap();
+  const currSidos = new Set(FILTERED.map(r => r.sido));
+
+  const rows = YOY_PREV
+    .filter(p => currSidos.has(p.region))
+    .sort((a, b) => a.region.localeCompare(b.region,'ko') || a.ncs.localeCompare(b.ncs,'ko'));
+
+  const shData = [];
+  // 제목
+  shData.push([`직종별 운영기관 성과 평균 현황 [${labelCurr} 종료과정 기준]`, ...Array(13).fill('')]);
+  shData.push(['◆ 조사 및 작성 : 국비사업팀', ...Array(13).fill('')]);
+  shData.push([]); // 빈 행
+
+  // 헤더 1행
+  shData.push([
+    '시·도', '직종명',
+    `${labelPrev} 성과배점`, `${labelPrev} 개설수`, `${labelPrev} 만족도`,
+    `${labelPrev} 수료`, `${labelPrev} 취업`, `${labelPrev} 취업률(%)`,
+    `${labelCurr} 성과배점`, `${labelCurr} 개설수`, `${labelCurr} 만족도`,
+    `${labelCurr} 수료`, `${labelCurr} 취업`, `${labelCurr} 취업률(%)`,
+    '전년대비 성과배점', '전년대비 취업률(%p)'
+  ]);
+
+  rows.forEach(p => {
+    const c = currMap[`${p.region}|||${normalizeNcsName(p.ncs)}`] || null;
+    const diffScore = (p.score != null && c?.score != null) ? parseFloat((c.score - p.score).toFixed(2)) : '';
+    const diffEmpR  = (p.emp_rate != null && c?.emp_rate != null) ? parseFloat(((c.emp_rate - p.emp_rate)*100).toFixed(2)) : '';
+    shData.push([
+      p.region, p.ncs,
+      p.score    != null ? parseFloat(p.score.toFixed(2))           : '',
+      p.cnt      != null ? Math.round(p.cnt)                         : '',
+      p.sat      != null ? parseFloat(p.sat.toFixed(1))             : '',
+      p.complete != null ? Math.round(p.complete)                    : '',
+      p.employ   != null ? Math.round(p.employ)                      : '',
+      p.emp_rate != null ? parseFloat((p.emp_rate*100).toFixed(1))  : '',
+      c?.score    != null ? parseFloat(c.score.toFixed(2))           : '',
+      c?.cnt      != null ? Math.round(c.cnt)                        : '',
+      c?.sat      != null ? parseFloat(c.sat.toFixed(1))             : '',
+      c?.complete != null ? Math.round(c.complete)                   : '',
+      c?.employ   != null ? Math.round(c.employ)                     : '',
+      c?.emp_rate != null ? parseFloat((c.emp_rate*100).toFixed(1)) : '',
+      diffScore, diffEmpR,
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(shData);
+  ws['!cols'] = [
+    {wch:8},{wch:22},
+    {wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},
+    {wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},
+    {wch:14},{wch:14}
+  ];
+
+  // 헤더행 색상 (행4 = index 3)
+  const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
+  COLS.forEach((col, i) => {
+    const ref = `${col}4`;
+    if (!ws[ref]) ws[ref] = { v: shData[3][i], t: 's' };
+    ws[ref].s = {
+      fill: { fgColor: { rgb: i < 2 ? '92400E' : i < 8 ? 'D97706' : i < 14 ? '1E40AF' : '065F46' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    };
+  });
+
+  // 데이터행 전년대비 색상 (O·P열)
+  for (let r = 4; r < shData.length; r++) {
+    ['O','P'].forEach(col => {
+      const ref = `${col}${r+1}`;
+      if (!ws[ref]) return;
+      const v = ws[ref].v;
+      if (typeof v === 'number' && v !== 0) {
+        ws[ref].s = {
+          font: { bold: true, color: { rgb: v < 0 ? '1E40AF' : 'DC2626' } },
+          alignment: { horizontal: 'center' },
+        };
+      }
+    });
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, `전년대비_${labelCurr}`);
+  XLSX.writeFile(wb, `직종별전년대비_${labelCurr}_${today}.xlsx`);
 }
 
 function toggleType(el, type) {
@@ -673,7 +1123,7 @@ function applyFilters() {
   const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
   const sido     = document.getElementById('sidoFilter').value;
   const selNcs   = window.selectedNcsCodes || new Set();
-  const kdc      = document.getElementById('kdcFilter').value;
+  const selKdc   = window.selectedKdcNames || new Set();
   const ds       = document.getElementById('dateStart').value;
   const de       = document.getElementById('dateEnd').value;
   const basis    = document.querySelector('input[name=dateBasis]:checked').value;
@@ -682,7 +1132,8 @@ function applyFilters() {
     if (!selTypes.includes(r.type)) return false;
     if (sido && r.sido !== sido) return false;
     if (selNcs.size > 0 && !selNcs.has(r.ncs_code)) return false;
-    if (kdc && (r.kdc_name == null || r.kdc_name !== kdc)) return false;
+    // ★ 국기직종명 다중선택 필터
+    if (selKdc.size > 0 && (r.kdc_name == null || !selKdc.has(r.kdc_name))) return false;
     const d = basis === 'end' ? r.end : r.start;
     if (ds && d && fmtDate(d) < ds) return false;
     if (de && d && fmtDate(d) > de) return false;
@@ -708,7 +1159,10 @@ function resetFilters() {
     el.querySelector('input').checked = true;
   });
   document.getElementById('sidoFilter').value = '';
-  document.getElementById('kdcFilter').value  = '';
+  window.selectedKdcNames = new Set();
+  document.getElementById('kdcSearchInput').value = '';
+  renderKdcDropdown(); renderKdcSelected();
+  document.getElementById('kdcDropdown').style.display = 'none';
   window.selectedNcsCodes = new Set();
   document.getElementById('ncsSearchInput').value = '';
   renderNcsSelected(); renderNcsDropdown();
@@ -799,7 +1253,7 @@ function renderInstRow(r) {
 }
 
 function switchSubtab(id) {
-  ['cross','region'].forEach(t => {
+  ['cross','region','yoy'].forEach(t => {
     const panel = document.getElementById('subtab-'+t);
     const btn   = document.getElementById('subtab-btn-'+t);
     if (!panel || !btn) return;
@@ -810,6 +1264,7 @@ function switchSubtab(id) {
     btn.style.border        = active ? 'none' : '1px solid var(--border)';
   });
   if (id === 'region') renderRegionDetail();
+  if (id === 'yoy')    renderYoY();
 }
 
 function renderTab2() {
