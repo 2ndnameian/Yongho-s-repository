@@ -247,6 +247,12 @@
     <div class="tab" onclick="switchTab('tab3',this)">🎯 분석 3 · NCS 취업률</div>
   </div>
 
+  
+
+  
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab1',this)">📈 분석 1 · 성과 현황</div>
+
   <div class="tab-content active" id="tab1">
     <div class="chart-grid">
       <div class="chart-card">
@@ -404,7 +410,7 @@
         <div class="pagination" id="pag-region"></div>
       </div>
     </div>
-  </div>
+
 
   <!-- ★ 직종별 전년 대비 서브탭 -->
   <div id="subtab-yoy" style="display:none;">
@@ -448,42 +454,105 @@
       </div>
     </div>
   </div>
+  </div>
 
   <div class="tab-content" id="tab3">
     <div style="margin-bottom:14px;font-size:12px;color:var(--text3)">
       ※ 취업률 0% 및 100% 기관 제외 후 산출 · 수료인원 0인 기관 제외
     </div>
-    <div class="ncs-grid" id="ncsGrid"></div>
-    <div style="margin-top:20px">
-      <div class="table-wrap">
-        <div class="table-header">
-          <h4 id="ncsDetailTitle">NCS 직종별 기관 취업률 상세</h4>
-          <span class="count" id="tableCount4"></span>
-          <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table4')">⬇ CSV 다운로드</button>
-        </div>
-        <div class="table-scroll">
-          <table id="table4">
-            <thead>
-              <tr>
-                <th onclick="sortTable('table4',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table4',1)">훈련기관 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table4',2)">과정수 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table4',3)">수료인원 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table4',4)">취업인원 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table4',5)">취업률 <span class="sort-icon">↕</span></th>
-              </tr>
-            </thead>
-            <tbody id="tbody4"></tbody>
-          </table>
-        </div>
-        <div class="pagination" id="pag4"></div>
+
+    <!-- NCS 직종별 요약 테이블 -->
+    <div class="table-wrap" style="margin-bottom:20px;">
+      <div class="table-header">
+        <h4>NCS 직종별 취업률 현황</h4>
+        <span class="count" id="tableCount3b"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px;" onclick="exportTab3Excel()">⬇ 엑셀 다운로드</button>
       </div>
+      <div class="table-scroll">
+        <table id="tab3NcsSummary">
+          <thead>
+            <tr>
+              <th onclick="sortTable('tab3NcsSummary',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',1)">기관수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',2)">과정수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',3)">수료인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',4)">취업인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',5)" style="color:#dc2626;">최저 취업률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',6)">평균 취업률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('tab3NcsSummary',7)" style="color:#059669;">최고 취업률 <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody3b"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 기관별 상세 테이블 -->
+    <div id="ncsDetailSection" class="table-wrap">
+      <div class="table-header">
+        <h4 id="ncsDetailTitle">NCS 기관별 취업률 상세 <span style="font-size:11px;font-weight:400;color:var(--text3);">· 직종명 클릭 시 해당 직종만 표시</span></h4>
+        <span class="count" id="tableCount4"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table4')">⬇ CSV</button>
+      </div>
+      <div class="table-scroll">
+        <table id="table4">
+          <thead>
+            <tr>
+              <th onclick="sortTable('table4',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',1)">시도 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',2)">훈련기관 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',3)">과정수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',4)">만족도 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',5)">수료인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',6)">취업인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table4',7)">취업률 <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody4"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pag4"></div>
     </div>
   </div>
 
 </div>
 
+</div>
+
 <script>
+
+// ── 알림 표시 (alert 대신 화면 표시) ─────────────────────
+function showMsg(msg, isErr) {
+  var el = document.getElementById('_msgBar');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_msgBar';
+    el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);'+
+      'padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;'+
+      'z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:600px;text-align:center;';
+    document.body.appendChild(el);
+  }
+  el.style.background = isErr ? '#fee2e2' : '#dcfce7';
+  el.style.color       = isErr ? '#991b1b' : '#166534';
+  el.style.border      = '1px solid ' + (isErr ? '#fca5a5' : '#86efac');
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.display='none'; }, isErr ? 8000 : 4000);
+  el.style.display = 'block';
+}
+
+
+// ── XLSX 라이브러리 로딩 확인 ─────────────────────────────
+function checkXLSX() {
+  if (typeof XLSX === 'undefined') {
+    showMsg('❌ XLSX 라이브러리가 로드되지 않았습니다. 페이지를 새로고침하세요.', true);
+    return false;
+  }
+  return true;
+}
+
+
+
 
 let RAW = [];
 let FILTERED = [];
@@ -888,8 +957,9 @@ function xDS(v,S)     { if(v==null||Math.abs(v)<0.01)return S.diffFlat; return v
 function xDL(v,isPct) { if(v==null||Math.abs(v)<0.01)return '-'; var a=isPct?Math.abs(v).toFixed(2)+'%p':Math.abs(v).toFixed(2); return (v>0?'▲':'▼')+a; }
 
 function exportYoyExcel() {
-  if (!YOY_PREV.length){alert('전년 파일을 먼저 업로드하세요.');return;}
-  if (!FILTERED.length){alert('현재 필터 데이터가 없습니다.');return;}
+  if (!checkXLSX()) return;
+  if (!YOY_PREV.length){showMsg('전년 파일을 먼저 업로드하세요.', false);return;}
+  if (!FILTERED.length){showMsg('현재 필터 데이터가 없습니다.', false);return;}
   var lP=document.getElementById('yoyLabelPrev').value||'25년';
   var lC=document.getElementById('yoyLabelCurr').value||'26년';
   var today=fmtDate(new Date()), wb=XLSX.utils.book_new();
@@ -1351,30 +1421,125 @@ function renderRegionDetail() {
 }
 
 // ── 분석 3 ───────────────────────────────────────────────
+function exportTab3Excel() {
+  if (!checkXLSX()) return;
+  if (!FILTERED.length) { alert('데이터가 없습니다.'); return; }
+  try {
+    const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1);
+    const byNcs = groupBy(validRows, 'ncs_name');
+    const wb    = XLSX.utils.book_new();
+    const today = fmtDate(new Date());
+    const S     = xlsxStyles();
+
+    // ① NCS 직종별 요약
+    const hdr1 = [
+      xC('NCS 직무분류', S.hdrBase), xC('기관수', S.hdrBase), xC('과정수', S.hdrBase),
+      xC('수료인원', S.hdrBase), xC('취업인원', S.hdrBase),
+      xC('최저 취업률(%)', S.hdrDiff), xC('평균 취업률(%)', S.hdrCurr), xC('최고 취업률(%)', S.hdrDiff),
+    ];
+    const sh1 = [[xC('NCS 직종별 취업률 현황 (0%·100% 기관 제외)',S.title)],[],[ xC('※ 취업률 0%·100% 기관 및 수료인원 0인 기관 제외',S.sub)],[],hdr1];
+    Object.entries(byNcs).map(([ncs, rs]) => {
+      const rates = rs.map(r=>r.emp_rate).filter(v=>v!=null).sort((a,b)=>a-b);
+      const avg   = rates.length ? rates.reduce((a,b)=>a+b,0)/rates.length : null;
+      return { ncs, instCnt: new Set(rs.map(r=>r.inst)).size, cnt: rs.length,
+               complete: rs.reduce((a,r)=>a+(r.complete||0),0), employ: rs.reduce((a,r)=>a+(r.employ||0),0),
+               min: rates[0]||null, avg, max: rates[rates.length-1]||null };
+    }).sort((a,b)=>a.ncs.localeCompare(b.ncs,'ko')).forEach(r => sh1.push([
+      xC(r.ncs, S.ncs),
+      xN(r.instCnt, S.prev), xN(r.cnt, S.prev),
+      xN(r.complete, S.prev), xN(r.employ, S.prev),
+      xN(r.min!=null?parseFloat((r.min*100).toFixed(1)):'', S.diffDown),
+      xN(r.avg!=null?parseFloat((r.avg*100).toFixed(1)):'', S.curr),
+      xN(r.max!=null?parseFloat((r.max*100).toFixed(1)):'', S.diffUp),
+    ]));
+    const ws1 = XLSX.utils.aoa_to_sheet(sh1);
+    ws1['!cols'] = [{wch:20},{wch:8},{wch:8},{wch:10},{wch:10},{wch:13},{wch:13},{wch:13}];
+    ws1['!merges'] = [{s:{r:0,c:0},e:{r:0,c:7}}];
+    ws1['!rows'] = [{hpx:24},{hpx:8},{hpx:14},{hpx:8},{hpx:30}];
+    XLSX.utils.book_append_sheet(wb, ws1, '①NCS직종별요약');
+
+    // ② 기관별 상세
+    const key = r => r.ncs_name + '|||' + r.inst;
+    const byKey = groupBy(validRows, key);
+    const hdr2 = [
+      xC('NCS 직무분류',S.hdrBase), xC('시도',S.hdrBase), xC('훈련기관',S.hdrBase),
+      xC('과정수',S.hdrBase), xC('만족도',S.hdrBase),
+      xC('수료인원',S.hdrCurr), xC('취업인원',S.hdrCurr), xC('취업률(%)',S.hdrCurr),
+    ];
+    const sh2 = [[xC('NCS 기관별 취업률 상세 (0%·100% 기관 제외)',S.title)],[],[],hdr2];
+    Object.entries(byKey).map(([k,rs]) => {
+      const parts=k.split('|||');
+      const c=sumN(rs,'complete'),e=sumN(rs,'employ');
+      const er=c>0?e/c:null;
+      const sat=avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
+      return {ncs:parts[0],sido:rs[0].sido,inst:parts[1],cnt:rs.length,sat,complete:c,employ:e,emp_rate:er};
+    }).sort((a,b)=>(b.emp_rate||0)-(a.emp_rate||0)).forEach(r => sh2.push([
+      xC(r.ncs, S.ncs), xC(r.sido, {}), xC(r.inst, {}),
+      xN(r.cnt, S.prev),
+      xN(r.sat!=null?parseFloat(r.sat.toFixed(1)):'', S.prev),
+      xN(r.complete, S.curr), xN(r.employ, S.curr),
+      xN(r.emp_rate!=null?parseFloat((r.emp_rate*100).toFixed(1)):'', S.currB),
+    ]));
+    const ws2 = XLSX.utils.aoa_to_sheet(sh2);
+    ws2['!cols'] = [{wch:18},{wch:7},{wch:22},{wch:7},{wch:8},{wch:10},{wch:10},{wch:10}];
+    ws2['!merges'] = [{s:{r:0,c:0},e:{r:0,c:7}}];
+    ws2['!rows'] = [{hpx:24},{hpx:8},{hpx:8},{hpx:30}];
+    XLSX.utils.book_append_sheet(wb, ws2, '②기관별상세');
+
+    XLSX.writeFile(wb, `NCS취업률현황_${today}.xlsx`);
+  } catch(err) {
+    showMsg('❌ 엑셀 오류: ' + err.message, true);
+    console.error(err);
+  }
+}
+
 function renderTab3() {
   const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1);
   const byNcs = groupBy(validRows, 'ncs_name');
-  const ncsCards = Object.entries(byNcs).map(([ncs, rs]) => {
-    const rates = rs.map(r => r.emp_rate).sort((a,b)=>a-b);
-    return { ncs, min: rates[0], max: rates[rates.length-1], cnt: rs.length };
-  }).sort((a,b) => a.ncs.localeCompare(b.ncs));
-  document.getElementById('ncsGrid').innerHTML = ncsCards.map(c => `
-    <div class="ncs-card" onclick="filterNcs3('${c.ncs}')" style="cursor:pointer">
-      <h5>${c.ncs}</h5>
-      <div class="ncs-range">
-        <span class="min">${pct(c.min)}</span>
-        <div class="ncs-range-bar"><div class="ncs-range-fill" style="left:${pct(c.min)};width:${pct(c.max-c.min)}"></div></div>
-        <span class="max">${pct(c.max)}</span>
-      </div>
-      <div class="ncs-meta">기관 ${c.cnt}개 · 클릭하면 상세 보기</div>
-    </div>
-  `).join('') || '<div class="empty"><div class="icon">📭</div>데이터 없음</div>';
+
+  // NCS 직종별 집계 (기관 평균 방식)
+  const ncsRows = Object.entries(byNcs).map(([ncs, rs]) => {
+    const rates = rs.map(r => r.emp_rate).filter(v => v != null).sort((a,b) => a-b);
+    const instSet = new Set(rs.map(r => r.inst));
+    const avgRate = rates.length ? rates.reduce((a,b)=>a+b,0)/rates.length : null;
+    return {
+      ncs,
+      instCnt:  instSet.size,
+      courseCnt: rs.length,
+      minRate:  rates[0]    || null,
+      maxRate:  rates[rates.length-1] || null,
+      avgRate,
+      complete: rs.reduce((a,r)=>a+(r.complete||0),0),
+      employ:   rs.reduce((a,r)=>a+(r.employ||0),0),
+    };
+  }).sort((a,b) => a.ncs.localeCompare(b.ncs,'ko'));
+
+  document.getElementById('tableCount3b').textContent = `${ncsRows.length}개 직무분류`;
+
+  document.getElementById('tbody3b').innerHTML = ncsRows.map(r => `<tr style="cursor:pointer;" onclick="filterNcs3('${r.ncs.replace(/'/g,"\'")}')">
+    <td style="color:var(--accent);font-weight:600;">${r.ncs}</td>
+    <td style="text-align:right;">${r.instCnt}</td>
+    <td style="text-align:right;">${r.courseCnt}</td>
+    <td style="text-align:right;">${r.complete.toLocaleString()}</td>
+    <td style="text-align:right;">${r.employ.toLocaleString()}</td>
+    <td>${r.minRate!=null ? `<span style="color:#dc2626;font-weight:600;">${pct(r.minRate)}</span>` : '-'}</td>
+    <td>${rateBar(r.avgRate,'green')}</td>
+    <td>${r.maxRate!=null ? `<span style="color:#059669;font-weight:600;">${pct(r.maxRate)}</span>` : '-'}</td>
+  </tr>`).join('');
+
   renderNcsDetail(validRows);
 }
 function filterNcs3(ncs) {
-  const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1 && r.ncs_name === ncs);
+  const validRows = FILTERED.filter(r =>
+    r.complete > 0 && r.employ != null &&
+    r.emp_rate > 0 && r.emp_rate < 1 &&
+    r.ncs_name === ncs
+  );
   document.getElementById('ncsDetailTitle').textContent = `NCS 기관 취업률 상세 · ${ncs}`;
   renderNcsDetail(validRows);
+  // 상세 테이블로 스크롤
+  const el = document.getElementById('ncsDetailSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function renderNcsDetail(rows) {
   const key = r => r.ncs_name + '|||' + r.inst;
@@ -1383,14 +1548,19 @@ function renderNcsDetail(rows) {
     const parts = k.split('|||');
     const c = sumN(rs,'complete'), e = sumN(rs,'employ');
     const er = c > 0 ? e/c : null;
-    return { ncs: parts[0], inst: parts[1], cnt: rs.length, complete: c, employ: e, emp_rate: er };
+    const sat = avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
+    return { ncs: parts[0], inst: parts[1], sido: rs[0].sido, cnt: rs.length, complete: c, employ: e, emp_rate: er, sat };
   }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
   document.getElementById('tableCount4').textContent = `${aggRows.length.toLocaleString()}개`;
   pages.table4 = 1;
   renderPaginatedTable('tbody4','pag4', aggRows, 'table4', r => `<tr>
-    <td>${r.ncs}</td><td>${r.inst}</td><td>${r.cnt}</td>
-    <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
-    <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${r.ncs}</td>
+    <td>${r.sido}</td>
+    <td>${r.inst}</td>
+    <td style="text-align:right;">${r.cnt}</td>
+    <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+    <td style="text-align:right;">${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.employ!=null?r.employ.toLocaleString():'-'}</td>
     <td>${rateBar(r.emp_rate,'green')}</td>
   </tr>`);
 }
@@ -1410,7 +1580,8 @@ function exportCSV(tableId) {
 }
 
 function exportAnalysis2Excel() {
-  if (!FILTERED.length) { alert('데이터가 없습니다. 파일을 업로드하고 필터를 적용하세요.'); return; }
+  if (!checkXLSX()) return;
+  if (!FILTERED.length) { showMsg('데이터가 없습니다. 파일을 업로드하고 필터를 적용하세요.', false); return; }
   try {
     const wb    = XLSX.utils.book_new();
     const today = fmtDate(new Date());
@@ -1540,8 +1711,8 @@ function exportAnalysis2Excel() {
 
     XLSX.writeFile(wb, '분석2_지역직종현황_'+today+'.xlsx');
   } catch(err) {
-    alert('엑셀 생성 오류: ' + err.message);
     console.error('exportAnalysis2Excel 오류:', err);
+    showMsg('❌ 엑셀 오류: ' + err.message, true);
   }
 }
 
@@ -1644,6 +1815,8 @@ function scoreBar(v) {
 function typeBadge(t) {
   return ({계좌제:'badge-blue',국기:'badge-green',KDT:'badge-yellow',KDC:'badge-yellow',산대특:'badge-red',근로자:'badge-gray'})[t]||'badge-gray';
 }
+
+
 
 </script>
 </body>
