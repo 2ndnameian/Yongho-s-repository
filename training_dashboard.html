@@ -502,6 +502,13 @@ function handleFile(file) {
 }
 
 function parseRows(rows) {
+  // 컬럼명 디버그 (첫 행 키 확인)
+  if (rows.length > 0) {
+    const keys = Object.keys(rows[0]);
+    const kdcKey = keys.find(k => k.includes('국기') || k.toLowerCase().includes('kdc'));
+    console.log('[디버그] 전체 컬럼:', keys);
+    console.log('[디버그] 국기직종명 키:', kdcKey, '/ 값:', rows.find(r => rows[0][kdcKey])?.[kdcKey]);
+  }
   return rows.map(r => {
     const complete = toNum(r['수료']);
     const employ   = toNum(r['총 취업']);
@@ -529,7 +536,7 @@ function parseRows(rows) {
       ncs_code:  (r['NCS 코드'] || '').toString(),
       ncs_name:  (r['NCS직무분류'] || '').toString(),
       type,
-      kdc_name:  (r['국기직종명'] || r['kdc_name'] || '').toString().trim(),
+      kdc_name:  r['국기직종명'] ? r['국기직종명'].toString().trim() : null,
       course:    (r['훈련과정명'] || '').toString(),
       course_id: (r['훈련과정ID'] || '').toString(),
       session:   toNum(r['회차']),
@@ -581,7 +588,7 @@ function initUI() {
   sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
 
   // 국기직종명 셀렉트
-  const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(Boolean))].sort();
+  const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(v => v != null && v !== ''))].sort();
   const kf = document.getElementById('kdcFilter');
   kf.innerHTML = '<option value="">전체</option>';
   kdcNames.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kf.appendChild(o); });
