@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>직업훈련 성과 현황</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root {
@@ -861,58 +861,80 @@ function renderYoY() {
   }).join('');
 }
 
+
+// ── 엑셀 스타일 공통 ────────────────────────────────
+function xlsxStyles() {
+  return {
+    title:    { font:{ bold:true, sz:14 }, alignment:{ horizontal:'center', vertical:'center' } },
+    sub:      { font:{ italic:true, sz:10, color:{ rgb:'475569' } } },
+    hdrBase:  { font:{ bold:true, color:{ rgb:'FFFFFF' }, sz:11 }, fill:{ fgColor:{ rgb:'92400E' } }, alignment:{ horizontal:'center', vertical:'center', wrapText:true } },
+    hdrPrev:  { font:{ bold:true, color:{ rgb:'1A1A1A' }, sz:11 }, fill:{ fgColor:{ rgb:'D97706' } }, alignment:{ horizontal:'center', vertical:'center', wrapText:true } },
+    hdrCurr:  { font:{ bold:true, color:{ rgb:'FFFFFF' }, sz:11 }, fill:{ fgColor:{ rgb:'1E40AF' } }, alignment:{ horizontal:'center', vertical:'center', wrapText:true } },
+    hdrDiff:  { font:{ bold:true, color:{ rgb:'FFFFFF' }, sz:11 }, fill:{ fgColor:{ rgb:'065F46' } }, alignment:{ horizontal:'center', vertical:'center', wrapText:true } },
+    sido:     { font:{ bold:true }, fill:{ fgColor:{ rgb:'FFFBEB' } }, alignment:{ horizontal:'center', vertical:'center' } },
+    ncs:      { alignment:{ vertical:'center' } },
+    prev:     { fill:{ fgColor:{ rgb:'FFFDE7' } }, alignment:{ horizontal:'right', vertical:'center' } },
+    prevB:    { fill:{ fgColor:{ rgb:'FFFDE7' } }, font:{ bold:true }, alignment:{ horizontal:'right', vertical:'center' } },
+    curr:     { fill:{ fgColor:{ rgb:'EFF6FF' } }, alignment:{ horizontal:'right', vertical:'center' } },
+    currB:    { fill:{ fgColor:{ rgb:'EFF6FF' } }, font:{ bold:true }, alignment:{ horizontal:'right', vertical:'center' } },
+    diffUp:   { font:{ bold:true, color:{ rgb:'DC2626' }, sz:11 }, fill:{ fgColor:{ rgb:'ECFDF5' } }, alignment:{ horizontal:'center', vertical:'center' } },
+    diffDown: { font:{ bold:true, color:{ rgb:'1E40AF' }, sz:11 }, fill:{ fgColor:{ rgb:'ECFDF5' } }, alignment:{ horizontal:'center', vertical:'center' } },
+    diffFlat: { fill:{ fgColor:{ rgb:'ECFDF5' } }, alignment:{ horizontal:'center', vertical:'center' } },
+  };
+}
+function xC(v,s)      { return { v:(v!=null?v:''), s:s }; }
+function xN(v,s)      { return (v!==''&&v!=null)?{v:v,t:'n',s:s}:{v:'',s:s}; }
+function xDS(v,S)     { if(v==null||Math.abs(v)<0.01)return S.diffFlat; return v>0?S.diffUp:S.diffDown; }
+function xDL(v,isPct) { if(v==null||Math.abs(v)<0.01)return '-'; var a=isPct?Math.abs(v).toFixed(2)+'%p':Math.abs(v).toFixed(2); return (v>0?'▲':'▼')+a; }
+
 function exportYoyExcel() {
-  if (!YOY_PREV.length) { alert('전년 파일을 먼저 업로드하세요.'); return; }
-  if (!FILTERED.length) { alert('현재 필터 데이터가 없습니다.'); return; }
-  const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
-  const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
-  const today     = fmtDate(new Date());
-  const wb        = XLSX.utils.book_new();
-  const currMap   = buildCurrMap();
-  const currSidos = new Set(FILTERED.map(r => r.sido));
-  const rows = YOY_PREV
-    .filter(p => currSidos.has(p.region))
-    .sort((a,b) => a.region.localeCompare(b.region,'ko') || a.ncs.localeCompare(b.ncs,'ko'));
-  const shData = [
-    [`직종별 운영기관 성과 평균 현황 [${labelCurr} 종료과정 기준]`],
-    ['◆ 조사 및 작성 : 국비사업팀'],
+  if (!YOY_PREV.length){alert('전년 파일을 먼저 업로드하세요.');return;}
+  if (!FILTERED.length){alert('현재 필터 데이터가 없습니다.');return;}
+  var lP=document.getElementById('yoyLabelPrev').value||'25년';
+  var lC=document.getElementById('yoyLabelCurr').value||'26년';
+  var today=fmtDate(new Date()), wb=XLSX.utils.book_new();
+  var cMap=buildCurrMap(), cSi=new Set(FILTERED.map(function(r){return r.sido;}));
+  var S=xlsxStyles();
+  var rows=YOY_PREV.filter(function(p){return cSi.has(p.region);})
+    .sort(function(a,b){var r=a.region.localeCompare(b.region,'ko');return r!==0?r:a.ncs.localeCompare(b.ncs,'ko');});
+  var wd=[
+    [xC('직종별 운영기관 성과 평균 현황 ['+lC+' 종료과정 기준]',S.title)],
+    [xC('◆ 조사 및 작성 : 국비사업팀',S.sub)],
     [],
-    ['시·도','직종명',
-     labelPrev+' 성과배점', labelPrev+' 개설수', labelPrev+' 만족도', labelPrev+' 수료', labelPrev+' 취업', labelPrev+' 취업률(%)',
-     labelCurr+' 성과배점', labelCurr+' 개설수', labelCurr+' 만족도', labelCurr+' 수료', labelCurr+' 취업', labelCurr+' 취업률(%)',
-     '전년대비 성과배점', '전년대비 취업률(%p)'],
+    [xC('시·도',S.hdrBase),xC('직종명',S.hdrBase),
+     xC(lP+' 성과배점',S.hdrPrev),xC(lP+' 개설수',S.hdrPrev),xC(lP+' 만족도',S.hdrPrev),xC(lP+' 수료',S.hdrPrev),xC(lP+' 취업',S.hdrPrev),xC(lP+' 취업률(%)',S.hdrPrev),
+     xC(lC+' 성과배점',S.hdrCurr),xC(lC+' 개설수',S.hdrCurr),xC(lC+' 만족도',S.hdrCurr),xC(lC+' 수료',S.hdrCurr),xC(lC+' 취업',S.hdrCurr),xC(lC+' 취업률(%)',S.hdrCurr),
+     xC('▲▼ 성과배점',S.hdrDiff),xC('▲▼ 취업률',S.hdrDiff)],
   ];
-  rows.forEach(p => {
-    const c      = currMap[p.region + '|||' + normalizeNcsName(p.ncs)] || null;
-    const cScore = c ? c.score    : null;
-    const cCnt   = c ? c.cnt      : null;
-    const cSat   = c ? c.sat      : null;
-    const cComp  = c ? c.complete : null;
-    const cEmp   = c ? c.employ   : null;
-    const cEmpR  = c ? c.emp_rate : null;
-    const dS = (p.score!=null && cScore!=null)   ? parseFloat((cScore-p.score).toFixed(2))               : '';
-    const dE = (p.emp_rate!=null && cEmpR!=null) ? parseFloat(((cEmpR-p.emp_rate)*100).toFixed(2))       : '';
-    shData.push([
-      p.region, p.ncs,
-      p.score    !=null ? parseFloat(p.score.toFixed(2))           : '',
-      p.cnt      !=null ? Math.round(p.cnt)                         : '',
-      p.sat      !=null ? parseFloat(p.sat.toFixed(1))             : '',
-      p.complete !=null ? Math.round(p.complete)                    : '',
-      p.employ   !=null ? Math.round(p.employ)                      : '',
-      p.emp_rate !=null ? parseFloat((p.emp_rate*100).toFixed(1))  : '',
-      cScore !=null ? parseFloat(cScore.toFixed(2))                 : '',
-      cCnt   !=null ? Math.round(cCnt)                              : '',
-      cSat   !=null ? parseFloat(cSat.toFixed(1))                  : '',
-      cComp  !=null ? Math.round(cComp)                             : '',
-      cEmp   !=null ? Math.round(cEmp)                              : '',
-      cEmpR  !=null ? parseFloat((cEmpR*100).toFixed(1))           : '',
-      dS, dE,
+  rows.forEach(function(p){
+    var c=cMap[p.region+'|||'+normalizeNcsName(p.ncs)]||null;
+    var cSc=c?c.score:null,cCn=c?c.cnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
+    var dS=(p.score!=null&&cSc!=null)?parseFloat((cSc-p.score).toFixed(2)):null;
+    var dE=(p.emp_rate!=null&&cER!=null)?parseFloat(((cER-p.emp_rate)*100).toFixed(2)):null;
+    wd.push([
+      xC(p.region,S.sido),xC(p.ncs,S.ncs),
+      xN(p.score!=null?parseFloat(p.score.toFixed(2)):'',S.prevB),
+      xN(p.cnt!=null?Math.round(p.cnt):'',S.prev),
+      xN(p.sat!=null?parseFloat(p.sat.toFixed(1)):'',S.prev),
+      xN(p.complete!=null?Math.round(p.complete):'',S.prev),
+      xN(p.employ!=null?Math.round(p.employ):'',S.prev),
+      xN(p.emp_rate!=null?parseFloat((p.emp_rate*100).toFixed(1)):'',S.prevB),
+      xN(cSc!=null?parseFloat(cSc.toFixed(2)):'',S.currB),
+      xN(cCn!=null?Math.round(cCn):'',S.curr),
+      xN(cSa!=null?parseFloat(cSa.toFixed(1)):'',S.curr),
+      xN(cCo!=null?Math.round(cCo):'',S.curr),
+      xN(cEm!=null?Math.round(cEm):'',S.curr),
+      xN(cER!=null?parseFloat((cER*100).toFixed(1)):'',S.currB),
+      xC(xDL(dS,false),xDS(dS,S)),
+      xC(xDL(dE,true),xDS(dE,S)),
     ]);
   });
-  const ws = XLSX.utils.aoa_to_sheet(shData);
-  ws['!cols'] = [{wch:8},{wch:22},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:14},{wch:14}];
-  XLSX.utils.book_append_sheet(wb, ws, `전년대비_${labelCurr}`);
-  XLSX.writeFile(wb, `직종별전년대비_${labelCurr}_${today}.xlsx`);
+  var ws=XLSX.utils.aoa_to_sheet(wd);
+  ws['!cols']=[{wch:8},{wch:22},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:14},{wch:12}];
+  ws['!rows']=[{hpx:28},{hpx:16},{hpx:8},{hpx:32}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:15}}];
+  XLSX.utils.book_append_sheet(wb,ws,'전년대비_'+lC);
+  XLSX.writeFile(wb,'직종별전년대비_'+lC+'_'+today+'.xlsx');
 }
 
 // ── 필터 ────────────────────────────────────────────────
@@ -1472,40 +1494,48 @@ function exportAnalysis2Excel() {
     ws3['!cols'] = [{wch:7},{wch:14},{wch:14},{wch:20},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:9},{wch:9},{wch:9},{wch:11},{wch:11},{wch:9}];
     XLSX.utils.book_append_sheet(wb, ws3, '③지역별기관상세');
 
-    if (YOY_PREV.length > 0) {
-      const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
-      const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
-      const currMap2  = buildCurrMap();
-      const currSidos2 = {};
-      FILTERED.forEach(r => { currSidos2[r.sido] = true; });
-      const sh4Data = [[infoTxt],[],['[직종별 전년 대비] '+labelPrev+' → '+labelCurr+' (비교연도: 필터 기간 전체)'],
-        ['시도','직종명',labelPrev+' 성과배점',labelPrev+' 개설수',labelPrev+' 만족도',labelPrev+' 수료',labelPrev+' 취업',labelPrev+' 취업률(%)',
-         labelCurr+' 성과배점',labelCurr+' 개설수',labelCurr+' 만족도',labelCurr+' 수료',labelCurr+' 취업',labelCurr+' 취업률(%)',
-         '전년대비 성과배점','전년대비 취업률(%p)']];
-      YOY_PREV.filter(p=>currSidos2[p.region])
-        .sort((a,b)=>a.region.localeCompare(b.region,'ko')||a.ncs.localeCompare(b.ncs,'ko'))
-        .forEach(p => {
-          const c      = currMap2[p.region+'|||'+normalizeNcsName(p.ncs)] || null;
-          const cScore = c ? c.score    : null;
-          const cCnt   = c ? c.cnt      : null;
-          const cSat   = c ? c.sat      : null;
-          const cComp  = c ? c.complete : null;
-          const cEmp   = c ? c.employ   : null;
-          const cEmpR  = c ? c.emp_rate : null;
-          const dS = p.score!=null&&cScore!=null ? parseFloat((cScore-p.score).toFixed(2)) : '';
-          const dE = p.emp_rate!=null&&cEmpR!=null ? parseFloat(((cEmpR-p.emp_rate)*100).toFixed(2)) : '';
-          sh4Data.push([p.region,p.ncs,
-            p.score!=null?parseFloat(p.score.toFixed(2)):'',p.cnt!=null?Math.round(p.cnt):'',
-            p.sat!=null?parseFloat(p.sat.toFixed(1)):'',p.complete!=null?Math.round(p.complete):'',
-            p.employ!=null?Math.round(p.employ):'',p.emp_rate!=null?parseFloat((p.emp_rate*100).toFixed(1)):'',
-            cScore!=null?parseFloat(cScore.toFixed(2)):'',cCnt!=null?Math.round(cCnt):'',
-            cSat!=null?parseFloat(cSat.toFixed(1)):'',cComp!=null?Math.round(cComp):'',
-            cEmp!=null?Math.round(cEmp):'',cEmpR!=null?parseFloat((cEmpR*100).toFixed(1)):'',
-            dS,dE]);
+        if (YOY_PREV.length > 0) {
+      var lP=document.getElementById('yoyLabelPrev').value||'25년';
+      var lC=document.getElementById('yoyLabelCurr').value||'26년';
+      var cM=buildCurrMap(), cSi={}, S4=xlsxStyles();
+      FILTERED.forEach(function(r){cSi[r.sido]=true;});
+      var d4=[
+        [xC(infoTxt,{})],[],
+        [xC('[직종별 전년 대비] '+lP+' → '+lC,{})],
+        [xC('시도',S4.hdrBase),xC('직종명',S4.hdrBase),
+         xC(lP+' 성과배점',S4.hdrPrev),xC(lP+' 개설수',S4.hdrPrev),xC(lP+' 만족도',S4.hdrPrev),xC(lP+' 수료',S4.hdrPrev),xC(lP+' 취업',S4.hdrPrev),xC(lP+' 취업률(%)',S4.hdrPrev),
+         xC(lC+' 성과배점',S4.hdrCurr),xC(lC+' 개설수',S4.hdrCurr),xC(lC+' 만족도',S4.hdrCurr),xC(lC+' 수료',S4.hdrCurr),xC(lC+' 취업',S4.hdrCurr),xC(lC+' 취업률(%)',S4.hdrCurr),
+         xC('▲▼ 성과배점',S4.hdrDiff),xC('▲▼ 취업률',S4.hdrDiff)],
+      ];
+      YOY_PREV.filter(function(p){return cSi[p.region];})
+        .sort(function(a,b){var r=a.region.localeCompare(b.region,'ko');return r!==0?r:a.ncs.localeCompare(b.ncs,'ko');})
+        .forEach(function(p){
+          var c=cM[p.region+'|||'+normalizeNcsName(p.ncs)]||null;
+          var cSc=c?c.score:null,cCn=c?c.cnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
+          var dS=(p.score!=null&&cSc!=null)?parseFloat((cSc-p.score).toFixed(2)):null;
+          var dE=(p.emp_rate!=null&&cER!=null)?parseFloat(((cER-p.emp_rate)*100).toFixed(2)):null;
+          d4.push([
+            xC(p.region,S4.sido),xC(p.ncs,S4.ncs),
+            xN(p.score!=null?parseFloat(p.score.toFixed(2)):'',S4.prevB),
+            xN(p.cnt!=null?Math.round(p.cnt):'',S4.prev),
+            xN(p.sat!=null?parseFloat(p.sat.toFixed(1)):'',S4.prev),
+            xN(p.complete!=null?Math.round(p.complete):'',S4.prev),
+            xN(p.employ!=null?Math.round(p.employ):'',S4.prev),
+            xN(p.emp_rate!=null?parseFloat((p.emp_rate*100).toFixed(1)):'',S4.prevB),
+            xN(cSc!=null?parseFloat(cSc.toFixed(2)):'',S4.currB),
+            xN(cCn!=null?Math.round(cCn):'',S4.curr),
+            xN(cSa!=null?parseFloat(cSa.toFixed(1)):'',S4.curr),
+            xN(cCo!=null?Math.round(cCo):'',S4.curr),
+            xN(cEm!=null?Math.round(cEm):'',S4.curr),
+            xN(cER!=null?parseFloat((cER*100).toFixed(1)):'',S4.currB),
+            xC(xDL(dS,false),xDS(dS,S4)),
+            xC(xDL(dE,true),xDS(dE,S4)),
+          ]);
         });
-      const ws4 = XLSX.utils.aoa_to_sheet(sh4Data);
-      ws4['!cols'] = [{wch:7},{wch:20},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:13},{wch:13}];
-      XLSX.utils.book_append_sheet(wb, ws4, '④전년대비('+labelCurr+')');
+      var w4=XLSX.utils.aoa_to_sheet(d4);
+      w4['!cols']=[{wch:7},{wch:20},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:13},{wch:12}];
+      w4['!rows']=[{hpx:16},{hpx:8},{hpx:16},{hpx:32}];
+      XLSX.utils.book_append_sheet(wb, w4, '④전년대비('+lC+')');
     }
 
     XLSX.writeFile(wb, '분석2_지역직종현황_'+today+'.xlsx');
