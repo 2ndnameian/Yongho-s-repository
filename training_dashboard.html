@@ -412,10 +412,11 @@
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
       <div style="flex:0 0 auto;">
         <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;letter-spacing:.04em;">기준연도(전년) 파일 업로드</div>
-        <label style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:#f0fdf4;border:1px solid var(--accent2);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--accent2);">
+        <button onclick="document.getElementById('yoyFileInput').click()"
+          style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:#f0fdf4;border:1px solid var(--accent2);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--accent2);">
           📂 엑셀 선택
-          <input type="file" id="yoyFileInput" accept=".xlsx" style="display:none" onchange="handleYoyFile(this.files[0])">
-        </label>
+        </button>
+        <input type="file" id="yoyFileInput" accept=".xlsx" style="display:none" onchange="handleYoyFile(this.files[0])">
         <span id="yoyFileName" style="font-size:11px;color:var(--text3);margin-left:8px;"></span>
       </div>
       <div style="flex:1;min-width:260px;">
