@@ -203,11 +203,17 @@
       <div class="checkbox-group" id="typeFilter"></div>
     </div>
 
-    <!-- 2행: 시도 + NCS코드 다중선택 -->
-    <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:16px;">
+    <!-- 2행: 시도 + 국기직종명 + NCS코드 다중선택 -->
+    <div style="display:grid;grid-template-columns:160px 180px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
         <label>시·도</label>
         <select id="sidoFilter" onchange="applyFilters()">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>국기직종명</label>
+        <select id="kdcFilter" onchange="applyFilters()">
           <option value="">전체</option>
         </select>
       </div>
@@ -523,6 +529,7 @@ function parseRows(rows) {
       ncs_code:  (r['NCS 코드'] || '').toString(),
       ncs_name:  (r['NCS직무분류'] || '').toString(),
       type,
+      kdc_name:  (r['국기직종명'] || r['kdc_name'] || '').toString().trim(),
       course:    (r['훈련과정명'] || '').toString(),
       course_id: (r['훈련과정ID'] || '').toString(),
       session:   toNum(r['회차']),
@@ -572,6 +579,12 @@ function initUI() {
   const sf = document.getElementById('sidoFilter');
   sf.innerHTML = '<option value="">전체</option>';
   sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
+
+  // 국기직종명 셀렉트
+  const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(Boolean))].sort();
+  const kf = document.getElementById('kdcFilter');
+  kf.innerHTML = '<option value="">전체</option>';
+  kdcNames.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kf.appendChild(o); });
 
   // NCS 코드+이름 목록 생성 (중복 제거)
   const ncsMap = {};
@@ -734,6 +747,7 @@ function applyFilters() {
   const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
   const sido     = document.getElementById('sidoFilter').value;
   const selNcs   = window.selectedNcsCodes || new Set();
+  const kdc      = document.getElementById('kdcFilter').value;
   const ds       = document.getElementById('dateStart').value;
   const de       = document.getElementById('dateEnd').value;
   const basis    = document.querySelector('input[name=dateBasis]:checked').value;
@@ -742,6 +756,7 @@ function applyFilters() {
     if (!selTypes.includes(r.type)) return false;
     if (sido && r.sido !== sido) return false;
     if (selNcs.size > 0 && !selNcs.has(r.ncs_code)) return false;
+    if (kdc && r.kdc_name !== kdc) return false;
     const d = basis === 'end' ? r.end : r.start;
     if (ds && d && fmtDate(d) < ds) return false;
     if (de && d && fmtDate(d) > de) return false;
@@ -771,6 +786,7 @@ function resetFilters() {
     el.querySelector('input').checked = true;
   });
   document.getElementById('sidoFilter').value = '';
+  document.getElementById('kdcFilter').value  = '';
 
   // NCS 다중선택 초기화
   window.selectedNcsCodes = new Set();
