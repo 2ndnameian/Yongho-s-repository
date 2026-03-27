@@ -196,45 +196,54 @@
   <!-- 필터 -->
   <div class="filter-panel">
     <h3>🔍 필터</h3>
-    <div class="filter-grid">
 
-      <div class="filter-group" style="grid-column: span 2">
-        <label>훈련유형</label>
-        <div class="checkbox-group" id="typeFilter"></div>
-      </div>
+    <!-- 1행: 훈련유형 다중선택 -->
+    <div class="filter-group" style="margin-bottom:16px;">
+      <label>훈련유형 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택)</span></label>
+      <div class="checkbox-group" id="typeFilter"></div>
+    </div>
 
+    <!-- 2행: 시도 + NCS코드 다중선택 -->
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
         <label>시·도</label>
         <select id="sidoFilter" onchange="applyFilters()">
           <option value="">전체</option>
         </select>
       </div>
-
       <div class="filter-group">
-        <label>NCS 직무분류</label>
-        <select id="ncsFilter" onchange="applyFilters()">
-          <option value="">전체</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label>훈련기간 (시작)</label>
-        <div class="filter-row">
-          <input type="date" id="dateStart" onchange="applyFilters()">
-          <span>~</span>
-          <input type="date" id="dateEnd" onchange="applyFilters()">
+        <label>NCS 코드 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택 · 검색)</span></label>
+        <div style="position:relative;">
+          <input type="text" id="ncsSearchInput" placeholder="코드 또는 직종명 입력..."
+            style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;box-sizing:border-box;"
+            oninput="renderNcsDropdown()" onfocus="showNcsDropdown()">
+          <div id="ncsDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.5);"></div>
         </div>
+        <div id="ncsSelected" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:4px;"></div>
       </div>
+    </div>
 
+    <!-- 3행: 기간기준 + 날짜범위 -->
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
         <label>기간 기준</label>
-        <div class="radio-group">
+        <div class="radio-group" style="margin-top:6px;">
           <label><input type="radio" name="dateBasis" value="end" checked onchange="applyFilters()"> 훈련종료일</label>
           <label><input type="radio" name="dateBasis" value="start" onchange="applyFilters()"> 훈련시작일</label>
         </div>
       </div>
-
+      <div class="filter-group">
+        <label>훈련기간</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+          <input type="date" id="dateStart" onchange="applyFilters()"
+            style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
+          <span style="color:var(--text3);font-size:13px;">~</span>
+          <input type="date" id="dateEnd" onchange="applyFilters()"
+            style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+      </div>
     </div>
+
     <div class="filter-actions">
       <button class="btn btn-primary" onclick="applyFilters()">적용</button>
       <button class="btn btn-ghost" onclick="resetFilters()">초기화</button>
@@ -296,58 +305,115 @@
 
   <!-- 분석 2 -->
   <div class="tab-content" id="tab2">
-    <div class="table-wrap" style="margin-bottom:16px">
-      <div class="table-header">
-        <h4>지역별 현황</h4>
-        <span class="count" id="tableCount2"></span>
-        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table2')">⬇ CSV 다운로드</button>
+
+    <!-- 서브탭 -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;">
+      <button id="subtab-btn-cross" onclick="switchSubtab('cross')"
+        style="padding:8px 18px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;">
+        📊 지역×직종 현황
+      </button>
+      <button id="subtab-btn-region" onclick="switchSubtab('region')"
+        style="padding:8px 18px;border-radius:7px;border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text2);">
+        🏢 지역별 기관 상세
+      </button>
+    </div>
+
+    <!-- 서브탭1: 지역×직종 크로스 테이블 -->
+    <div id="subtab-cross">
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-header">
+          <h4>지역 × 직종별 성과 현황</h4>
+          <span class="count" id="tableCount2"></span>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <select id="crossViewMode" onchange="renderTab2()"
+              style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px;">
+              <option value="emp_rate">취업률 기준</option>
+              <option value="score">성과점수 기준</option>
+              <option value="satisfy">만족도 기준</option>
+              <option value="complete">수료인원 기준</option>
+              <option value="cnt">과정수 기준</option>
+            </select>
+            <button class="btn btn-ghost" style="font-size:12px" onclick="exportCSV('table2')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="table2">
+            <thead><tr id="crossHeader"></tr></thead>
+            <tbody id="tbody2"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="table-scroll">
-        <table id="table2">
-          <thead>
-            <tr>
-              <th onclick="sortTable('table2',0)">시·도 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',1)">과정수 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',2)">정원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',3)">모집인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',4)">수료인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',5)">취업인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',6)">모집률 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',7)">수료율 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',8)">취업률 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',9)">만족도 평균 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table2',10)">성과점수 평균 <span class="sort-icon">↕</span></th>
-            </tr>
-          </thead>
-          <tbody id="tbody2"></tbody>
-        </table>
+
+      <!-- 지역별 요약 -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <h4>NCS 직무분류별 전체 현황</h4>
+          <span class="count" id="tableCount3"></span>
+          <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table3')">⬇ CSV</button>
+        </div>
+        <div class="table-scroll">
+          <table id="table3">
+            <thead>
+              <tr>
+                <th onclick="sortTable('table3',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',1)">과정수 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',2)">정원 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',3)">모집 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',4)">수료 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',5)">취업 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',6)">모집률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',7)">수료율 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',8)">취업률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',9)">만족도 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table3',10)">성과점수 <span class="sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody3"></tbody>
+          </table>
+        </div>
       </div>
     </div>
-    <div class="table-wrap">
-      <div class="table-header">
-        <h4>NCS 직무분류별 현황</h4>
-        <span class="count" id="tableCount3"></span>
-        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table3')">⬇ CSV 다운로드</button>
+
+    <!-- 서브탭2: 지역별 기관 상세 -->
+    <div id="subtab-region" style="display:none;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <select id="regionSelect" onchange="renderRegionDetail()"
+          style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-size:13px;outline:none;">
+          <option value="">지역 선택</option>
+        </select>
+        <select id="regionNcsSelect" onchange="renderRegionDetail()"
+          style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-size:13px;outline:none;">
+          <option value="">직종 전체</option>
+        </select>
+        <span id="regionTotalBadge" style="font-size:12px;color:var(--text3);"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table-region')">⬇ CSV</button>
       </div>
-      <div class="table-scroll">
-        <table id="table3">
-          <thead>
-            <tr>
-              <th onclick="sortTable('table3',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',1)">과정수 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',2)">정원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',3)">모집인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',4)">수료인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',5)">취업인원 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',6)">모집률 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',7)">수료율 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',8)">취업률 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',9)">만족도 평균 <span class="sort-icon">↕</span></th>
-              <th onclick="sortTable('table3',10)">성과점수 평균 <span class="sort-icon">↕</span></th>
-            </tr>
-          </thead>
-          <tbody id="tbody3"></tbody>
-        </table>
+
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table id="table-region">
+            <thead>
+              <tr>
+                <th onclick="sortTable('table-region',0)">직종 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',1)">훈련기관 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',2)">개설수 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',3)">만족도 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',4)">정원 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',5)">모집 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',6)">수료 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',7)">취업 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',8)">모집률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',9)">수료율 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',10)">취업률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',11)">성과(만족도) <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',12)">성과(취업) <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',13)">성과합계 <span class="sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-region"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pag-region"></div>
       </div>
     </div>
   </div>
@@ -395,7 +461,7 @@ let RAW = [];        // 원본 전체 데이터
 let FILTERED = [];   // 필터 적용 데이터
 let charts = {};
 const PAGE_SIZE = 100;
-let pages = { table1: 1, table4: 1 };
+let pages = { table1: 1, table4: 1, region: 1 };
 const EMP_TYPES = ['계좌제','국기','KDT','KDC','산대특'];
 const TODAY = new Date('2026-03-27');
 
@@ -504,12 +570,19 @@ function initUI() {
   // 시도 셀렉트
   const sidos = [...new Set(RAW.map(r => r.sido).filter(Boolean))].sort();
   const sf = document.getElementById('sidoFilter');
+  sf.innerHTML = '<option value="">전체</option>';
   sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
 
-  // NCS 셀렉트
-  const ncsList = [...new Set(RAW.map(r => r.ncs_name).filter(Boolean))].sort();
-  const nf = document.getElementById('ncsFilter');
-  ncsList.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; nf.appendChild(o); });
+  // NCS 코드+이름 목록 생성 (중복 제거)
+  const ncsMap = {};
+  RAW.forEach(r => {
+    if (r.ncs_code && r.ncs_name) ncsMap[r.ncs_code] = r.ncs_name;
+  });
+  window.NCS_LIST = Object.entries(ncsMap).map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  window.selectedNcsCodes = new Set();
+
+  renderNcsDropdown();
 
   // 날짜 범위 초기값
   const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
@@ -517,6 +590,13 @@ function initUI() {
     document.getElementById('dateStart').value = fmtDate(ends[0]);
     document.getElementById('dateEnd').value   = fmtDate(ends[ends.length-1]);
   }
+
+  // 드롭다운 외부 클릭 시 닫기
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.filter-group')) {
+      document.getElementById('ncsDropdown').style.display = 'none';
+    }
+  });
 
   applyFilters();
 }
@@ -527,13 +607,84 @@ function toggleType(el, type) {
   applyFilters();
 }
 
+// ── NCS 다중선택 드롭다운 ──────────────────────────────────
+function showNcsDropdown() {
+  document.getElementById('ncsDropdown').style.display = 'block';
+  renderNcsDropdown();
+}
+
+function renderNcsDropdown() {
+  const q = (document.getElementById('ncsSearchInput').value || '').toLowerCase();
+  const list = window.NCS_LIST || [];
+  const filtered = q
+    ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q))
+    : list;
+
+  const dd = document.getElementById('ncsDropdown');
+  dd.style.display = 'block';
+
+  if (!filtered.length) {
+    dd.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
+    return;
+  }
+
+  dd.innerHTML = filtered.slice(0, 100).map(n => {
+    const sel = window.selectedNcsCodes && window.selectedNcsCodes.has(n.code);
+    return `<div onclick="toggleNcs('${n.code}','${n.name.replace(/'/g,"\\'")}',this)"
+      style="padding:8px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;
+             background:${sel ? 'rgba(79,142,247,.15)' : 'transparent'};
+             color:${sel ? 'var(--accent)' : 'var(--text)'};"
+      onmouseover="this.style.background='${sel ? 'rgba(79,142,247,.2)' : 'var(--surface2)'}'"
+      onmouseout="this.style.background='${sel ? 'rgba(79,142,247,.15)' : 'transparent'}'">
+      <span style="font-size:11px;min-width:14px;">${sel ? '✓' : ''}</span>
+      <span style="color:var(--text3);min-width:56px;">${n.code}</span>
+      <span>${n.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleNcs(code, name, el) {
+  if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
+  if (window.selectedNcsCodes.has(code)) {
+    window.selectedNcsCodes.delete(code);
+  } else {
+    window.selectedNcsCodes.add(code);
+  }
+  renderNcsDropdown();
+  renderNcsSelected();
+  applyFilters();
+}
+
+function removeNcs(code) {
+  window.selectedNcsCodes && window.selectedNcsCodes.delete(code);
+  renderNcsDropdown();
+  renderNcsSelected();
+  applyFilters();
+}
+
+function renderNcsSelected() {
+  const list = window.NCS_LIST || [];
+  const sel = window.selectedNcsCodes || new Set();
+  const el = document.getElementById('ncsSelected');
+  if (sel.size === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = [...sel].map(code => {
+    const item = list.find(n => n.code === code);
+    const name = item ? item.name : code;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(79,142,247,.15);
+      border:1px solid rgba(79,142,247,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent);">
+      ${code} ${name}
+      <span onclick="removeNcs('${code}')" style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
+    </span>`;
+  }).join('');
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 필터 적용
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function applyFilters() {
   const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
   const sido     = document.getElementById('sidoFilter').value;
-  const ncs      = document.getElementById('ncsFilter').value;
+  const selNcs   = window.selectedNcsCodes || new Set();
   const ds       = document.getElementById('dateStart').value;
   const de       = document.getElementById('dateEnd').value;
   const basis    = document.querySelector('input[name=dateBasis]:checked').value;
@@ -541,7 +692,7 @@ function applyFilters() {
   FILTERED = RAW.filter(r => {
     if (!selTypes.includes(r.type)) return false;
     if (sido && r.sido !== sido) return false;
-    if (ncs  && r.ncs_name !== ncs) return false;
+    if (selNcs.size > 0 && !selNcs.has(r.ncs_code)) return false;
     const d = basis === 'end' ? r.end : r.start;
     if (ds && d && fmtDate(d) < ds) return false;
     if (de && d && fmtDate(d) > de) return false;
@@ -557,6 +708,7 @@ function applyFilters() {
 
   pages.table1 = 1;
   pages.table4 = 1;
+  pages.region = 1;
 
   renderSummary();
   renderTab1();
@@ -570,7 +722,14 @@ function resetFilters() {
     el.querySelector('input').checked = true;
   });
   document.getElementById('sidoFilter').value = '';
-  document.getElementById('ncsFilter').value  = '';
+
+  // NCS 다중선택 초기화
+  window.selectedNcsCodes = new Set();
+  document.getElementById('ncsSearchInput').value = '';
+  renderNcsSelected();
+  renderNcsDropdown();
+  document.getElementById('ncsDropdown').style.display = 'none';
+
   const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
   if (ends.length) {
     document.getElementById('dateStart').value = fmtDate(ends[0]);
@@ -668,49 +827,251 @@ function renderInstRow(r) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 2
+// 분석 2 - 서브탭 전환
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function renderTab2() {
-  // 지역별
-  const bySido = groupBy(FILTERED, 'sido');
-  const sidoRows = Object.entries(bySido).map(([sido, rs]) => makeAggRow(sido, rs)).sort((a,b)=>b.cnt-a.cnt);
-  document.getElementById('tableCount2').textContent = `${sidoRows.length}개 시·도`;
-  document.getElementById('tbody2').innerHTML = sidoRows.map(r => aggRowHTML(r)).join('');
-
-  // NCS별
-  const byNcs = groupBy(FILTERED, 'ncs_name');
-  const ncsRows = Object.entries(byNcs).map(([ncs, rs]) => makeAggRow(ncs, rs)).sort((a,b)=>b.cnt-a.cnt);
-  document.getElementById('tableCount3').textContent = `${ncsRows.length}개 직무분류`;
-  document.getElementById('tbody3').innerHTML = ncsRows.map(r => aggRowHTML(r, true)).join('');
+function switchSubtab(id) {
+  ['cross','region'].forEach(t => {
+    const panel = document.getElementById('subtab-'+t);
+    const btn   = document.getElementById('subtab-btn-'+t);
+    if (!panel || !btn) return;
+    const active = t === id;
+    panel.style.display = active ? '' : 'none';
+    btn.style.background    = active ? 'var(--accent)' : 'transparent';
+    btn.style.color         = active ? '#fff' : 'var(--text2)';
+    btn.style.border        = active ? 'none' : '1px solid var(--border)';
+  });
+  if (id === 'region') renderRegionDetail();
 }
 
-function makeAggRow(label, rs) {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 2 - 지역×직종 크로스 + NCS별 현황
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderTab2() {
+  const mode = document.getElementById('crossViewMode')?.value || 'emp_rate';
+
+  // 지역·직종 집계
+  const sidos    = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
+  const ncsList  = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
+
+  // 지역×직종 맵
+  const crossMap = {};
+  FILTERED.forEach(r => {
+    const k = `${r.sido}|||${r.ncs_name}`;
+    if (!crossMap[k]) crossMap[k] = [];
+    crossMap[k].push(r);
+  });
+
+  // 직종별 전체 합계
+  const ncsTotal = {};
+  ncsList.forEach(ncs => {
+    const rs = FILTERED.filter(r => r.ncs_name === ncs);
+    ncsTotal[ncs] = calcAgg(rs);
+  });
+
+  // 헤더: 직종명들
+  const header = document.getElementById('crossHeader');
+  header.innerHTML = `
+    <th style="position:sticky;left:0;background:var(--surface2);z-index:10;min-width:80px;">시·도</th>
+    ${ncsList.map(n => `<th style="font-size:11px;white-space:nowrap;min-width:90px;" title="${n}">${n.length>6?n.slice(0,6)+'..':n}</th>`).join('')}
+    <th style="background:var(--surface2);font-weight:700;">합계</th>`;
+
+  // 바디: 지역별 행
+  const tbody2 = document.getElementById('tbody2');
+  const modeLabel = {emp_rate:'취업률',score:'성과점수',satisfy:'만족도',complete:'수료',cnt:'과정수'}[mode];
+
+  // 색상 스케일 계산 (히트맵용)
+  const allVals = [];
+  sidos.forEach(sido => {
+    ncsList.forEach(ncs => {
+      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      if (rs.length) {
+        const agg = calcAgg(rs);
+        const v = getAggVal(agg, mode);
+        if (v != null) allVals.push(v);
+      }
+    });
+  });
+  const maxVal = allVals.length ? Math.max(...allVals) : 1;
+  const minVal = allVals.length ? Math.min(...allVals) : 0;
+
+  tbody2.innerHTML = sidos.map(sido => {
+    const sidoAll = FILTERED.filter(r => r.sido === sido);
+    const sidoAgg = calcAgg(sidoAll);
+    const cells = ncsList.map(ncs => {
+      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      if (!rs.length) return `<td style="color:var(--text3);font-size:11px;text-align:center;">-</td>`;
+      const agg = calcAgg(rs);
+      const v   = getAggVal(agg, mode);
+      const pct = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
+      const alpha = (0.08 + pct * 0.35).toFixed(2);
+      const displayVal = fmtAggVal(v, mode);
+      return `<td style="text-align:center;font-size:12px;background:rgba(79,142,247,${alpha});cursor:pointer;"
+        onclick="quickDrillDown('${sido}','${ncs}')" title="${sido} · ${ncs}\n과정:${agg.cnt} 취업률:${fmtAggVal(agg.emp_rate,'emp_rate')} 성과:${fmtAggVal(agg.score,'score')}">
+        ${displayVal}
+      </td>`;
+    });
+    return `<tr>
+      <td style="position:sticky;left:0;background:var(--surface);font-weight:600;font-size:12px;z-index:5;white-space:nowrap;">${sido}</td>
+      ${cells.join('')}
+      <td style="background:var(--surface2);font-weight:700;text-align:center;font-size:12px;">${fmtAggVal(getAggVal(sidoAgg,mode),mode)}</td>
+    </tr>`;
+  }).join('');
+
+  // 전체 합계 행
+  const totalAgg = calcAgg(FILTERED);
+  const totalCells = ncsList.map(ncs => {
+    const v = getAggVal(ncsTotal[ncs], mode);
+    return `<td style="background:var(--surface2);font-weight:700;text-align:center;font-size:12px;">${fmtAggVal(v,mode)}</td>`;
+  }).join('');
+  tbody2.innerHTML += `<tr style="border-top:2px solid var(--accent);">
+    <td style="position:sticky;left:0;background:var(--surface2);font-weight:700;z-index:5;">전체</td>
+    ${totalCells}
+    <td style="background:rgba(79,142,247,.2);font-weight:800;text-align:center;">${fmtAggVal(getAggVal(totalAgg,mode),mode)}</td>
+  </tr>`;
+
+  document.getElementById('tableCount2').textContent = `${sidos.length}개 지역 × ${ncsList.length}개 직종 · 기준: ${modeLabel}`;
+
+  // NCS별 현황 테이블
+  const ncsRows = ncsList.map(ncs => {
+    const rs = FILTERED.filter(r => r.ncs_name === ncs);
+    return { label: ncs, ...calcAgg(rs) };
+  }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
+
+  document.getElementById('tableCount3').textContent = `${ncsRows.length}개 직무분류`;
+  document.getElementById('tbody3').innerHTML = ncsRows.map(r => `<tr>
+    <td style="cursor:pointer;color:var(--accent);" onclick="filterNcsAndDrill('${r.label}')">${r.label}</td>
+    <td style="text-align:right;">${r.cnt}</td>
+    <td style="text-align:right;">${r.quota!=null?r.quota.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${rateBar(r.rec_rate,'')}</td>
+    <td>${rateBar(r.comp_rate,'')}</td>
+    <td>${rateBar(r.emp_rate,'green')}</td>
+    <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+    <td>${r.score!=null?scoreBar(r.score):'-'}</td>
+  </tr>`).join('');
+
+  // 지역별 셀렉트 업데이트
+  updateRegionSelects();
+}
+
+function calcAgg(rs) {
   const quota    = sumN(rs,'quota');
   const confirm  = sumN(rs,'confirm');
   const complete = sumN(rs,'complete');
   const employ   = sumN(rs,'employ');
-  const recRate  = quota > 0 ? confirm/quota : null;
-  const compRate = confirm > 0 ? complete/confirm : null;
-  const empRate  = complete > 0 ? employ/complete : null;
-  const sat      = avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
-  const score    = avgN(rs.filter(r=>r.score!=null),'score');
-  return { label, cnt: rs.length, quota, confirm, complete, employ, recRate, compRate, empRate, sat, score };
+  return {
+    cnt:       rs.length,
+    quota, confirm, complete, employ,
+    rec_rate:  quota > 0    ? confirm/quota    : null,
+    comp_rate: confirm > 0  ? complete/confirm : null,
+    emp_rate:  complete > 0 ? employ/complete  : null,
+    sat:       avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
+    score:     avgN(rs.filter(r=>r.score!=null),'score'),
+  };
 }
 
-function aggRowHTML(r, isNcs=false) {
-  return `<tr>
-    <td><b>${r.label||'-'}</b></td>
-    <td>${r.cnt.toLocaleString()}</td>
-    <td>${r.quota!=null?r.quota.toLocaleString():'-'}</td>
-    <td>${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
-    <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
-    <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
-    <td>${rateBar(r.recRate,'')}</td>
-    <td>${rateBar(r.compRate,'')}</td>
-    <td>${rateBar(r.empRate,'green')}</td>
-    <td>${r.sat!=null?r.sat.toFixed(1):'-'}</td>
-    <td>${r.score!=null?scoreBar(r.score):'-'}</td>
-  </tr>`;
+function getAggVal(agg, mode) {
+  if (!agg) return null;
+  return { emp_rate: agg.emp_rate, score: agg.score, satisfy: agg.sat, complete: agg.complete, cnt: agg.cnt }[mode] ?? null;
+}
+
+function fmtAggVal(v, mode) {
+  if (v == null) return '-';
+  if (mode === 'emp_rate') return (v*100).toFixed(1)+'%';
+  if (mode === 'score')    return v.toFixed(1);
+  if (mode === 'satisfy')  return v.toFixed(1);
+  if (mode === 'complete') return Math.round(v).toLocaleString();
+  if (mode === 'cnt')      return v.toLocaleString();
+  return v;
+}
+
+function quickDrillDown(sido, ncs) {
+  // 지역별 기관 상세로 이동
+  switchSubtab('region');
+  setTimeout(() => {
+    const rs = document.getElementById('regionSelect');
+    if (rs) { rs.value = sido; }
+    const rn = document.getElementById('regionNcsSelect');
+    if (rn) { rn.value = ncs; }
+    renderRegionDetail();
+  }, 50);
+}
+
+function filterNcsAndDrill(ncs) {
+  switchSubtab('region');
+  setTimeout(() => {
+    const rn = document.getElementById('regionNcsSelect');
+    if (rn) { rn.value = ncs; }
+    renderRegionDetail();
+  }, 50);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 2 - 지역별 기관 상세
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function updateRegionSelects() {
+  const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
+  const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
+  const rs = document.getElementById('regionSelect');
+  const rn = document.getElementById('regionNcsSelect');
+  if (!rs || !rn) return;
+
+  const curSido = rs.value;
+  const curNcs  = rn.value;
+  rs.innerHTML = '<option value="">지역 선택</option>' + sidos.map(s=>`<option value="${s}">${s}</option>`).join('');
+  rn.innerHTML = '<option value="">직종 전체</option>' + ncsList.map(n=>`<option value="${n}">${n}</option>`).join('');
+  rs.value = curSido;
+  rn.value = curNcs;
+}
+
+function renderRegionDetail() {
+  const sido    = document.getElementById('regionSelect')?.value || '';
+  const ncs     = document.getElementById('regionNcsSelect')?.value || '';
+
+  let rows = FILTERED;
+  if (sido) rows = rows.filter(r => r.sido === sido);
+  if (ncs)  rows = rows.filter(r => r.ncs_name === ncs);
+
+  // 기관+직종 단위 집계
+  const byKey = groupBy(rows, r => `${r.ncs_name}|||${r.inst}`);
+  const aggRows = Object.entries(byKey).map(([k, rs]) => {
+    const [ncsName, inst] = k.split('|||');
+    const agg = calcAgg(rs);
+    const scoreSat = agg.sat != null && EMP_TYPES.includes(rs[0].type) ? (agg.sat/100)*20 : null;
+    const scoreEmp = agg.emp_rate != null && EMP_TYPES.includes(rs[0].type) ? agg.emp_rate*40 : null;
+    const scoreTotal = scoreSat!=null && scoreEmp!=null ? scoreSat+scoreEmp : null;
+    return { ncs: ncsName, inst, sido: rs[0].sido, type: rs[0].type, ...agg, scoreSat, scoreEmp, scoreTotal };
+  }).sort((a,b) => {
+    if (a.ncs !== b.ncs) return a.ncs.localeCompare(b.ncs,'ko');
+    return (b.scoreTotal||0) - (a.scoreTotal||0);
+  });
+
+  document.getElementById('regionTotalBadge').textContent =
+    sido ? `${sido}${ncs?' · '+ncs:''} · ${aggRows.length}개 기관` : `전체 ${aggRows.length}개 기관`;
+
+  pages['region'] = 1;
+  renderPaginatedTable('tbody-region','pag-region', aggRows, 'region', r => {
+    const isTotal = r.inst === '총합계';
+    const rowStyle = isTotal ? 'font-weight:700;background:var(--surface2);' : '';
+    return `<tr style="${rowStyle}">
+      <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs||'-'}</td>
+      <td style="white-space:nowrap;">${r.inst}</td>
+      <td style="text-align:right;">${r.cnt}</td>
+      <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+      <td style="text-align:right;">${r.quota!=null?r.quota.toLocaleString():'-'}</td>
+      <td style="text-align:right;">${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
+      <td style="text-align:right;">${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+      <td style="text-align:right;">${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+      <td>${rateBar(r.rec_rate,'')}</td>
+      <td>${rateBar(r.comp_rate,'')}</td>
+      <td>${rateBar(r.emp_rate,'green')}</td>
+      <td style="text-align:right;color:var(--accent2);">${r.scoreSat!=null?r.scoreSat.toFixed(1):'-'}</td>
+      <td style="text-align:right;color:var(--accent);">${r.scoreEmp!=null?r.scoreEmp.toFixed(1):'-'}</td>
+      <td>${r.scoreTotal!=null?scoreBar(r.scoreTotal):'-'}</td>
+    </tr>`;
+  });
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -832,6 +1193,7 @@ function goPage(tableKey, page) {
   pages[tableKey] = page;
   if (tableKey==='table1') renderTab1();
   if (tableKey==='table4') renderTab3();
+  if (tableKey==='region') renderRegionDetail();
 }
 
 function pageRange(cur, total) {
