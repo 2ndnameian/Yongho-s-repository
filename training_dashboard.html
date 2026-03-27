@@ -24,14 +24,12 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; font-size: 14px; min-height: 100vh; }
 
-  /* ── 헤더 ── */
   .header { background: #1e40af; border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .header-title { font-size: 18px; font-weight: 700; color: #ffffff; }
   .header-sub { font-size: 12px; color: #93c5fd; }
   .header-badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
   .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
-  /* ── 업로드 영역 ── */
   .upload-area { margin: 24px 28px; border: 2px dashed #cbd5e1; background: #ffffff; border-radius: var(--radius); padding: 36px; text-align: center; cursor: pointer; transition: all .2s; }
   .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: rgba(79,142,247,.05); }
   .upload-area .icon { font-size: 40px; margin-bottom: 12px; }
@@ -39,15 +37,12 @@
   .upload-area strong { color: var(--text); font-size: 15px; }
   #fileInput { display: none; }
 
-  /* ── 로딩 ── */
   .loading { display: none; text-align: center; padding: 40px; color: var(--text2); }
   .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── 메인 레이아웃 ── */
   .main { display: none; padding: 0 28px 40px; }
 
-  /* ── 필터 패널 ── */
   .filter-panel { background: var(--surface); border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.06); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 20px; }
   .filter-panel h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 14px; letter-spacing: .05em; text-transform: uppercase; }
   .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
@@ -74,7 +69,6 @@
   .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
   .warn-badge { display: inline-flex; align-items: center; gap: 5px; background: #fffbeb; border: 1px solid #fde68a; color: var(--accent3); border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: auto; }
 
-  /* ── 요약 카드 ── */
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
   .summary-card .label { font-size: 11px; color: var(--text3); margin-bottom: 6px; font-weight: 600; letter-spacing: .04em; }
@@ -84,7 +78,6 @@
   .summary-card.green { border-color: rgba(56,217,169,.4); }
   .summary-card.yellow { border-color: rgba(245,158,11,.4); }
 
-  /* ── 탭 ── */
   .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border); }
   .tab { padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
   .tab:hover { color: var(--text); }
@@ -92,7 +85,6 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* ── 테이블 ── */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
   .table-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
   .table-header h4 { font-size: 13px; font-weight: 600; }
@@ -120,21 +112,18 @@
   .bar-fill.yellow { background: var(--accent3); }
   .bar-val { font-size: 11px; color: var(--text2); min-width: 40px; text-align: right; }
 
-  /* ── 차트 영역 ── */
   .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
   .chart-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--text2); }
   .chart-card canvas { max-height: 240px; }
   @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
 
-  /* ── 페이지네이션 ── */
   .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-top: 1px solid var(--border); }
   .page-btn { padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; font-size: 12px; transition: all .15s; }
   .page-btn:hover { border-color: var(--accent); color: var(--accent); }
   .page-btn.active { background: var(--accent); border-color: var(--accent); color: #ffffff; }
   .page-btn:disabled { opacity: .3; cursor: default; }
 
-  /* ── 분석3 NCS 카드 ── */
   .ncs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   .ncs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
   .ncs-card h5 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
@@ -151,7 +140,6 @@
 </head>
 <body>
 
-<!-- 헤더 -->
 <div class="header">
   <div style="display:flex;align-items:center;gap:14px;">
     <div style="width:36px;height:36px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📊</div>
@@ -172,7 +160,6 @@
   </div>
 </div>
 
-<!-- 업로드 -->
 <div id="uploadSection">
   <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()"
        ondragover="event.preventDefault();this.classList.add('drag')"
@@ -190,20 +177,14 @@
   </div>
 </div>
 
-<!-- 메인 -->
 <div class="main" id="mainSection">
 
-  <!-- 필터 -->
   <div class="filter-panel">
     <h3>🔍 필터</h3>
-
-    <!-- 1행: 훈련유형 다중선택 -->
     <div class="filter-group" style="margin-bottom:16px;">
       <label>훈련유형 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택)</span></label>
       <div class="checkbox-group" id="typeFilter"></div>
     </div>
-
-    <!-- 2행: 시도 + 국기직종명 + NCS코드 다중선택 -->
     <div style="display:grid;grid-template-columns:160px 180px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
         <label>시·도</label>
@@ -228,8 +209,6 @@
         <div id="ncsSelected" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:4px;"></div>
       </div>
     </div>
-
-    <!-- 3행: 기간기준 + 날짜범위 -->
     <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
         <label>기간 기준</label>
@@ -249,7 +228,6 @@
         </div>
       </div>
     </div>
-
     <div class="filter-actions">
       <button class="btn btn-primary" onclick="applyFilters()">적용</button>
       <button class="btn btn-ghost" onclick="resetFilters()">초기화</button>
@@ -257,17 +235,14 @@
     </div>
   </div>
 
-  <!-- 요약 카드 -->
   <div class="summary-grid" id="summaryCards"></div>
 
-  <!-- 탭 -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('tab1',this)">📈 분석 1 · 성과 현황</div>
     <div class="tab" onclick="switchTab('tab2',this)">🗺️ 분석 2 · 지역·직종별</div>
     <div class="tab" onclick="switchTab('tab3',this)">🎯 분석 3 · NCS 취업률</div>
   </div>
 
-  <!-- 분석 1 -->
   <div class="tab-content active" id="tab1">
     <div class="chart-grid">
       <div class="chart-card">
@@ -309,10 +284,7 @@
     </div>
   </div>
 
-  <!-- 분석 2 -->
   <div class="tab-content" id="tab2">
-
-    <!-- 서브탭 -->
     <div style="display:flex;gap:6px;margin-bottom:16px;">
       <button id="subtab-btn-cross" onclick="switchSubtab('cross')"
         style="padding:8px 18px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;">
@@ -324,7 +296,6 @@
       </button>
     </div>
 
-    <!-- 서브탭1: 지역×직종 크로스 테이블 -->
     <div id="subtab-cross">
       <div class="table-wrap" style="margin-bottom:16px">
         <div class="table-header">
@@ -350,7 +321,6 @@
         </div>
       </div>
 
-      <!-- 지역별 요약 -->
       <div class="table-wrap">
         <div class="table-header">
           <h4>NCS 직무분류별 전체 현황</h4>
@@ -380,7 +350,6 @@
       </div>
     </div>
 
-    <!-- 서브탭2: 지역별 기관 상세 -->
     <div id="subtab-region" style="display:none;">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
         <select id="regionSelect" onchange="renderRegionDetail()"
@@ -400,20 +369,21 @@
           <table id="table-region">
             <thead>
               <tr>
-                <th onclick="sortTable('table-region',0)">직종 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',1)">훈련기관 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',2)">개설수 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',3)">만족도 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',4)">정원 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',5)">모집 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',6)">수료 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',7)">취업 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',8)">모집률 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',9)">수료율 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',10)">취업률 <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',11)">성과(만족도) <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',12)">성과(취업) <span class="sort-icon">↕</span></th>
-                <th onclick="sortTable('table-region',13)">성과합계 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',0)">직종(NCS) <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',1)">국기직종명 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',2)">훈련기관 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',3)">개설수 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',4)">만족도 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',5)">정원 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',6)">모집 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',7)">수료 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',8)">취업 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',9)">모집률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',10)">수료율 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',11)">취업률 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',12)">성과(만족도) <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',13)">성과(취업) <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table-region',14)">성과합계 <span class="sort-icon">↕</span></th>
               </tr>
             </thead>
             <tbody id="tbody-region"></tbody>
@@ -424,7 +394,6 @@
     </div>
   </div>
 
-  <!-- 분석 3 -->
   <div class="tab-content" id="tab3">
     <div style="margin-bottom:14px;font-size:12px;color:var(--text3)">
       ※ 취업률 0% 및 100% 기관 제외 후 산출 · 수료인원 0인 기관 제외
@@ -460,20 +429,14 @@
 </div>
 
 <script>
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 전역 상태
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let RAW = [];        // 원본 전체 데이터
-let FILTERED = [];   // 필터 적용 데이터
+let RAW = [];
+let FILTERED = [];
 let charts = {};
 const PAGE_SIZE = 100;
 let pages = { table1: 1, table4: 1, region: 1 };
 const EMP_TYPES = ['계좌제','국기','KDT','KDC','산대특'];
 const TODAY = new Date('2026-03-27');
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 파일 처리
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('dropZone').classList.remove('drag');
@@ -502,13 +465,6 @@ function handleFile(file) {
 }
 
 function parseRows(rows) {
-  // 컬럼명 디버그 (첫 행 키 확인)
-  if (rows.length > 0) {
-    const keys = Object.keys(rows[0]);
-    const kdcKey = keys.find(k => k.includes('국기') || k.toLowerCase().includes('kdc'));
-    console.log('[디버그] 전체 컬럼:', keys);
-    console.log('[디버그] 국기직종명 키:', kdcKey, '/ 값:', rows.find(r => rows[0][kdcKey])?.[kdcKey]);
-  }
   return rows.map(r => {
     const complete = toNum(r['수료']);
     const employ   = toNum(r['총 취업']);
@@ -536,6 +492,7 @@ function parseRows(rows) {
       ncs_code:  (r['NCS 코드'] || '').toString(),
       ncs_name:  (r['NCS직무분류'] || '').toString(),
       type,
+      // ★ kdc_name: 국기직종명 원본 보존 (표시용만 사용, 집계 키로는 사용 안 함)
       kdc_name:  r['국기직종명'] ? r['국기직종명'].toString().trim() : null,
       course:    (r['훈련과정명'] || '').toString(),
       course_id: (r['훈련과정ID'] || '').toString(),
@@ -563,16 +520,12 @@ function toDate(v) {
   return isNaN(d) ? null : d;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// UI 초기화
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initUI() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('uploadSection').style.display = 'none';
   document.getElementById('mainSection').style.display = 'block';
   document.getElementById('resetBtn').style.display = '';
 
-  // 훈련유형 체크박스
   const types = [...new Set(RAW.map(r => r.type).filter(Boolean))].sort();
   const tf = document.getElementById('typeFilter');
   tf.innerHTML = types.map(t => `
@@ -581,19 +534,16 @@ function initUI() {
       <span>${t}</span>
     </label>`).join('');
 
-  // 시도 셀렉트
   const sidos = [...new Set(RAW.map(r => r.sido).filter(Boolean))].sort();
   const sf = document.getElementById('sidoFilter');
   sf.innerHTML = '<option value="">전체</option>';
   sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
 
-  // 국기직종명 셀렉트
   const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(v => v != null && v !== ''))].sort();
   const kf = document.getElementById('kdcFilter');
   kf.innerHTML = '<option value="">전체</option>';
   kdcNames.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kf.appendChild(o); });
 
-  // NCS 코드+이름 목록 생성 (중복 제거)
   const ncsMap = {};
   RAW.forEach(r => {
     if (r.ncs_code && r.ncs_name) ncsMap[r.ncs_code] = r.ncs_name;
@@ -604,14 +554,12 @@ function initUI() {
 
   renderNcsDropdown();
 
-  // 날짜 범위 초기값
   const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
   if (ends.length) {
     document.getElementById('dateStart').value = fmtDate(ends[0]);
     document.getElementById('dateEnd').value   = fmtDate(ends[ends.length-1]);
   }
 
-  // 드롭다운 외부 클릭 시 닫기
   document.addEventListener('click', e => {
     if (!e.target.closest('.filter-group')) {
       document.getElementById('ncsDropdown').style.display = 'none';
@@ -622,14 +570,12 @@ function initUI() {
 }
 
 function toggleType(el, type) {
-  // label 클릭 시 input 체크 상태를 직접 읽어서 처리 (이중 이벤트 방지)
   const input = el.querySelector('input');
   const isChecked = input.checked;
   el.classList.toggle('active', isChecked);
   applyFilters();
 }
 
-// ── NCS 다중선택 체크박스 드롭다운 ──────────────────────────
 function showNcsDropdown() {
   document.getElementById('ncsDropdown').style.display = 'block';
   renderNcsDropdown();
@@ -639,32 +585,22 @@ function renderNcsDropdown() {
   const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
   const list = window.NCS_LIST || [];
   const sel  = window.selectedNcsCodes || new Set();
-
-  const filtered = q
-    ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q))
-    : list;
-
+  const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
   const dd = document.getElementById('ncsDropdown');
   dd.style.display = 'block';
-
   if (!filtered.length) {
     dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
     return;
   }
-
-  // 전체선택 / 전체해제 버튼
-  const allChecked = filtered.every(n => sel.has(n.code));
   const headerHtml = `
     <div style="padding:6px 12px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;background:#f8fafc;">
       <span style="font-size:11px;color:var(--text3);">${filtered.length}개 표시</span>
       <button onclick="selectAllNcs()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
       <button onclick="clearAllNcs()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
     </div>`;
-
   const itemsHtml = filtered.slice(0, 150).map(n => {
     const checked = sel.has(n.code);
-    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;
-                           background:${checked ? 'rgba(79,142,247,.1)' : 'transparent'};"
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;background:${checked ? 'rgba(79,142,247,.1)' : 'transparent'};"
               onmouseover="this.style.background='${checked ? 'rgba(79,142,247,.18)' : 'var(--surface2)'}'"
               onmouseout="this.style.background='${checked ? 'rgba(79,142,247,.1)' : 'transparent'}'">
       <input type="checkbox" ${checked ? 'checked' : ''}
@@ -674,7 +610,6 @@ function renderNcsDropdown() {
       <span style="font-size:12px;color:${checked ? 'var(--accent)' : 'var(--text)'};">${n.name}</span>
     </label>`;
   }).join('');
-
   dd.innerHTML = headerHtml + `<div style="max-height:180px;overflow-y:auto;">${itemsHtml}</div>`;
 }
 
@@ -683,9 +618,7 @@ function selectAllNcs() {
   const list = window.NCS_LIST || [];
   const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
   filtered.forEach(n => window.selectedNcsCodes.add(n.code));
-  renderNcsDropdown();
-  renderNcsSelected();
-  applyFilters();
+  renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
 
 function clearAllNcs() {
@@ -693,42 +626,19 @@ function clearAllNcs() {
   const list = window.NCS_LIST || [];
   const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
   filtered.forEach(n => window.selectedNcsCodes.delete(n.code));
-  renderNcsDropdown();
-  renderNcsSelected();
-  applyFilters();
+  renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
 
 function toggleNcsByCode(code, name, checked) {
   if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
-  if (checked) {
-    window.selectedNcsCodes.add(code);
-  } else {
-    window.selectedNcsCodes.delete(code);
-  }
-  // 드롭다운 배경색만 갱신 (닫지 않음)
-  renderNcsDropdown();
-  renderNcsSelected();
-  applyFilters();
-}
-
-// 기존 toggleNcs는 하위 호환용으로 유지
-function toggleNcs(code, name, el) {
-  if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
-  if (window.selectedNcsCodes.has(code)) {
-    window.selectedNcsCodes.delete(code);
-  } else {
-    window.selectedNcsCodes.add(code);
-  }
-  renderNcsDropdown();
-  renderNcsSelected();
-  applyFilters();
+  if (checked) window.selectedNcsCodes.add(code);
+  else window.selectedNcsCodes.delete(code);
+  renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
 
 function removeNcs(code) {
   window.selectedNcsCodes && window.selectedNcsCodes.delete(code);
-  renderNcsDropdown();
-  renderNcsSelected();
-  applyFilters();
+  renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
 
 function renderNcsSelected() {
@@ -747,9 +657,6 @@ function renderNcsSelected() {
   }).join('');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 필터 적용
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function applyFilters() {
   const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
   const sido     = document.getElementById('sidoFilter').value;
@@ -770,16 +677,12 @@ function applyFilters() {
     return true;
   });
 
-  // 집계중 경고
   const hasUnconfirmed = FILTERED.some(r => !r.confirmed && r.has_emp);
   document.getElementById('warnBadge').style.display = hasUnconfirmed ? '' : 'none';
-
   document.getElementById('totalBadge').style.display = '';
   document.getElementById('totalBadge').textContent = `${FILTERED.length.toLocaleString()}건`;
 
-  pages.table1 = 1;
-  pages.table4 = 1;
-  pages.region = 1;
+  pages.table1 = 1; pages.table4 = 1; pages.region = 1;
 
   renderSummary();
   renderTab1();
@@ -794,14 +697,10 @@ function resetFilters() {
   });
   document.getElementById('sidoFilter').value = '';
   document.getElementById('kdcFilter').value  = '';
-
-  // NCS 다중선택 초기화
   window.selectedNcsCodes = new Set();
   document.getElementById('ncsSearchInput').value = '';
-  renderNcsSelected();
-  renderNcsDropdown();
+  renderNcsSelected(); renderNcsDropdown();
   document.getElementById('ncsDropdown').style.display = 'none';
-
   const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
   if (ends.length) {
     document.getElementById('dateStart').value = fmtDate(ends[0]);
@@ -821,9 +720,6 @@ function resetAll() {
   document.getElementById('dropZone').style.display      = '';
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 요약 카드
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderSummary() {
   const totalCourses  = FILTERED.length;
   const totalInsts    = new Set(FILTERED.map(r => r.inst)).size;
@@ -832,7 +728,6 @@ function renderSummary() {
   const avgSatisfy    = avg(FILTERED.filter(r => r.satisfy != null), 'satisfy');
   const empRate       = totalComplete > 0 ? totalEmploy / totalComplete : null;
   const avgScore      = avg(FILTERED.filter(r => r.score != null), 'score');
-
   document.getElementById('summaryCards').innerHTML = `
     <div class="summary-card"><div class="label">총 과정 수</div><div class="value">${totalCourses.toLocaleString()}</div><div class="sub">회차 기준</div></div>
     <div class="summary-card"><div class="label">훈련기관 수</div><div class="value">${totalInsts.toLocaleString()}</div></div>
@@ -844,11 +739,7 @@ function renderSummary() {
   `;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 1
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderTab1() {
-  // 차트1: 훈련유형별 취업률
   const byType = groupBy(FILTERED.filter(r => r.has_emp), 'type');
   const typeLabels = Object.keys(byType).sort();
   const typeRates  = typeLabels.map(t => {
@@ -857,14 +748,11 @@ function renderTab1() {
     return c > 0 ? +(e/c*100).toFixed(1) : 0;
   });
   renderBar('chart1', typeLabels, typeRates, '취업률 (%)', ['#1e40af','#059669','#d97706','#7c3aed','#dc2626','#0891b2']);
-
-  // 차트2: 시도별 과정 수
   const bySido = groupBy(FILTERED, 'sido');
   const sidoLabels = Object.keys(bySido).sort((a,b) => bySido[b].length - bySido[a].length).slice(0,12);
   const sidoCounts = sidoLabels.map(s => bySido[s].length);
   renderBar('chart2', sidoLabels, sidoCounts, '과정 수', '#1e40af');
 
-  // 기관별 집계 테이블
   const byInst = groupBy(FILTERED, 'inst');
   const rows = Object.entries(byInst).map(([inst, rs]) => {
     const c = sumN(rs,'complete'), e = sumN(rs,'employ');
@@ -898,9 +786,6 @@ function renderInstRow(r) {
   </tr>`;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 2 - 서브탭 전환
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function switchSubtab(id) {
   ['cross','region'].forEach(t => {
     const panel = document.getElementById('subtab-'+t);
@@ -915,17 +800,11 @@ function switchSubtab(id) {
   if (id === 'region') renderRegionDetail();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 2 - 지역×직종 크로스 + NCS별 현황
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderTab2() {
   const mode = document.getElementById('crossViewMode')?.value || 'emp_rate';
+  const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
+  const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
 
-  // 지역·직종 집계
-  const sidos    = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
-  const ncsList  = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
-
-  // 지역×직종 맵
   const crossMap = {};
   FILTERED.forEach(r => {
     const k = `${r.sido}|||${r.ncs_name}`;
@@ -933,25 +812,21 @@ function renderTab2() {
     crossMap[k].push(r);
   });
 
-  // 직종별 전체 합계
   const ncsTotal = {};
   ncsList.forEach(ncs => {
     const rs = FILTERED.filter(r => r.ncs_name === ncs);
     ncsTotal[ncs] = calcAgg(rs);
   });
 
-  // 헤더: 직종명들
   const header = document.getElementById('crossHeader');
   header.innerHTML = `
     <th style="position:sticky;left:0;background:var(--surface2);z-index:10;min-width:80px;">시·도</th>
     ${ncsList.map(n => `<th style="font-size:11px;white-space:nowrap;min-width:90px;" title="${n}">${n.length>6?n.slice(0,6)+'..':n}</th>`).join('')}
     <th style="background:var(--surface2);font-weight:700;">합계</th>`;
 
-  // 바디: 지역별 행
   const tbody2 = document.getElementById('tbody2');
   const modeLabel = {emp_rate:'취업률',score:'성과점수',satisfy:'만족도',complete:'수료',cnt:'과정수'}[mode];
 
-  // 색상 스케일 계산 (히트맵용)
   const allVals = [];
   sidos.forEach(sido => {
     ncsList.forEach(ncs => {
@@ -974,8 +849,8 @@ function renderTab2() {
       if (!rs.length) return `<td style="color:var(--text3);font-size:11px;text-align:center;">-</td>`;
       const agg = calcAgg(rs);
       const v   = getAggVal(agg, mode);
-      const pct = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
-      const alpha = (0.08 + pct * 0.35).toFixed(2);
+      const p   = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
+      const alpha = (0.08 + p * 0.35).toFixed(2);
       const displayVal = fmtAggVal(v, mode);
       return `<td style="text-align:center;font-size:12px;background:rgba(79,142,247,${alpha});cursor:pointer;"
         onclick="quickDrillDown('${sido}','${ncs}')" title="${sido} · ${ncs}\n과정:${agg.cnt} 취업률:${fmtAggVal(agg.emp_rate,'emp_rate')} 성과:${fmtAggVal(agg.score,'score')}">
@@ -989,7 +864,6 @@ function renderTab2() {
     </tr>`;
   }).join('');
 
-  // 전체 합계 행
   const totalAgg = calcAgg(FILTERED);
   const totalCells = ncsList.map(ncs => {
     const v = getAggVal(ncsTotal[ncs], mode);
@@ -1003,7 +877,6 @@ function renderTab2() {
 
   document.getElementById('tableCount2').textContent = `${sidos.length}개 지역 × ${ncsList.length}개 직종 · 기준: ${modeLabel}`;
 
-  // NCS별 현황 테이블
   const ncsRows = ncsList.map(ncs => {
     const rs = FILTERED.filter(r => r.ncs_name === ncs);
     return { label: ncs, ...calcAgg(rs) };
@@ -1024,7 +897,6 @@ function renderTab2() {
     <td>${r.score!=null?scoreBar(r.score):'-'}</td>
   </tr>`).join('');
 
-  // 지역별 셀렉트 업데이트
   updateRegionSelects();
 }
 
@@ -1060,13 +932,12 @@ function fmtAggVal(v, mode) {
 }
 
 function quickDrillDown(sido, ncs) {
-  // 지역별 기관 상세로 이동
   switchSubtab('region');
   setTimeout(() => {
     const rs = document.getElementById('regionSelect');
-    if (rs) { rs.value = sido; }
+    if (rs) rs.value = sido;
     const rn = document.getElementById('regionNcsSelect');
-    if (rn) { rn.value = ncs; }
+    if (rn) rn.value = ncs;
     renderRegionDetail();
   }, 50);
 }
@@ -1075,19 +946,18 @@ function filterNcsAndDrill(ncs) {
   switchSubtab('region');
   setTimeout(() => {
     const rn = document.getElementById('regionNcsSelect');
-    if (rn) { rn.value = ncs; }
+    if (rn) rn.value = ncs;
     renderRegionDetail();
   }, 50);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 2 - 지역별 기관 상세
+// ★ 수정 1: updateRegionSelects - 직종 드롭다운을 ncs_name 기준으로 통일
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updateRegionSelects() {
   const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
-  // 직종 목록: kdc_name(국기직종명) 있으면 우선, 없으면 ncs_name 사용
-  // 직종 목록: kdc_name(국기직종명) 있으면 그 값, 없으면 ncs_name - 중복 제거
-  const ncsList = [...new Set(FILTERED.map(r => r.kdc_name != null ? r.kdc_name : r.ncs_name).filter(Boolean))].sort();
+  // ★ 변경: kdc_name 혼용 제거 → ncs_name 기준으로만 직종 목록 생성
+  const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
   const rs = document.getElementById('regionSelect');
   const rn = document.getElementById('regionNcsSelect');
   if (!rs || !rn) return;
@@ -1100,36 +970,37 @@ function updateRegionSelects() {
   rn.value = curNcs;
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ★ 수정 2: renderRegionDetail - keyFn을 ncs_name 기준으로 통일 + kdc_name 별도 표시
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderRegionDetail() {
-  const sido    = document.getElementById('regionSelect')?.value || '';
-  const ncs     = document.getElementById('regionNcsSelect')?.value || '';
-  // 글로벌 국기직종명 필터 선택값 (applyFilters에서 사용한 값)
-  const kdcGlobal = document.getElementById('kdcFilter')?.value || '';
+  const sido = document.getElementById('regionSelect')?.value || '';
+  const ncs  = document.getElementById('regionNcsSelect')?.value || '';
 
   let rows = FILTERED;
   if (sido) rows = rows.filter(r => r.sido === sido);
-  if (ncs)  rows = rows.filter(r => (r.kdc_name != null ? r.kdc_name : r.ncs_name) === ncs);
+  // ★ 변경: ncs_name 기준으로 필터
+  if (ncs)  rows = rows.filter(r => r.ncs_name === ncs);
 
-  // ── 집계 키 결정 ──────────────────────────────────────────
-  // 규칙: kdc_name이 있는 행(국기 유형)은 무조건 kdc_name 기준으로 묶기
-  //       kdc_name이 없는 행(근로자/계좌제 등)은 ncs_name 기준으로 묶기
-  // → NCS 세부코드가 달라도 같은 국기직종명+기관이면 1행으로 합산됨
-  const keyFn = r => `${r.kdc_name != null ? r.kdc_name : r.ncs_name}|||${r.inst}`;
+  // ★ 핵심 수정: keyFn을 ncs_name + inst 기준으로 통일
+  //   (기존에는 kdc_name이 있으면 kdc_name을 키로 사용해서 같은 기관이 2개 행으로 분리되던 문제 해결)
+  const keyFn = r => `${r.ncs_name}|||${r.inst}`;
 
   const byKey = groupBy(rows, keyFn);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
-    const [label, inst] = k.split('|||');
-    const agg  = calcAgg(rs);
+    const [ncsLabel, inst] = k.split('|||');
+    const agg = calcAgg(rs);
     const type = rs[0].type;
-    // 성과점수: 해당 그룹 내 취업률 대상 유형이 있으면 계산
-    const empRows   = rs.filter(r => EMP_TYPES.includes(r.type));
-    const scoreSat  = agg.sat != null && empRows.length > 0
-      ? (agg.sat / 100) * 20 : null;
-    const scoreEmp  = agg.emp_rate != null && empRows.length > 0
-      ? agg.emp_rate * 40 : null;
-    const scoreTotal = scoreSat != null && scoreEmp != null
-      ? scoreSat + scoreEmp : null;
-    return { ncs: label, inst, sido: rs[0].sido, type, ...agg, scoreSat, scoreEmp, scoreTotal };
+
+    // ★ 국기직종명 수집: 해당 그룹 내 kdc_name 중 null이 아닌 것 (여러 개면 쉼표로 합치기)
+    const kdcNames = [...new Set(rs.map(r => r.kdc_name).filter(Boolean))];
+    const kdcLabel = kdcNames.length > 0 ? kdcNames.join(', ') : '-';
+
+    const empRows    = rs.filter(r => EMP_TYPES.includes(r.type));
+    const scoreSat   = agg.sat != null && empRows.length > 0 ? (agg.sat / 100) * 20 : null;
+    const scoreEmp   = agg.emp_rate != null && empRows.length > 0 ? agg.emp_rate * 40 : null;
+    const scoreTotal = scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
+    return { ncs: ncsLabel, kdcLabel, inst, sido: rs[0].sido, type, ...agg, scoreSat, scoreEmp, scoreTotal };
   }).sort((a,b) => {
     if (a.ncs !== b.ncs) return a.ncs.localeCompare(b.ncs,'ko');
     return (b.scoreTotal||0) - (a.scoreTotal||0);
@@ -1140,10 +1011,9 @@ function renderRegionDetail() {
 
   pages['region'] = 1;
   renderPaginatedTable('tbody-region','pag-region', aggRows, 'region', r => {
-    const isTotal = r.inst === '총합계';
-    const rowStyle = isTotal ? 'font-weight:700;background:var(--surface2);' : '';
-    return `<tr style="${rowStyle}">
+    return `<tr>
       <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs || '-'}</td>
+      <td style="font-size:11px;color:var(--text3);white-space:nowrap;">${r.kdcLabel}</td>
       <td style="white-space:nowrap;">${r.inst}</td>
       <td style="text-align:right;">${r.cnt}</td>
       <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
@@ -1161,16 +1031,11 @@ function renderRegionDetail() {
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 3
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderTab3() {
-  // 취업률 계산 가능 + 0%/100% 제외
   const validRows = FILTERED.filter(r =>
     r.complete > 0 && r.employ != null &&
     r.emp_rate > 0 && r.emp_rate < 1
   );
-
   const byNcs = groupBy(validRows, 'ncs_name');
   const ncsCards = Object.entries(byNcs).map(([ncs, rs]) => {
     const rates = rs.map(r => r.emp_rate).sort((a,b)=>a-b);
@@ -1191,7 +1056,6 @@ function renderTab3() {
     </div>
   `).join('') || '<div class="empty"><div class="icon">📭</div>데이터 없음</div>';
 
-  // 전체 상세 테이블
   renderNcsDetail(validRows);
 }
 
@@ -1206,7 +1070,6 @@ function filterNcs3(ncs) {
 }
 
 function renderNcsDetail(rows) {
-  // 기관+NCS 단위로 집계
   const key = r => `${r.ncs_name}|||${r.inst}`;
   const byKey = groupBy(rows, key);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
@@ -1228,9 +1091,6 @@ function renderNcsDetail(rows) {
   </tr>`);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 차트
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderBar(id, labels, data, label, colors) {
   if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id).getContext('2d');
@@ -1252,18 +1112,13 @@ function renderBar(id, labels, data, label, colors) {
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 페이지네이션 테이블
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderPaginatedTable(tbodyId, pagId, rows, tableKey, rowFn) {
   const page = pages[tableKey] || 1;
   const total = Math.ceil(rows.length / PAGE_SIZE);
   const slice = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
-
   document.getElementById(tbodyId).innerHTML = slice.length
     ? slice.map(rowFn).join('')
     : '<tr><td colspan="20" class="empty"><div class="icon">📭</div>데이터 없음</td></tr>';
-
   const pag = document.getElementById(pagId);
   if (total <= 1) { pag.innerHTML=''; return; }
   let btns = `<button class="page-btn" onclick="goPage('${tableKey}',${page-1})" ${page===1?'disabled':''}>‹</button>`;
@@ -1294,9 +1149,6 @@ function pageRange(cur, total) {
   return d;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 테이블 정렬
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let sortState = {};
 function sortTable(tableId, colIdx) {
   const table = document.getElementById(tableId);
@@ -1319,9 +1171,6 @@ function sortTable(tableId, colIdx) {
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CSV 다운로드
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function exportCSV(tableId) {
   const table = document.getElementById(tableId);
   const rows = [...table.querySelectorAll('tr')];
@@ -1337,9 +1186,6 @@ function exportCSV(tableId) {
   a.click();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 탭 전환
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function switchTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -1347,9 +1193,6 @@ function switchTab(id, el) {
   document.getElementById(id).classList.add('active');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 유틸
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const sum  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; };
 const sumN = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.reduce((a,b)=>a+b,0); };
 const avg  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
