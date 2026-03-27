@@ -1742,10 +1742,11 @@ function exportAnalysis2Excel() {
   // ① 지역 × 직종 크로스 (취업률 / 성과점수 / 만족도 3개 블록)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const buildCross = (label, valFn) => {
-    const hdr = [infoTxt];
-    hdr.push([]);
-    hdr.push([`[지역×직종] ${label} · 기관 평균`]);
-    hdr.push(['시·도', ...ncsList, `합계(${label})`]);
+    const rows = [];
+    rows.push([infoTxt]);          // ★ 문자열을 배열로 감싸서 1행 처리
+    rows.push([]);
+    rows.push([`[지역×직종] ${label} · 기관 평균`]);
+    rows.push(['시·도', ...ncsList, `합계(${label})`]);
     sidos.forEach(sido => {
       const row = [sido];
       const sidoAgg = calcAggByInst(FILTERED.filter(r => r.sido === sido));
@@ -1754,13 +1755,13 @@ function exportAnalysis2Excel() {
         row.push(rs.length ? (valFn(calcAggByInst(rs)) ?? '') : '');
       });
       row.push(valFn(sidoAgg) ?? '');
-      hdr.push(row);
+      rows.push(row);
     });
     const totRow = ['전체'];
     ncsList.forEach(ncs => totRow.push(valFn(ncsTotal[ncs]) ?? ''));
     totRow.push(valFn(totalAgg) ?? '');
-    hdr.push(totRow);
-    return hdr;
+    rows.push(totRow);
+    return rows;
   };
 
   const sh1Data = [
