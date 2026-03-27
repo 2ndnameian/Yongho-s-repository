@@ -285,7 +285,7 @@
   </div>
 
   <div class="tab-content" id="tab2">
-    <div style="display:flex;gap:6px;margin-bottom:16px;">
+    <div style="display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
       <button id="subtab-btn-cross" onclick="switchSubtab('cross')"
         style="padding:8px 18px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;">
         📊 지역×직종 현황
@@ -293,6 +293,10 @@
       <button id="subtab-btn-region" onclick="switchSubtab('region')"
         style="padding:8px 18px;border-radius:7px;border:1px solid #e2e8f0;font-size:13px;font-weight:600;cursor:pointer;background:#ffffff;color:#64748b;">
         🏢 지역별 기관 상세
+      </button>
+      <button onclick="exportAnalysis2Excel()"
+        style="margin-left:auto;padding:8px 18px;border-radius:7px;border:1px solid var(--accent2);font-size:13px;font-weight:600;cursor:pointer;background:#f0fdf4;color:var(--accent2);display:flex;align-items:center;gap:6px;">
+        📥 분석 2 전체 엑셀 다운로드
       </button>
     </div>
 
@@ -1240,6 +1244,226 @@ function exportCSV(tableId) {
   a.href = URL.createObjectURL(blob);
   a.download = `훈련성과_${tableId}_${fmtDate(new Date())}.csv`;
   a.click();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 2 통합 엑셀 다운로드 (3개 시트)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function exportAnalysis2Excel() {
+  const wb = XLSX.utils.book_new();
+  const today = fmtDate(new Date());
+
+  // ── 공통 헬퍼 ──────────────────────────
+  const numFmt  = v => (v == null || v === '') ? '' : (typeof v === 'number' ? v : parseFloat(v) || v);
+  const pctVal  = v => v != null ? parseFloat((v*100).toFixed(1)) : '';
+  const fmtNum  = v => v != null ? parseFloat(v.toFixed(1)) : '';
+
+  // ── 현재 필터 상태 정보 ─────────────────
+  const sido    = document.getElementById('sidoFilter').value || '전체';
+  const kdc     = document.getElementById('kdcFilter').value  || '전체';
+  const ds      = document.getElementById('dateStart').value  || '';
+  const de      = document.getElementById('dateEnd').value    || '';
+  const basis   = document.querySelector('input[name=dateBasis]:checked').value === 'end' ? '훈련종료일' : '훈련시작일';
+  const infoRow = [`적용 필터 | 지역: ${sido} | 국기직종명: ${kdc} | 기간기준: ${basis} | ${ds} ~ ${de} | 추출일: ${today}`];
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 시트 1: 지역 × 직종 크로스 테이블
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
+  const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
+
+  const crossMap = {};
+  FILTERED.forEach(r => {
+    const k = `${r.sido}|||${r.ncs_name}`;
+    if (!crossMap[k]) crossMap[k] = [];
+    crossMap[k].push(r);
+  });
+
+  // 모든 모드를 한 번에 내보냄 (취업률 기준 시트)
+  const sh1Data = [];
+  sh1Data.push(infoRow);
+  sh1Data.push([]);
+  sh1Data.push(['[지역 × 직종별 성과 현황] 취업률(%) · 기관 평균']);
+  sh1Data.push(['시·도', ...ncsList, '합계(취업률)']);
+
+  const ncsTotal = {};
+  ncsList.forEach(ncs => {
+    ncsTotal[ncs] = calcAggByInst(FILTERED.filter(r => r.ncs_name === ncs));
+  });
+
+  sidos.forEach(sido => {
+    const row = [sido];
+    const sidoAgg = calcAggByInst(FILTERED.filter(r => r.sido === sido));
+    ncsList.forEach(ncs => {
+      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      if (!rs.length) { row.push(''); return; }
+      const agg = calcAggByInst(rs);
+      row.push(agg.emp_rate != null ? pctVal(agg.emp_rate) : '');
+    });
+    row.push(sidoAgg.emp_rate != null ? pctVal(sidoAgg.emp_rate) : '');
+    sh1Data.push(row);
+  });
+
+  // 전체 합계 행
+  const totalRow = ['전체'];
+  const totalAgg = calcAggByInst(FILTERED);
+  ncsList.forEach(ncs => {
+    const v = ncsTotal[ncs];
+    totalRow.push(v && v.emp_rate != null ? pctVal(v.emp_rate) : '');
+  });
+  totalRow.push(totalAgg.emp_rate != null ? pctVal(totalAgg.emp_rate) : '');
+  sh1Data.push(totalRow);
+
+  // 빈 줄 후 성과점수 테이블
+  sh1Data.push([]);
+  sh1Data.push(['[지역 × 직종별 성과 현황] 성과점수 · 기관 평균']);
+  sh1Data.push(['시·도', ...ncsList, '합계(성과점수)']);
+  sidos.forEach(sido => {
+    const row = [sido];
+    const sidoAgg = calcAggByInst(FILTERED.filter(r => r.sido === sido));
+    ncsList.forEach(ncs => {
+      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      if (!rs.length) { row.push(''); return; }
+      const agg = calcAggByInst(rs);
+      row.push(agg.score != null ? fmtNum(agg.score) : '');
+    });
+    row.push(sidoAgg.score != null ? fmtNum(sidoAgg.score) : '');
+    sh1Data.push(row);
+  });
+  const totalScoreRow = ['전체'];
+  ncsList.forEach(ncs => {
+    const v = ncsTotal[ncs];
+    totalScoreRow.push(v && v.score != null ? fmtNum(v.score) : '');
+  });
+  totalScoreRow.push(totalAgg.score != null ? fmtNum(totalAgg.score) : '');
+  sh1Data.push(totalScoreRow);
+
+  // 빈 줄 후 만족도 테이블
+  sh1Data.push([]);
+  sh1Data.push(['[지역 × 직종별 성과 현황] 만족도 · 기관 평균']);
+  sh1Data.push(['시·도', ...ncsList, '합계(만족도)']);
+  sidos.forEach(sido => {
+    const row = [sido];
+    const sidoAgg = calcAggByInst(FILTERED.filter(r => r.sido === sido));
+    ncsList.forEach(ncs => {
+      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      if (!rs.length) { row.push(''); return; }
+      const agg = calcAggByInst(rs);
+      row.push(agg.sat != null ? fmtNum(agg.sat) : '');
+    });
+    row.push(sidoAgg.sat != null ? fmtNum(sidoAgg.sat) : '');
+    sh1Data.push(row);
+  });
+  const totalSatRow = ['전체'];
+  ncsList.forEach(ncs => {
+    const v = ncsTotal[ncs];
+    totalSatRow.push(v && v.sat != null ? fmtNum(v.sat) : '');
+  });
+  totalSatRow.push(totalAgg.sat != null ? fmtNum(totalAgg.sat) : '');
+  sh1Data.push(totalSatRow);
+
+  const ws1 = XLSX.utils.aoa_to_sheet(sh1Data);
+  ws1['!cols'] = [{wch:10}, ...ncsList.map(()=>({wch:14})), {wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws1, '①지역×직종');
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 시트 2: NCS 직무분류별 전체 현황
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const sh2Data = [];
+  sh2Data.push(infoRow);
+  sh2Data.push([]);
+  sh2Data.push(['[NCS 직무분류별 전체 현황] 취업률·만족도·성과점수 = 기관별 평균']);
+  sh2Data.push(['NCS 직무분류','기관수','과정수','정원','모집','수료','취업','모집률(%)','수료율(%)','취업률(%)','만족도','성과점수']);
+
+  const ncsRows2 = ncsList.map(ncs => {
+    const rs = FILTERED.filter(r => r.ncs_name === ncs);
+    return { label: ncs, ...calcAggByInst(rs) };
+  }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
+
+  ncsRows2.forEach(r => {
+    sh2Data.push([
+      r.label,
+      r.cnt,
+      FILTERED.filter(x=>x.ncs_name===r.label).length,  // 원시 과정수
+      numFmt(r.quota),
+      numFmt(r.confirm),
+      numFmt(r.complete),
+      numFmt(r.employ),
+      r.rec_rate  != null ? pctVal(r.rec_rate)  : '',
+      r.comp_rate != null ? pctVal(r.comp_rate) : '',
+      r.emp_rate  != null ? pctVal(r.emp_rate)  : '',
+      r.sat   != null ? fmtNum(r.sat)   : '',
+      r.score != null ? fmtNum(r.score) : '',
+    ]);
+  });
+
+  const ws2 = XLSX.utils.aoa_to_sheet(sh2Data);
+  ws2['!cols'] = [{wch:16},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws2, '②NCS직무분류별');
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 시트 3: 지역별 기관 상세 (전체 데이터 - 페이지네이션 무관)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const sh3Data = [];
+  sh3Data.push(infoRow);
+  sh3Data.push([]);
+  sh3Data.push(['[지역별 기관 상세] 취업률·만족도·성과점수 = 기관별 계산값']);
+  sh3Data.push([
+    '시·도','직종(NCS)','국기직종명','훈련기관',
+    '개설수','만족도','정원','모집','수료','취업',
+    '모집률(%)','수료율(%)','취업률(%)',
+    '성과(만족도)','성과(취업)','성과합계'
+  ]);
+
+  // 전체 FILTERED 데이터 기준으로 기관 집계 (화면 필터 무관하게 전체)
+  const keyFn3 = r => `${r.sido}|||${r.ncs_name}|||${r.inst}`;
+  const byKey3 = groupBy(FILTERED, keyFn3);
+
+  const allRegionRows = Object.entries(byKey3).map(([k, rs]) => {
+    const [sido, ncsLabel, inst] = k.split('|||');
+    const agg = calcAgg(rs);  // 단일 기관이므로 원시 합산
+    const kdcNames = [...new Set(rs.map(r=>r.kdc_name).filter(Boolean))];
+    const kdcLabel = kdcNames.join(', ') || '-';
+    const empRows  = rs.filter(r => r.has_emp);
+    const scoreSat  = agg.sat != null && empRows.length > 0 ? parseFloat(((agg.sat/100)*20).toFixed(1)) : null;
+    const scoreEmp  = agg.emp_rate != null && empRows.length > 0 ? parseFloat((agg.emp_rate*40).toFixed(1)) : null;
+    const scoreTotal= scoreSat != null && scoreEmp != null ? parseFloat((scoreSat+scoreEmp).toFixed(1)) : null;
+    return { sido, ncs: ncsLabel, kdc: kdcLabel, inst, agg, scoreSat, scoreEmp, scoreTotal };
+  }).sort((a,b) => {
+    if (a.sido !== b.sido) return a.sido.localeCompare(b.sido,'ko');
+    if (a.ncs  !== b.ncs)  return a.ncs.localeCompare(b.ncs,'ko');
+    return (b.scoreTotal||0) - (a.scoreTotal||0);
+  });
+
+  allRegionRows.forEach(r => {
+    sh3Data.push([
+      r.sido, r.ncs, r.kdc, r.inst,
+      r.agg.cnt,
+      r.agg.sat   != null ? fmtNum(r.agg.sat)   : '',
+      numFmt(r.agg.quota),
+      numFmt(r.agg.confirm),
+      numFmt(r.agg.complete),
+      numFmt(r.agg.employ),
+      r.agg.rec_rate  != null ? pctVal(r.agg.rec_rate)  : '',
+      r.agg.comp_rate != null ? pctVal(r.agg.comp_rate) : '',
+      r.agg.emp_rate  != null ? pctVal(r.agg.emp_rate)  : '',
+      r.scoreSat   != null ? r.scoreSat   : '',
+      r.scoreEmp   != null ? r.scoreEmp   : '',
+      r.scoreTotal != null ? r.scoreTotal : '',
+    ]);
+  });
+
+  const ws3 = XLSX.utils.aoa_to_sheet(sh3Data);
+  ws3['!cols'] = [
+    {wch:8},{wch:14},{wch:14},{wch:20},
+    {wch:7},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},
+    {wch:10},{wch:10},{wch:10},
+    {wch:12},{wch:12},{wch:10}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws3, '③지역별기관상세');
+
+  // ── 파일 저장 ──────────────────────────
+  XLSX.writeFile(wb, `분석2_지역직종현황_${today}.xlsx`);
 }
 
 function switchTab(id, el) {
