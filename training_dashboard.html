@@ -1085,7 +1085,9 @@ function filterNcsAndDrill(ncs) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updateRegionSelects() {
   const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
-  const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
+  // 직종 목록: kdc_name(국기직종명) 있으면 우선, 없으면 ncs_name 사용
+  // 직종 목록: kdc_name(국기직종명) 있으면 그 값, 없으면 ncs_name - 중복 제거
+  const ncsList = [...new Set(FILTERED.map(r => r.kdc_name != null ? r.kdc_name : r.ncs_name).filter(Boolean))].sort();
   const rs = document.getElementById('regionSelect');
   const rn = document.getElementById('regionNcsSelect');
   if (!rs || !rn) return;
@@ -1101,20 +1103,33 @@ function updateRegionSelects() {
 function renderRegionDetail() {
   const sido    = document.getElementById('regionSelect')?.value || '';
   const ncs     = document.getElementById('regionNcsSelect')?.value || '';
+  // 글로벌 국기직종명 필터 선택값 (applyFilters에서 사용한 값)
+  const kdcGlobal = document.getElementById('kdcFilter')?.value || '';
 
   let rows = FILTERED;
   if (sido) rows = rows.filter(r => r.sido === sido);
-  if (ncs)  rows = rows.filter(r => r.ncs_name === ncs);
+  if (ncs)  rows = rows.filter(r => (r.kdc_name != null ? r.kdc_name : r.ncs_name) === ncs);
 
-  // 기관+직종 단위 집계
-  const byKey = groupBy(rows, r => `${r.ncs_name}|||${r.inst}`);
+  // ── 집계 키 결정 ──────────────────────────────────────────
+  // 규칙: kdc_name이 있는 행(국기 유형)은 무조건 kdc_name 기준으로 묶기
+  //       kdc_name이 없는 행(근로자/계좌제 등)은 ncs_name 기준으로 묶기
+  // → NCS 세부코드가 달라도 같은 국기직종명+기관이면 1행으로 합산됨
+  const keyFn = r => `${r.kdc_name != null ? r.kdc_name : r.ncs_name}|||${r.inst}`;
+
+  const byKey = groupBy(rows, keyFn);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
-    const [ncsName, inst] = k.split('|||');
-    const agg = calcAgg(rs);
-    const scoreSat = agg.sat != null && EMP_TYPES.includes(rs[0].type) ? (agg.sat/100)*20 : null;
-    const scoreEmp = agg.emp_rate != null && EMP_TYPES.includes(rs[0].type) ? agg.emp_rate*40 : null;
-    const scoreTotal = scoreSat!=null && scoreEmp!=null ? scoreSat+scoreEmp : null;
-    return { ncs: ncsName, inst, sido: rs[0].sido, type: rs[0].type, ...agg, scoreSat, scoreEmp, scoreTotal };
+    const [label, inst] = k.split('|||');
+    const agg  = calcAgg(rs);
+    const type = rs[0].type;
+    // 성과점수: 해당 그룹 내 취업률 대상 유형이 있으면 계산
+    const empRows   = rs.filter(r => EMP_TYPES.includes(r.type));
+    const scoreSat  = agg.sat != null && empRows.length > 0
+      ? (agg.sat / 100) * 20 : null;
+    const scoreEmp  = agg.emp_rate != null && empRows.length > 0
+      ? agg.emp_rate * 40 : null;
+    const scoreTotal = scoreSat != null && scoreEmp != null
+      ? scoreSat + scoreEmp : null;
+    return { ncs: label, inst, sido: rs[0].sido, type, ...agg, scoreSat, scoreEmp, scoreTotal };
   }).sort((a,b) => {
     if (a.ncs !== b.ncs) return a.ncs.localeCompare(b.ncs,'ko');
     return (b.scoreTotal||0) - (a.scoreTotal||0);
@@ -1128,7 +1143,7 @@ function renderRegionDetail() {
     const isTotal = r.inst === '총합계';
     const rowStyle = isTotal ? 'font-weight:700;background:var(--surface2);' : '';
     return `<tr style="${rowStyle}">
-      <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs||'-'}</td>
+      <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs || '-'}</td>
       <td style="white-space:nowrap;">${r.inst}</td>
       <td style="text-align:right;">${r.cnt}</td>
       <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
