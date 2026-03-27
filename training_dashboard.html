@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업훈련 성과 현황</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3347;
+    --accent: #4f8ef7;
+    --accent2: #38d9a9;
+    --accent3: #f59e0b;
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── 헤더 ── */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .header-sub { font-size: 12px; color: var(--text3); }
+  .header-badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  /* ── 업로드 영역 ── */
+  .upload-area { margin: 24px 28px; border: 2px dashed var(--border); border-radius: var(--radius); padding: 36px; text-align: center; cursor: pointer; transition: all .2s; }
+  .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: rgba(79,142,247,.05); }
+  .upload-area .icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-area p { color: var(--text2); font-size: 13px; margin-top: 6px; }
+  .upload-area strong { color: var(--text); font-size: 15px; }
+  #fileInput { display: none; }
+
+  /* ── 로딩 ── */
+  .loading { display: none; text-align: center; padding: 40px; color: var(--text2); }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── 메인 레이아웃 ── */
+  .main { display: none; padding: 0 28px 40px; }
+
+  /* ── 필터 패널 ── */
+  .filter-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 20px; }
+  .filter-panel h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 14px; letter-spacing: .05em; text-transform: uppercase; }
+  .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .filter-group label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 5px; font-weight: 600; letter-spacing: .04em; }
+  .filter-group select, .filter-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none; transition: border .15s; }
+  .filter-group select:focus, .filter-group input:focus { border-color: var(--accent); }
+  .filter-row { display: flex; gap: 8px; align-items: center; }
+  .filter-row input { flex: 1; }
+  .filter-row span { color: var(--text3); font-size: 12px; white-space: nowrap; }
+  .radio-group { display: flex; gap: 10px; margin-top: 2px; }
+  .radio-group label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); cursor: pointer; font-weight: 400; }
+  .radio-group input[type=radio] { accent-color: var(--accent); }
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .cb-item { display: flex; align-items: center; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; cursor: pointer; transition: all .15s; }
+  .cb-item:hover { border-color: var(--accent); }
+  .cb-item.active { background: rgba(79,142,247,.15); border-color: var(--accent); color: var(--accent); }
+  .cb-item input { display: none; }
+  .cb-item span { font-size: 12px; font-weight: 500; }
+  .filter-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3a7de8; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+  .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+  .warn-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(248,161,0,.1); border: 1px solid rgba(248,161,0,.3); color: var(--accent3); border-radius: 6px; padding: 4px 10px; font-size: 12px; margin-left: auto; }
+
+  /* ── 요약 카드 ── */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .summary-card .label { font-size: 11px; color: var(--text3); margin-bottom: 6px; font-weight: 600; letter-spacing: .04em; }
+  .summary-card .value { font-size: 22px; font-weight: 700; color: var(--text); }
+  .summary-card .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .summary-card.accent { border-color: rgba(79,142,247,.4); }
+  .summary-card.green { border-color: rgba(56,217,169,.4); }
+  .summary-card.yellow { border-color: rgba(245,158,11,.4); }
+
+  /* ── 탭 ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── 테이블 ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .table-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .table-header h4 { font-size: 13px; font-weight: 600; }
+  .table-header .count { font-size: 12px; color: var(--text3); }
+  .table-scroll { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--surface2); color: var(--text2); font-weight: 600; padding: 9px 12px; text-align: left; white-space: nowrap; position: sticky; top: 0; cursor: pointer; user-select: none; }
+  thead th:hover { color: var(--text); }
+  thead th .sort-icon { opacity: .4; margin-left: 4px; font-size: 10px; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 8px 12px; color: var(--text); white-space: nowrap; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-blue { background: rgba(79,142,247,.15); color: var(--accent); }
+  .badge-green { background: rgba(56,217,169,.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(245,158,11,.15); color: var(--accent3); }
+  .badge-red { background: rgba(248,113,113,.15); color: var(--danger); }
+  .badge-gray { background: rgba(100,116,139,.15); color: var(--text3); }
+  .warn-dot { display: inline-block; width: 6px; height: 6px; background: var(--accent3); border-radius: 50%; margin-right: 4px; }
+  .bar-cell { display: flex; align-items: center; gap: 6px; min-width: 100px; }
+  .bar-bg { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width .3s; }
+  .bar-fill.green { background: var(--accent2); }
+  .bar-fill.yellow { background: var(--accent3); }
+  .bar-val { font-size: 11px; color: var(--text2); min-width: 40px; text-align: right; }
+
+  /* ── 차트 영역 ── */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .chart-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--text2); }
+  .chart-card canvas { max-height: 240px; }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  /* ── 페이지네이션 ── */
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-top: 1px solid var(--border); }
+  .page-btn { padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; font-size: 12px; transition: all .15s; }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-btn:disabled { opacity: .3; cursor: default; }
+
+  /* ── 분석3 NCS 카드 ── */
+  .ncs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .ncs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .ncs-card h5 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .ncs-range { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .ncs-range .min { color: var(--danger); font-weight: 700; font-size: 15px; }
+  .ncs-range .max { color: var(--accent2); font-weight: 700; font-size: 15px; }
+  .ncs-range-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
+  .ncs-range-fill { position: absolute; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--danger), var(--accent2)); }
+  .ncs-meta { font-size: 11px; color: var(--text3); }
+
+  .empty { text-align: center; padding: 48px; color: var(--text3); }
+  .empty .icon { font-size: 36px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div>
+    <div class="header-title">📊 직업훈련 성과 현황</div>
+    <div class="header-sub">고용24 수집 데이터 기반 분석</div>
+  </div>
+  <div class="header-right">
+    <span class="header-badge" id="totalBadge" style="display:none"></span>
+    <button class="btn btn-ghost" onclick="resetAll()" id="resetBtn" style="display:none">↩ 초기화</button>
+  </div>
+</div>
+
+<!-- 업로드 -->
+<div id="uploadSection">
+  <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()"
+       ondragover="event.preventDefault();this.classList.add('drag')"
+       ondragleave="this.classList.remove('drag')"
+       ondrop="handleDrop(event)">
+    <div class="icon">📁</div>
+    <strong>엑셀 파일을 업로드하세요</strong>
+    <p>클릭하거나 파일을 여기에 드래그하세요</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--text3)">지원 형식: .xlsx · 시트명 <b>통합추가본_260220</b> 포함</p>
+    <input type="file" id="fileInput" accept=".xlsx" onchange="handleFile(this.files[0])">
+  </div>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div>데이터를 불러오는 중입니다...</div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div class="main" id="mainSection">
+
+  <!-- 필터 -->
+  <div class="filter-panel">
+    <h3>🔍 필터</h3>
+    <div class="filter-grid">
+
+      <div class="filter-group" style="grid-column: span 2">
+        <label>훈련유형</label>
+        <div class="checkbox-group" id="typeFilter"></div>
+      </div>
+
+      <div class="filter-group">
+        <label>시·도</label>
+        <select id="sidoFilter" onchange="applyFilters()">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>NCS 직무분류</label>
+        <select id="ncsFilter" onchange="applyFilters()">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>훈련기간 (시작)</label>
+        <div class="filter-row">
+          <input type="date" id="dateStart" onchange="applyFilters()">
+          <span>~</span>
+          <input type="date" id="dateEnd" onchange="applyFilters()">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>기간 기준</label>
+        <div class="radio-group">
+          <label><input type="radio" name="dateBasis" value="end" checked onchange="applyFilters()"> 훈련종료일</label>
+          <label><input type="radio" name="dateBasis" value="start" onchange="applyFilters()"> 훈련시작일</label>
+        </div>
+      </div>
+
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" onclick="applyFilters()">적용</button>
+      <button class="btn btn-ghost" onclick="resetFilters()">초기화</button>
+      <span id="warnBadge" class="warn-badge" style="display:none">⚠️ 취업률 집계 중인 과정 포함</span>
+    </div>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="summary-grid" id="summaryCards"></div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab1',this)">📈 분석 1 · 성과 현황</div>
+    <div class="tab" onclick="switchTab('tab2',this)">🗺️ 분석 2 · 지역·직종별</div>
+    <div class="tab" onclick="switchTab('tab3',this)">🎯 분석 3 · NCS 취업률</div>
+  </div>
+
+  <!-- 분석 1 -->
+  <div class="tab-content active" id="tab1">
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h4>훈련유형별 취업률 평균</h4>
+        <canvas id="chart1"></canvas>
+      </div>
+      <div class="chart-card">
+        <h4>시·도별 과정 수</h4>
+        <canvas id="chart2"></canvas>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h4>기관별 성과 현황</h4>
+        <span class="count" id="tableCount1"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table1')">⬇ CSV 다운로드</button>
+      </div>
+      <div class="table-scroll">
+        <table id="table1">
+          <thead>
+            <tr>
+              <th onclick="sortTable('table1',0)">훈련기관 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',1)">지역 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',2)">훈련유형 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',3)">NCS직무분류 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',4)">과정수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',5)">만족도 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',6)">수료인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',7)">취업인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',8)">취업률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table1',9)">성과점수 <span class="sort-icon">↕</span></th>
+              <th>확정여부</th>
+            </tr>
+          </thead>
+          <tbody id="tbody1"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pag1"></div>
+    </div>
+  </div>
+
+  <!-- 분석 2 -->
+  <div class="tab-content" id="tab2">
+    <div class="table-wrap" style="margin-bottom:16px">
+      <div class="table-header">
+        <h4>지역별 현황</h4>
+        <span class="count" id="tableCount2"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table2')">⬇ CSV 다운로드</button>
+      </div>
+      <div class="table-scroll">
+        <table id="table2">
+          <thead>
+            <tr>
+              <th onclick="sortTable('table2',0)">시·도 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',1)">과정수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',2)">정원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',3)">모집인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',4)">수료인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',5)">취업인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',6)">모집률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',7)">수료율 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',8)">취업률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',9)">만족도 평균 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table2',10)">성과점수 평균 <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody2"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h4>NCS 직무분류별 현황</h4>
+        <span class="count" id="tableCount3"></span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table3')">⬇ CSV 다운로드</button>
+      </div>
+      <div class="table-scroll">
+        <table id="table3">
+          <thead>
+            <tr>
+              <th onclick="sortTable('table3',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',1)">과정수 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',2)">정원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',3)">모집인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',4)">수료인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',5)">취업인원 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',6)">모집률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',7)">수료율 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',8)">취업률 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',9)">만족도 평균 <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable('table3',10)">성과점수 평균 <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody3"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 분석 3 -->
+  <div class="tab-content" id="tab3">
+    <div style="margin-bottom:14px;font-size:12px;color:var(--text3)">
+      ※ 취업률 0% 및 100% 기관 제외 후 산출 · 수료인원 0인 기관 제외
+    </div>
+    <div class="ncs-grid" id="ncsGrid"></div>
+    <div style="margin-top:20px">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h4 id="ncsDetailTitle">NCS 직종별 기관 취업률 상세</h4>
+          <span class="count" id="tableCount4"></span>
+          <button class="btn btn-ghost" style="margin-left:auto;font-size:12px" onclick="exportCSV('table4')">⬇ CSV 다운로드</button>
+        </div>
+        <div class="table-scroll">
+          <table id="table4">
+            <thead>
+              <tr>
+                <th onclick="sortTable('table4',0)">NCS 직무분류 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table4',1)">훈련기관 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table4',2)">과정수 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table4',3)">수료인원 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table4',4)">취업인원 <span class="sort-icon">↕</span></th>
+                <th onclick="sortTable('table4',5)">취업률 <span class="sort-icon">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody4"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pag4"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 전역 상태
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let RAW = [];        // 원본 전체 데이터
+let FILTERED = [];   // 필터 적용 데이터
+let charts = {};
+const PAGE_SIZE = 100;
+let pages = { table1: 1, table4: 1 };
+const EMP_TYPES = ['계좌제','국기','KDT','KDC','산대특'];
+const TODAY = new Date('2026-03-27');
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 파일 처리
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('loading').style.display = 'block';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const sheetName = wb.SheetNames.find(s => s.includes('통합추가본')) || wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
+      RAW = parseRows(rows);
+      initUI();
+    } catch(err) {
+      alert('파일 파싱 오류: ' + err.message);
+      document.getElementById('loading').style.display = 'none';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseRows(rows) {
+  return rows.map(r => {
+    const complete = toNum(r['수료']);
+    const employ   = toNum(r['총 취업']);
+    const quota    = toNum(r['정원']);
+    const confirm  = toNum(r['수강확정']);
+    const satisfy  = toNum(r['만족도']);
+    const empRate  = complete > 0 ? employ / complete : null;
+    const recRate  = quota > 0 ? confirm / quota : null;
+    const compRate = confirm > 0 ? complete / confirm : null;
+    const type     = (r['훈련유형'] || '').toString().trim();
+    const hasEmp   = EMP_TYPES.includes(type);
+    const scoreSat = hasEmp && satisfy != null ? (satisfy / 100) * 20 : null;
+    const scoreEmp = hasEmp && empRate != null ? empRate * 40 : null;
+    const score    = scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
+    const endDate  = toDate(r['훈련종료일']);
+    const startDate= toDate(r['훈련시작일']);
+    const confirmed= endDate ? (TODAY - endDate) / (1000*60*60*24) >= 180 : false;
+    const sido     = (r['지역'] || '').toString().split(/\s/)[0].replace('경기도','경기');
+
+    return {
+      inst:      (r['훈련기관명'] || '').toString(),
+      region:    (r['지역'] || '').toString(),
+      sido,
+      dept:      (r['주관부처'] || '').toString(),
+      ncs_code:  (r['NCS 코드'] || '').toString(),
+      ncs_name:  (r['NCS직무분류'] || '').toString(),
+      type,
+      course:    (r['훈련과정명'] || '').toString(),
+      course_id: (r['훈련과정ID'] || '').toString(),
+      session:   toNum(r['회차']),
+      start:     startDate,
+      end:       endDate,
+      quota, confirm, satisfy, complete, employ,
+      emp_rate: empRate, rec_rate: recRate, comp_rate: compRate,
+      score_sat: scoreSat, score_emp: scoreEmp, score,
+      confirmed,
+      has_emp: hasEmp,
+    };
+  });
+}
+
+function toNum(v) {
+  if (v == null || v === '') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function toDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UI 초기화
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function initUI() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('mainSection').style.display = 'block';
+  document.getElementById('resetBtn').style.display = '';
+
+  // 훈련유형 체크박스
+  const types = [...new Set(RAW.map(r => r.type).filter(Boolean))].sort();
+  const tf = document.getElementById('typeFilter');
+  tf.innerHTML = types.map(t => `
+    <label class="cb-item active" onclick="toggleType(this,'${t}')">
+      <input type="checkbox" value="${t}" checked>
+      <span>${t}</span>
+    </label>`).join('');
+
+  // 시도 셀렉트
+  const sidos = [...new Set(RAW.map(r => r.sido).filter(Boolean))].sort();
+  const sf = document.getElementById('sidoFilter');
+  sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
+
+  // NCS 셀렉트
+  const ncsList = [...new Set(RAW.map(r => r.ncs_name).filter(Boolean))].sort();
+  const nf = document.getElementById('ncsFilter');
+  ncsList.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; nf.appendChild(o); });
+
+  // 날짜 범위 초기값
+  const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
+  if (ends.length) {
+    document.getElementById('dateStart').value = fmtDate(ends[0]);
+    document.getElementById('dateEnd').value   = fmtDate(ends[ends.length-1]);
+  }
+
+  applyFilters();
+}
+
+function toggleType(el, type) {
+  el.classList.toggle('active');
+  el.querySelector('input').checked = el.classList.contains('active');
+  applyFilters();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 필터 적용
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function applyFilters() {
+  const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
+  const sido     = document.getElementById('sidoFilter').value;
+  const ncs      = document.getElementById('ncsFilter').value;
+  const ds       = document.getElementById('dateStart').value;
+  const de       = document.getElementById('dateEnd').value;
+  const basis    = document.querySelector('input[name=dateBasis]:checked').value;
+
+  FILTERED = RAW.filter(r => {
+    if (!selTypes.includes(r.type)) return false;
+    if (sido && r.sido !== sido) return false;
+    if (ncs  && r.ncs_name !== ncs) return false;
+    const d = basis === 'end' ? r.end : r.start;
+    if (ds && d && fmtDate(d) < ds) return false;
+    if (de && d && fmtDate(d) > de) return false;
+    return true;
+  });
+
+  // 집계중 경고
+  const hasUnconfirmed = FILTERED.some(r => !r.confirmed && r.has_emp);
+  document.getElementById('warnBadge').style.display = hasUnconfirmed ? '' : 'none';
+
+  document.getElementById('totalBadge').style.display = '';
+  document.getElementById('totalBadge').textContent = `${FILTERED.length.toLocaleString()}건`;
+
+  pages.table1 = 1;
+  pages.table4 = 1;
+
+  renderSummary();
+  renderTab1();
+  renderTab2();
+  renderTab3();
+}
+
+function resetFilters() {
+  document.querySelectorAll('#typeFilter .cb-item').forEach(el => {
+    el.classList.add('active');
+    el.querySelector('input').checked = true;
+  });
+  document.getElementById('sidoFilter').value = '';
+  document.getElementById('ncsFilter').value  = '';
+  const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
+  if (ends.length) {
+    document.getElementById('dateStart').value = fmtDate(ends[0]);
+    document.getElementById('dateEnd').value   = fmtDate(ends[ends.length-1]);
+  }
+  document.querySelector('input[name=dateBasis][value=end]').checked = true;
+  applyFilters();
+}
+
+function resetAll() {
+  RAW = []; FILTERED = [];
+  document.getElementById('uploadSection').style.display = '';
+  document.getElementById('mainSection').style.display   = 'none';
+  document.getElementById('resetBtn').style.display      = 'none';
+  document.getElementById('totalBadge').style.display    = 'none';
+  document.getElementById('loading').style.display       = 'none';
+  document.getElementById('dropZone').style.display      = '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 요약 카드
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderSummary() {
+  const totalCourses  = FILTERED.length;
+  const totalInsts    = new Set(FILTERED.map(r => r.inst)).size;
+  const totalComplete = sum(FILTERED, 'complete');
+  const totalEmploy   = sum(FILTERED, 'employ');
+  const avgSatisfy    = avg(FILTERED.filter(r => r.satisfy != null), 'satisfy');
+  const empRate       = totalComplete > 0 ? totalEmploy / totalComplete : null;
+  const avgScore      = avg(FILTERED.filter(r => r.score != null), 'score');
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="summary-card"><div class="label">총 과정 수</div><div class="value">${totalCourses.toLocaleString()}</div><div class="sub">회차 기준</div></div>
+    <div class="summary-card"><div class="label">훈련기관 수</div><div class="value">${totalInsts.toLocaleString()}</div></div>
+    <div class="summary-card accent"><div class="label">수료인원</div><div class="value">${totalComplete != null ? totalComplete.toLocaleString() : '-'}</div></div>
+    <div class="summary-card accent"><div class="label">취업인원</div><div class="value">${totalEmploy != null ? totalEmploy.toLocaleString() : '-'}</div></div>
+    <div class="summary-card green"><div class="label">전체 취업률</div><div class="value">${empRate != null ? pct(empRate) : '-'}</div></div>
+    <div class="summary-card"><div class="label">만족도 평균</div><div class="value">${avgSatisfy != null ? avgSatisfy.toFixed(1) : '-'}</div><div class="sub">100점 만점</div></div>
+    <div class="summary-card yellow"><div class="label">성과점수 평균</div><div class="value">${avgScore != null ? avgScore.toFixed(1) : '-'}</div><div class="sub">60점 만점</div></div>
+  `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 1
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderTab1() {
+  // 차트1: 훈련유형별 취업률
+  const byType = groupBy(FILTERED.filter(r => r.has_emp), 'type');
+  const typeLabels = Object.keys(byType).sort();
+  const typeRates  = typeLabels.map(t => {
+    const rows = byType[t];
+    const c = sumN(rows,'complete'), e = sumN(rows,'employ');
+    return c > 0 ? +(e/c*100).toFixed(1) : 0;
+  });
+  renderBar('chart1', typeLabels, typeRates, '취업률 (%)', ['#4f8ef7','#38d9a9','#f59e0b','#a78bfa','#f87171','#34d399']);
+
+  // 차트2: 시도별 과정 수
+  const bySido = groupBy(FILTERED, 'sido');
+  const sidoLabels = Object.keys(bySido).sort((a,b) => bySido[b].length - bySido[a].length).slice(0,12);
+  const sidoCounts = sidoLabels.map(s => bySido[s].length);
+  renderBar('chart2', sidoLabels, sidoCounts, '과정 수', '#4f8ef7');
+
+  // 기관별 집계 테이블
+  const byInst = groupBy(FILTERED, 'inst');
+  const rows = Object.entries(byInst).map(([inst, rs]) => {
+    const c = sumN(rs,'complete'), e = sumN(rs,'employ');
+    const er = c > 0 ? e/c : null;
+    const sc = avgN(rs.filter(r=>r.score!=null),'score');
+    const hasUnc = rs.some(r => !r.confirmed && r.has_emp);
+    return {
+      inst, sido: rs[0].sido, type: rs[0].type, ncs: rs[0].ncs_name,
+      cnt: rs.length, sat: avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
+      complete: c, employ: e, emp_rate: er, score: sc, unconfirmed: hasUnc,
+    };
+  }).sort((a,b) => (b.score||0) - (a.score||0));
+
+  document.getElementById('tableCount1').textContent = `${rows.length.toLocaleString()}개 기관`;
+  renderPaginatedTable('tbody1', 'pag1', rows, 'table1', renderInstRow);
+}
+
+function renderInstRow(r) {
+  return `<tr>
+    <td>${r.inst}</td>
+    <td>${r.sido}</td>
+    <td><span class="badge ${typeBadge(r.type)}">${r.type}</span></td>
+    <td>${r.ncs||'-'}</td>
+    <td>${r.cnt}</td>
+    <td>${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+    <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${rateBar(r.emp_rate, 'green')}${r.unconfirmed?'<span class="warn-dot" title="집계중 포함"></span>':''}</td>
+    <td>${r.score!=null?scoreBar(r.score):'-'}</td>
+    <td>${r.unconfirmed?'<span class="badge badge-yellow">집계중</span>':'<span class="badge badge-green">확정</span>'}</td>
+  </tr>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 2
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderTab2() {
+  // 지역별
+  const bySido = groupBy(FILTERED, 'sido');
+  const sidoRows = Object.entries(bySido).map(([sido, rs]) => makeAggRow(sido, rs)).sort((a,b)=>b.cnt-a.cnt);
+  document.getElementById('tableCount2').textContent = `${sidoRows.length}개 시·도`;
+  document.getElementById('tbody2').innerHTML = sidoRows.map(r => aggRowHTML(r)).join('');
+
+  // NCS별
+  const byNcs = groupBy(FILTERED, 'ncs_name');
+  const ncsRows = Object.entries(byNcs).map(([ncs, rs]) => makeAggRow(ncs, rs)).sort((a,b)=>b.cnt-a.cnt);
+  document.getElementById('tableCount3').textContent = `${ncsRows.length}개 직무분류`;
+  document.getElementById('tbody3').innerHTML = ncsRows.map(r => aggRowHTML(r, true)).join('');
+}
+
+function makeAggRow(label, rs) {
+  const quota    = sumN(rs,'quota');
+  const confirm  = sumN(rs,'confirm');
+  const complete = sumN(rs,'complete');
+  const employ   = sumN(rs,'employ');
+  const recRate  = quota > 0 ? confirm/quota : null;
+  const compRate = confirm > 0 ? complete/confirm : null;
+  const empRate  = complete > 0 ? employ/complete : null;
+  const sat      = avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
+  const score    = avgN(rs.filter(r=>r.score!=null),'score');
+  return { label, cnt: rs.length, quota, confirm, complete, employ, recRate, compRate, empRate, sat, score };
+}
+
+function aggRowHTML(r, isNcs=false) {
+  return `<tr>
+    <td><b>${r.label||'-'}</b></td>
+    <td>${r.cnt.toLocaleString()}</td>
+    <td>${r.quota!=null?r.quota.toLocaleString():'-'}</td>
+    <td>${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
+    <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${rateBar(r.recRate,'')}</td>
+    <td>${rateBar(r.compRate,'')}</td>
+    <td>${rateBar(r.empRate,'green')}</td>
+    <td>${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+    <td>${r.score!=null?scoreBar(r.score):'-'}</td>
+  </tr>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 분석 3
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderTab3() {
+  // 취업률 계산 가능 + 0%/100% 제외
+  const validRows = FILTERED.filter(r =>
+    r.complete > 0 && r.employ != null &&
+    r.emp_rate > 0 && r.emp_rate < 1
+  );
+
+  const byNcs = groupBy(validRows, 'ncs_name');
+  const ncsCards = Object.entries(byNcs).map(([ncs, rs]) => {
+    const rates = rs.map(r => r.emp_rate).sort((a,b)=>a-b);
+    return { ncs, min: rates[0], max: rates[rates.length-1], cnt: rs.length };
+  }).sort((a,b) => a.ncs.localeCompare(b.ncs));
+
+  document.getElementById('ncsGrid').innerHTML = ncsCards.map(c => `
+    <div class="ncs-card" onclick="filterNcs3('${c.ncs}')" style="cursor:pointer">
+      <h5>${c.ncs}</h5>
+      <div class="ncs-range">
+        <span class="min">${pct(c.min)}</span>
+        <div class="ncs-range-bar">
+          <div class="ncs-range-fill" style="left:${pct(c.min)};width:${pct(c.max-c.min)}"></div>
+        </div>
+        <span class="max">${pct(c.max)}</span>
+      </div>
+      <div class="ncs-meta">기관 ${c.cnt}개 · 클릭하면 상세 보기</div>
+    </div>
+  `).join('') || '<div class="empty"><div class="icon">📭</div>데이터 없음</div>';
+
+  // 전체 상세 테이블
+  renderNcsDetail(validRows);
+}
+
+function filterNcs3(ncs) {
+  const validRows = FILTERED.filter(r =>
+    r.complete > 0 && r.employ != null &&
+    r.emp_rate > 0 && r.emp_rate < 1 &&
+    r.ncs_name === ncs
+  );
+  document.getElementById('ncsDetailTitle').textContent = `NCS 기관 취업률 상세 · ${ncs}`;
+  renderNcsDetail(validRows);
+}
+
+function renderNcsDetail(rows) {
+  // 기관+NCS 단위로 집계
+  const key = r => `${r.ncs_name}|||${r.inst}`;
+  const byKey = groupBy(rows, key);
+  const aggRows = Object.entries(byKey).map(([k, rs]) => {
+    const [ncs, inst] = k.split('|||');
+    const c = sumN(rs,'complete'), e = sumN(rs,'employ');
+    const er = c > 0 ? e/c : null;
+    return { ncs, inst, cnt: rs.length, complete: c, employ: e, emp_rate: er };
+  }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
+
+  document.getElementById('tableCount4').textContent = `${aggRows.length.toLocaleString()}개`;
+  pages.table4 = 1;
+  renderPaginatedTable('tbody4','pag4', aggRows, 'table4', r => `<tr>
+    <td>${r.ncs}</td>
+    <td>${r.inst}</td>
+    <td>${r.cnt}</td>
+    <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${rateBar(r.emp_rate,'green')}</td>
+  </tr>`);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 차트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderBar(id, labels, data, label, colors) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label, data,
+      backgroundColor: Array.isArray(colors) ? colors : labels.map(()=>colors+'33'),
+      borderColor:     Array.isArray(colors) ? colors.map(c=>c) : labels.map(()=>colors),
+      borderWidth: 1.5, borderRadius: 4,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: '#2e3347' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: '#2e3347' } },
+      }
+    }
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 페이지네이션 테이블
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderPaginatedTable(tbodyId, pagId, rows, tableKey, rowFn) {
+  const page = pages[tableKey] || 1;
+  const total = Math.ceil(rows.length / PAGE_SIZE);
+  const slice = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
+
+  document.getElementById(tbodyId).innerHTML = slice.length
+    ? slice.map(rowFn).join('')
+    : '<tr><td colspan="20" class="empty"><div class="icon">📭</div>데이터 없음</td></tr>';
+
+  const pag = document.getElementById(pagId);
+  if (total <= 1) { pag.innerHTML=''; return; }
+  let btns = `<button class="page-btn" onclick="goPage('${tableKey}',${page-1})" ${page===1?'disabled':''}>‹</button>`;
+  const range = pageRange(page, total);
+  range.forEach(p => {
+    if (p === '...') btns += `<span style="color:var(--text3);padding:0 4px">…</span>`;
+    else btns += `<button class="page-btn ${p===page?'active':''}" onclick="goPage('${tableKey}',${p})">${p}</button>`;
+  });
+  btns += `<button class="page-btn" onclick="goPage('${tableKey}',${page+1})" ${page===total?'disabled':''}>›</button>`;
+  pag.innerHTML = btns;
+}
+
+function goPage(tableKey, page) {
+  pages[tableKey] = page;
+  if (tableKey==='table1') renderTab1();
+  if (tableKey==='table4') renderTab3();
+}
+
+function pageRange(cur, total) {
+  const d = [];
+  if (total <= 7) { for(let i=1;i<=total;i++) d.push(i); return d; }
+  d.push(1);
+  if (cur > 3) d.push('...');
+  for(let i=Math.max(2,cur-1);i<=Math.min(total-1,cur+1);i++) d.push(i);
+  if (cur < total-2) d.push('...');
+  d.push(total);
+  return d;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 테이블 정렬
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let sortState = {};
+function sortTable(tableId, colIdx) {
+  const table = document.getElementById(tableId);
+  const key = `${tableId}_${colIdx}`;
+  const asc = sortState[key] = !sortState[key];
+  const tbody = table.querySelector('tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a,b) => {
+    const av = a.cells[colIdx]?.textContent.trim() || '';
+    const bv = b.cells[colIdx]?.textContent.trim() || '';
+    const an = parseFloat(av.replace(/[%,]/g,'')), bn = parseFloat(bv.replace(/[%,]/g,''));
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an-bn : bn-an;
+    return asc ? av.localeCompare(bv,'ko') : bv.localeCompare(av,'ko');
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  table.querySelectorAll('thead th').forEach((th,i) => {
+    th.classList.toggle('sorted', i===colIdx);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = i===colIdx ? (asc?'↑':'↓') : '↕';
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CSV 다운로드
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function exportCSV(tableId) {
+  const table = document.getElementById(tableId);
+  const rows = [...table.querySelectorAll('tr')];
+  const csv = rows.map(r =>
+    [...r.querySelectorAll('th,td')].map(c =>
+      `"${c.textContent.trim().replace(/"/g,'""')}"`
+    ).join(',')
+  ).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `훈련성과_${tableId}_${fmtDate(new Date())}.csv`;
+  a.click();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 탭 전환
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 유틸
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const sum  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; };
+const sumN = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.reduce((a,b)=>a+b,0); };
+const avg  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const avgN = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const pct  = v => v != null ? (v*100).toFixed(1)+'%' : '-';
+const fmtDate = d => { if (!d) return ''; const dt = d instanceof Date ? d : new Date(d); return dt.toISOString().slice(0,10); };
+const groupBy = (arr, key) => arr.reduce((acc, r) => { const k = typeof key==='function'?key(r):r[key]||''; (acc[k]=acc[k]||[]).push(r); return acc; }, {});
+
+function rateBar(v, color='') {
+  if (v == null) return '<span style="color:var(--text3)">-</span>';
+  const w = Math.min(100, v*100).toFixed(0);
+  return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill ${color}" style="width:${w}%"></div></div><span class="bar-val">${pct(v)}</span></div>`;
+}
+
+function scoreBar(v) {
+  if (v == null) return '-';
+  const w = (v/60*100).toFixed(0);
+  const color = v>=45?'green':v>=30?'':' yellow';
+  return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill${color}" style="width:${w}%"></div></div><span class="bar-val">${v.toFixed(1)}</span></div>`;
+}
+
+function typeBadge(t) {
+  return {계좌제:'badge-blue',국기:'badge-green',KDT:'badge-yellow',KDC:'badge-yellow',산대특:'badge-red',근로자:'badge-gray'}[t]||'badge-gray';
+}
+</script>
+</body>
+</html>
