@@ -483,6 +483,7 @@
 </div>
 
 <script>
+
 let RAW = [];
 let FILTERED = [];
 let charts = {};
@@ -491,6 +492,7 @@ let pages = { table1: 1, table4: 1, region: 1 };
 const EMP_TYPES = ['계좌제','국기','KDT','KDC','산대특'];
 const TODAY = new Date('2026-03-27');
 
+// ── 파일 처리 ─────────────────────────────────────────────
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('dropZone').classList.remove('drag');
@@ -537,35 +539,23 @@ function parseRows(rows) {
     const startDate= toDate(r['훈련시작일']);
     const confirmed= endDate ? (TODAY - endDate) / (1000*60*60*24) >= 180 : false;
     const sido     = (r['지역'] || '').toString().split(/\s/)[0].replace('경기도','경기');
-
-    // ★ kdc_name: 국기직종명 (있는 경우)
     const kdc_name = r['국기직종명'] ? r['국기직종명'].toString().trim() : null;
-
-    // ★ 핵심: 국기 과정은 kdc_name을 ncs_name으로 사용 → 같은 기관의 국기 과정이 항상 동일한 키로 집계됨
-    //   (예: ncs_name이 "디자인"이든 "디지털디자인"이든 kdc_name="디지털디자인"이면 "디지털디자인"으로 통일)
-    const raw_ncs = (r['NCS직무분류'] || '').toString();
+    const raw_ncs  = (r['NCS직무분류'] || '').toString();
     const ncs_name = (kdc_name && type === '국기') ? kdc_name : raw_ncs;
-
     return {
       inst:      (r['훈련기관명'] || '').toString(),
       region:    (r['지역'] || '').toString(),
-      sido,
-      dept:      (r['주관부처'] || '').toString(),
+      sido, dept: (r['주관부처'] || '').toString(),
       ncs_code:  (r['NCS 코드'] || '').toString(),
-      ncs_name,        // ★ 국기 과정은 kdc_name으로 통일된 값
-      raw_ncs_name: raw_ncs,  // 원본 NCS직무분류 보존
-      type,
-      kdc_name,
+      ncs_name, raw_ncs_name: raw_ncs, type, kdc_name,
       course:    (r['훈련과정명'] || '').toString(),
       course_id: (r['훈련과정ID'] || '').toString(),
       session:   toNum(r['회차']),
-      start:     startDate,
-      end:       endDate,
+      start: startDate, end: endDate,
       quota, confirm, satisfy, complete, employ,
       emp_rate: empRate, rec_rate: recRate, comp_rate: compRate,
       score_sat: scoreSat, score_emp: scoreEmp, score,
-      confirmed,
-      has_emp: hasEmp,
+      confirmed, has_emp: hasEmp,
     };
   });
 }
@@ -582,6 +572,7 @@ function toDate(v) {
   return isNaN(d) ? null : d;
 }
 
+// ── UI 초기화 ───────────────────────────────────────────
 function initUI() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('uploadSection').style.display = 'none';
@@ -608,13 +599,10 @@ function initUI() {
   renderKdcSelected();
 
   const ncsMap = {};
-  RAW.forEach(r => {
-    if (r.ncs_code && r.ncs_name) ncsMap[r.ncs_code] = r.ncs_name;
-  });
+  RAW.forEach(r => { if (r.ncs_code && r.ncs_name) ncsMap[r.ncs_code] = r.ncs_name; });
   window.NCS_LIST = Object.entries(ncsMap).map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   window.selectedNcsCodes = new Set();
-
   renderNcsDropdown();
 
   const ends = RAW.map(r => r.end).filter(Boolean).sort((a,b) => a-b);
@@ -633,14 +621,11 @@ function initUI() {
   applyFilters();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 국기직종명 다중선택 드롭다운
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 국기직종명 다중선택 ─────────────────────────────────
 function showKdcDropdown() {
   document.getElementById('kdcDropdown').style.display = 'block';
   renderKdcDropdown();
 }
-
 function renderKdcDropdown() {
   const q    = (document.getElementById('kdcSearchInput').value || '').toLowerCase().trim();
   const list = window.KDC_LIST || [];
@@ -669,7 +654,6 @@ function renderKdcDropdown() {
   }).join('');
   dd.innerHTML = hdr + `<div style="max-height:180px;overflow-y:auto;">${items}</div>`;
 }
-
 function selectAllKdc() {
   const q = (document.getElementById('kdcSearchInput').value||'').toLowerCase().trim();
   const list = window.KDC_LIST||[];
@@ -697,71 +681,55 @@ function renderKdcSelected() {
   if (!el) return;
   if (sel.size === 0) { el.innerHTML = ''; return; }
   el.innerHTML = [...sel].map(n =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(5,150,105,.12);
-      border:1px solid rgba(5,150,105,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent2);">
-      ${n}
-      <span onclick="removeKdc('${n.replace(/'/g,"\\'")}'')" style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent2);">
+      ${n}<span onclick="removeKdc('${n.replace(/'/g,"\\'")}')'' style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
     </span>`
   ).join('');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 전년 대비 (YoY) 기능
-// YOY_PREV: [{region, ncs, score, cnt, sat, recruit, complete, employ, emp_rate, comp_rate}]
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── YoY 전년 대비 ────────────────────────────────────────
 let YOY_PREV = [];
 
-// ── 전년 고정값 파일 파서 (요약본 구조) ──────────────────
 function handleYoyFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array' });
-      // 시트 우선순위: '직종별 현황' 포함 시트 → 첫 번째 시트
       const sheetName = wb.SheetNames.find(s => s.includes('직종별')) || wb.SheetNames[0];
-      const ws   = wb.Sheets[sheetName];
-      const raw  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-
-      // 헤더 행 탐지 (순번·지역·직종명 포함 행)
+      const ws  = wb.Sheets[sheetName];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
       let dataStart = -1;
       for (let i = 0; i < raw.length; i++) {
         const row = raw[i].map(v => (v||'').toString());
         if (row.some(v => v.includes('직종명')) && row.some(v => v.includes('지역'))) {
-          dataStart = i + 2; // 헤더 2행(대분류+소분류) 건너뜀
-          break;
+          dataStart = i + 2; break;
         }
       }
-      if (dataStart < 0) dataStart = 4; // 폴백: 행4부터
-
-      // 컬럼 인덱스 자동 탐지
-      // 구조: [순번, 연번, 지역, 직종명, 승인24, 승인25, 성과배점, 개설수, 만족도, 모집, 수료, 취업, 수료율, 취업률]
+      if (dataStart < 0) dataStart = 4;
       YOY_PREV = [];
       for (let i = dataStart; i < raw.length; i++) {
         const row = raw[i];
         if (!row || row.every(v => v == null || v === '')) continue;
         const seq = row[0];
-        if (seq == null || isNaN(parseFloat(seq))) continue; // 순번 없으면 데이터 행 아님
-
+        if (seq == null || isNaN(parseFloat(seq))) continue;
         const region   = (row[2] || '').toString().trim();
-        // ★ 직종명 정규화: HTML 엔티티·전각/반각 공백·줄바꿈 등 제거
         const ncs      = normalizeNcsName((row[3] || '').toString());
         if (!region || !ncs) continue;
-
-        const score    = parseFloat(row[6])  || null;
-        const cnt      = parseFloat(row[7])  || null;
-        const sat      = parseFloat(row[8])  || null;
-        const recruit  = parseFloat(row[9])  || null;
-        const complete = parseFloat(row[10]) || null;
-        const employ   = parseFloat(row[11]) || null;
-        const comp_rate= parseFloat(row[12]) || null;
-        const emp_rate = parseFloat(row[13]) || null;
-
-        YOY_PREV.push({ region, ncs, score, cnt, sat, recruit, complete, employ, comp_rate, emp_rate });
+        YOY_PREV.push({
+          region, ncs,
+          score:     parseFloat(row[6])  || null,
+          cnt:       parseFloat(row[7])  || null,
+          sat:       parseFloat(row[8])  || null,
+          recruit:   parseFloat(row[9])  || null,
+          complete:  parseFloat(row[10]) || null,
+          employ:    parseFloat(row[11]) || null,
+          comp_rate: parseFloat(row[12]) || null,
+          emp_rate:  parseFloat(row[13]) || null,
+        });
       }
-
       document.getElementById('yoyFileName').textContent =
-        `✅ ${file.name}  |  ${sheetName}  |  ${YOY_PREV.length}개 지역·직종`;
+        `✅ ${file.name} | ${sheetName} | ${YOY_PREV.length}개 지역·직종`;
       document.getElementById('yoyStatus').textContent = '';
       renderYoY();
     } catch(err) {
@@ -771,73 +739,49 @@ function handleYoyFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-// ── 현재 FILTERED 데이터를 지역+직종 단위로 집계 ──────────
-// 직종명 정규화: 양쪽 공백, HTML 엔티티(&amp; → &), 전각공백 제거
 function normalizeNcsName(s) {
-  return s
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g,  '<')
-    .replace(/&gt;/g,  '>')
-    .replace(/\u00a0|\u3000/g, ' ')  // 전각·넌브레이킹 공백
-    .replace(/\s+/g, ' ')            // 연속 공백 통일
-    .trim();
+  return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+          .replace(/\u00a0|\u3000/g,' ').replace(/\s+/g,' ').trim();
 }
 
 function buildCurrMap() {
-  // 키: "지역|||직종명(정규화)"
   const map = {};
-  const keys = [...new Set(FILTERED.map(r => `${r.sido}|||${normalizeNcsName(r.ncs_name)}`))];
+  const keys = [...new Set(FILTERED.map(r => r.sido + '|||' + normalizeNcsName(r.ncs_name)))];
   keys.forEach(k => {
     const sep  = k.indexOf('|||');
     const sido = k.slice(0, sep);
     const ncs  = k.slice(sep + 3);
     const rs   = FILTERED.filter(r => r.sido === sido && normalizeNcsName(r.ncs_name) === ncs);
-    const agg  = calcAggByInst(rs);
-    map[k] = agg;
+    map[k] = calcAggByInst(rs);
   });
   return map;
 }
 
-// ── 전년 데이터를 직종명으로 매칭 (지역 포함) ────────────
-function buildPrevKey(r) { return `${r.region}|||${r.ncs}`; }
+function buildPrevKey(r) { return r.region + '|||' + r.ncs; }
 
 function renderYoY() {
   const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
   const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
-
-  const hasPrev = YOY_PREV.length > 0;
-  const hasCurr = FILTERED.length > 0;
-
-  if (!hasPrev) {
+  if (!YOY_PREV.length) {
     document.getElementById('yoyTbody').innerHTML =
       '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">📂 위에서 전년(25년) 기준 파일을 업로드하세요</td></tr>';
     return;
   }
-  if (!hasCurr) {
+  if (!FILTERED.length) {
     document.getElementById('yoyTbody').innerHTML =
       '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">상단 필터를 적용해 비교 데이터를 선택하세요</td></tr>';
     return;
   }
-
-  const currMap = buildCurrMap(); // 지역+직종 → 집계값
-
-  // 전년 기준으로 행 구성 (전년에 있는 지역·직종 기준)
-  // 현재 필터의 시·도 범위와 교집합만 표시
+  const currMap   = buildCurrMap();
   const currSidos = new Set(FILTERED.map(r => r.sido));
-
   const rows = YOY_PREV
-    .filter(p => currSidos.has(p.region))  // 현재 필터 지역 교집합
+    .filter(p => currSidos.has(p.region))
     .map(p => {
-      const currKey = `${p.region}|||${normalizeNcsName(p.ncs)}`;
-      const curr = currMap[currKey] || null;
+      const curr = currMap[p.region + '|||' + normalizeNcsName(p.ncs)] || null;
       return { sido: p.region, ncs: p.ncs, prev: p, curr };
     })
-    .sort((a, b) => {
-      if (a.sido !== b.sido) return a.sido.localeCompare(b.sido, 'ko');
-      return a.ncs.localeCompare(b.ncs, 'ko');
-    });
+    .sort((a, b) => a.sido.localeCompare(b.sido,'ko') || a.ncs.localeCompare(b.ncs,'ko'));
 
-  // ── 헤더 ──────────────────────────────────────
   document.getElementById('yoyThead').innerHTML = `
     <tr>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;white-space:nowrap;min-width:52px;position:sticky;left:0;z-index:5;">시·도</th>
@@ -866,7 +810,6 @@ function renderYoY() {
     `직종별 운영기관 성과 평균 현황 · ${labelPrev} → ${labelCurr} 전년 대비`;
   document.getElementById('yoyCount').textContent = `${rows.length}개 지역·직종`;
 
-  // ── 바디 ──────────────────────────────────────
   const sidoCounts = {};
   rows.forEach(r => { sidoCounts[r.sido] = (sidoCounts[r.sido]||0)+1; });
   const sidoDone = new Set();
@@ -874,49 +817,29 @@ function renderYoY() {
   const fmtDiff = (v, isPct) => {
     if (v == null || Math.abs(v) < 0.0001) return '<span style="color:#94a3b8;">-</span>';
     const abs = isPct ? Math.abs(v*100).toFixed(2)+'%p' : Math.abs(v).toFixed(2);
-    // 감소=▼파랑, 증가=▲빨강
     if (v < 0) return `<span style="color:#1e40af;font-weight:700;">▼${abs}</span>`;
     return `<span style="color:#dc2626;font-weight:700;">▲${abs}</span>`;
   };
-
   const cv = v => v != null && !isNaN(v) ? Math.round(v).toLocaleString() : '-';
   const cf = v => v != null && !isNaN(v) ? parseFloat(v).toFixed(1) : '-';
   const cp = v => v != null && !isNaN(v) ? (parseFloat(v)*100).toFixed(1)+'%' : '-';
 
   document.getElementById('yoyTbody').innerHTML = rows.map(r => {
     const p = r.prev, c = r.curr;
-
-    // 전년: 파일에서 직접 읽은 값
-    const pScore = p.score;
-    const pCnt   = p.cnt;
-    const pSat   = p.sat;
-    const pComp  = p.complete;
-    const pEmp   = p.employ;
-    const pEmpR  = p.emp_rate;
-
-    // 당년: calcAggByInst 결과
+    const pScore = p.score, pCnt = p.cnt, pSat = p.sat, pComp = p.complete, pEmp = p.employ, pEmpR = p.emp_rate;
     const cScore = c ? c.score    : null;
     const cCnt   = c ? c.cnt      : null;
     const cSat   = c ? c.sat      : null;
     const cComp  = c ? c.complete : null;
     const cEmp   = c ? c.employ   : null;
     const cEmpR  = c ? c.emp_rate : null;
-
     const diffScore = (pScore != null && cScore != null) ? cScore - pScore : null;
     const diffEmpR  = (pEmpR  != null && cEmpR  != null) ? cEmpR  - pEmpR  : null;
-
     const sidoCell = !sidoDone.has(r.sido)
-      ? `<td rowspan="${sidoCounts[r.sido]}"
-           style="text-align:center;font-weight:700;font-size:12px;
-                  background:#fffbeb;border-right:2px solid #d97706;
-                  white-space:nowrap;position:sticky;left:0;z-index:2;">${r.sido}</td>`
+      ? `<td rowspan="${sidoCounts[r.sido]}" style="text-align:center;font-weight:700;font-size:12px;background:#fffbeb;border-right:2px solid #d97706;white-space:nowrap;position:sticky;left:0;z-index:2;">${r.sido}</td>`
       : '';
     sidoDone.add(r.sido);
-
-    // 당년 데이터 없으면 행 흐리게
-    const noData = !c;
-    const rowStyle = noData ? 'opacity:.5;' : '';
-
+    const rowStyle = !c ? 'opacity:.5;' : '';
     return `<tr style="border-bottom:1px solid #e2e8f0;${rowStyle}">
       ${sidoCell}
       <td style="font-size:12px;white-space:nowrap;">${r.ncs}</td>
@@ -937,112 +860,70 @@ function renderYoY() {
   }).join('');
 }
 
-// ── YoY 엑셀 다운로드 ────────────────────────────────────
 function exportYoyExcel() {
   if (!YOY_PREV.length) { alert('전년 파일을 먼저 업로드하세요.'); return; }
   if (!FILTERED.length) { alert('현재 필터 데이터가 없습니다.'); return; }
-
   const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
   const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
   const today     = fmtDate(new Date());
   const wb        = XLSX.utils.book_new();
-
   const currMap   = buildCurrMap();
   const currSidos = new Set(FILTERED.map(r => r.sido));
-
   const rows = YOY_PREV
     .filter(p => currSidos.has(p.region))
-    .sort((a, b) => a.region.localeCompare(b.region,'ko') || a.ncs.localeCompare(b.ncs,'ko'));
-
-  const shData = [];
-  // 제목
-  shData.push([`직종별 운영기관 성과 평균 현황 [${labelCurr} 종료과정 기준]`, ...Array(13).fill('')]);
-  shData.push(['◆ 조사 및 작성 : 국비사업팀', ...Array(13).fill('')]);
-  shData.push([]); // 빈 행
-
-  // 헤더 1행
-  shData.push([
-    '시·도', '직종명',
-    `${labelPrev} 성과배점`, `${labelPrev} 개설수`, `${labelPrev} 만족도`,
-    `${labelPrev} 수료`, `${labelPrev} 취업`, `${labelPrev} 취업률(%)`,
-    `${labelCurr} 성과배점`, `${labelCurr} 개설수`, `${labelCurr} 만족도`,
-    `${labelCurr} 수료`, `${labelCurr} 취업`, `${labelCurr} 취업률(%)`,
-    '전년대비 성과배점', '전년대비 취업률(%p)'
-  ]);
-
+    .sort((a,b) => a.region.localeCompare(b.region,'ko') || a.ncs.localeCompare(b.ncs,'ko'));
+  const shData = [
+    [`직종별 운영기관 성과 평균 현황 [${labelCurr} 종료과정 기준]`],
+    ['◆ 조사 및 작성 : 국비사업팀'],
+    [],
+    ['시·도','직종명',
+     labelPrev+' 성과배점', labelPrev+' 개설수', labelPrev+' 만족도', labelPrev+' 수료', labelPrev+' 취업', labelPrev+' 취업률(%)',
+     labelCurr+' 성과배점', labelCurr+' 개설수', labelCurr+' 만족도', labelCurr+' 수료', labelCurr+' 취업', labelCurr+' 취업률(%)',
+     '전년대비 성과배점', '전년대비 취업률(%p)'],
+  ];
   rows.forEach(p => {
-    const c = currMap[`${p.region}|||${normalizeNcsName(p.ncs)}`] || null;
-    const diffScore = (p.score != null && c?.score != null) ? parseFloat((c.score - p.score).toFixed(2)) : '';
-    const diffEmpR  = (p.emp_rate != null && c?.emp_rate != null) ? parseFloat(((c.emp_rate - p.emp_rate)*100).toFixed(2)) : '';
+    const c      = currMap[p.region + '|||' + normalizeNcsName(p.ncs)] || null;
+    const cScore = c ? c.score    : null;
+    const cCnt   = c ? c.cnt      : null;
+    const cSat   = c ? c.sat      : null;
+    const cComp  = c ? c.complete : null;
+    const cEmp   = c ? c.employ   : null;
+    const cEmpR  = c ? c.emp_rate : null;
+    const dS = (p.score!=null && cScore!=null)   ? parseFloat((cScore-p.score).toFixed(2))               : '';
+    const dE = (p.emp_rate!=null && cEmpR!=null) ? parseFloat(((cEmpR-p.emp_rate)*100).toFixed(2))       : '';
     shData.push([
       p.region, p.ncs,
-      p.score    != null ? parseFloat(p.score.toFixed(2))           : '',
-      p.cnt      != null ? Math.round(p.cnt)                         : '',
-      p.sat      != null ? parseFloat(p.sat.toFixed(1))             : '',
-      p.complete != null ? Math.round(p.complete)                    : '',
-      p.employ   != null ? Math.round(p.employ)                      : '',
-      p.emp_rate != null ? parseFloat((p.emp_rate*100).toFixed(1))  : '',
-      c?.score    != null ? parseFloat(c.score.toFixed(2))           : '',
-      c?.cnt      != null ? Math.round(c.cnt)                        : '',
-      c?.sat      != null ? parseFloat(c.sat.toFixed(1))             : '',
-      c?.complete != null ? Math.round(c.complete)                   : '',
-      c?.employ   != null ? Math.round(c.employ)                     : '',
-      c?.emp_rate != null ? parseFloat((c.emp_rate*100).toFixed(1)) : '',
-      diffScore, diffEmpR,
+      p.score    !=null ? parseFloat(p.score.toFixed(2))           : '',
+      p.cnt      !=null ? Math.round(p.cnt)                         : '',
+      p.sat      !=null ? parseFloat(p.sat.toFixed(1))             : '',
+      p.complete !=null ? Math.round(p.complete)                    : '',
+      p.employ   !=null ? Math.round(p.employ)                      : '',
+      p.emp_rate !=null ? parseFloat((p.emp_rate*100).toFixed(1))  : '',
+      cScore !=null ? parseFloat(cScore.toFixed(2))                 : '',
+      cCnt   !=null ? Math.round(cCnt)                              : '',
+      cSat   !=null ? parseFloat(cSat.toFixed(1))                  : '',
+      cComp  !=null ? Math.round(cComp)                             : '',
+      cEmp   !=null ? Math.round(cEmp)                              : '',
+      cEmpR  !=null ? parseFloat((cEmpR*100).toFixed(1))           : '',
+      dS, dE,
     ]);
   });
-
   const ws = XLSX.utils.aoa_to_sheet(shData);
-  ws['!cols'] = [
-    {wch:8},{wch:22},
-    {wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},
-    {wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},
-    {wch:14},{wch:14}
-  ];
-
-  // 헤더행 색상 (행4 = index 3)
-  const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
-  COLS.forEach((col, i) => {
-    const ref = `${col}4`;
-    if (!ws[ref]) ws[ref] = { v: shData[3][i], t: 's' };
-    ws[ref].s = {
-      fill: { fgColor: { rgb: i < 2 ? '92400E' : i < 8 ? 'D97706' : i < 14 ? '1E40AF' : '065F46' } },
-      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-    };
-  });
-
-  // 데이터행 전년대비 색상 (O·P열)
-  for (let r = 4; r < shData.length; r++) {
-    ['O','P'].forEach(col => {
-      const ref = `${col}${r+1}`;
-      if (!ws[ref]) return;
-      const v = ws[ref].v;
-      if (typeof v === 'number' && v !== 0) {
-        ws[ref].s = {
-          font: { bold: true, color: { rgb: v < 0 ? '1E40AF' : 'DC2626' } },
-          alignment: { horizontal: 'center' },
-        };
-      }
-    });
-  }
-
+  ws['!cols'] = [{wch:8},{wch:22},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:11},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, `전년대비_${labelCurr}`);
   XLSX.writeFile(wb, `직종별전년대비_${labelCurr}_${today}.xlsx`);
 }
 
+// ── 필터 ────────────────────────────────────────────────
 function toggleType(el, type) {
   const input = el.querySelector('input');
-  const isChecked = input.checked;
-  el.classList.toggle('active', isChecked);
+  el.classList.toggle('active', input.checked);
   applyFilters();
 }
-
 function showNcsDropdown() {
   document.getElementById('ncsDropdown').style.display = 'block';
   renderNcsDropdown();
 }
-
 function renderNcsDropdown() {
   const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
   const list = window.NCS_LIST || [];
@@ -1050,69 +931,56 @@ function renderNcsDropdown() {
   const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
   const dd = document.getElementById('ncsDropdown');
   dd.style.display = 'block';
-  if (!filtered.length) {
-    dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
-    return;
-  }
-  const headerHtml = `
-    <div style="padding:6px 12px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;background:#f8fafc;">
-      <span style="font-size:11px;color:var(--text3);">${filtered.length}개 표시</span>
-      <button onclick="selectAllNcs()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
-      <button onclick="clearAllNcs()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
-    </div>`;
+  if (!filtered.length) { dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">검색 결과 없음</div>'; return; }
+  const headerHtml = `<div style="padding:6px 12px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;background:#f8fafc;">
+    <span style="font-size:11px;color:var(--text3);">${filtered.length}개 표시</span>
+    <button onclick="selectAllNcs()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
+    <button onclick="clearAllNcs()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
+  </div>`;
   const itemsHtml = filtered.slice(0, 150).map(n => {
     const checked = sel.has(n.code);
-    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;background:${checked ? 'rgba(79,142,247,.1)' : 'transparent'};"
-              onmouseover="this.style.background='${checked ? 'rgba(79,142,247,.18)' : 'var(--surface2)'}'"
-              onmouseout="this.style.background='${checked ? 'rgba(79,142,247,.1)' : 'transparent'}'">
-      <input type="checkbox" ${checked ? 'checked' : ''}
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;background:${checked?'rgba(79,142,247,.1)':'transparent'};"
+              onmouseover="this.style.background='${checked?'rgba(79,142,247,.18)':'var(--surface2)'}'"
+              onmouseout="this.style.background='${checked?'rgba(79,142,247,.1)':'transparent'}'">
+      <input type="checkbox" ${checked?'checked':''}
         onchange="toggleNcsByCode('${n.code}','${n.name.replace(/'/g,"\\'")}',this.checked)"
         style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
       <span style="color:var(--text3);font-size:11px;min-width:60px;flex-shrink:0;">${n.code}</span>
-      <span style="font-size:12px;color:${checked ? 'var(--accent)' : 'var(--text)'};">${n.name}</span>
+      <span style="font-size:12px;color:${checked?'var(--accent)':'var(--text)'};">${n.name}</span>
     </label>`;
   }).join('');
   dd.innerHTML = headerHtml + `<div style="max-height:180px;overflow-y:auto;">${itemsHtml}</div>`;
 }
-
 function selectAllNcs() {
-  const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
-  const list = window.NCS_LIST || [];
-  const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
-  filtered.forEach(n => window.selectedNcsCodes.add(n.code));
+  const q = (document.getElementById('ncsSearchInput').value||'').toLowerCase().trim();
+  const list = window.NCS_LIST||[];
+  (q ? list.filter(n => n.code.includes(q)||n.name.toLowerCase().includes(q)) : list).forEach(n => window.selectedNcsCodes.add(n.code));
   renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
-
 function clearAllNcs() {
-  const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
-  const list = window.NCS_LIST || [];
-  const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
-  filtered.forEach(n => window.selectedNcsCodes.delete(n.code));
+  const q = (document.getElementById('ncsSearchInput').value||'').toLowerCase().trim();
+  const list = window.NCS_LIST||[];
+  (q ? list.filter(n => n.code.includes(q)||n.name.toLowerCase().includes(q)) : list).forEach(n => window.selectedNcsCodes.delete(n.code));
   renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
-
 function toggleNcsByCode(code, name, checked) {
   if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
-  if (checked) window.selectedNcsCodes.add(code);
-  else window.selectedNcsCodes.delete(code);
+  if (checked) window.selectedNcsCodes.add(code); else window.selectedNcsCodes.delete(code);
   renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
-
 function removeNcs(code) {
   window.selectedNcsCodes && window.selectedNcsCodes.delete(code);
   renderNcsDropdown(); renderNcsSelected(); applyFilters();
 }
-
 function renderNcsSelected() {
   const list = window.NCS_LIST || [];
-  const sel = window.selectedNcsCodes || new Set();
-  const el = document.getElementById('ncsSelected');
+  const sel  = window.selectedNcsCodes || new Set();
+  const el   = document.getElementById('ncsSelected');
   if (sel.size === 0) { el.innerHTML = ''; return; }
   el.innerHTML = [...sel].map(code => {
     const item = list.find(n => n.code === code);
     const name = item ? item.name : code;
-    return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(79,142,247,.15);
-      border:1px solid rgba(79,142,247,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent);">
+    return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent);">
       ${code} ${name}
       <span onclick="removeNcs('${code}')" style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
     </span>`;
@@ -1127,30 +995,22 @@ function applyFilters() {
   const ds       = document.getElementById('dateStart').value;
   const de       = document.getElementById('dateEnd').value;
   const basis    = document.querySelector('input[name=dateBasis]:checked').value;
-
   FILTERED = RAW.filter(r => {
     if (!selTypes.includes(r.type)) return false;
     if (sido && r.sido !== sido) return false;
     if (selNcs.size > 0 && !selNcs.has(r.ncs_code)) return false;
-    // ★ 국기직종명 다중선택 필터
     if (selKdc.size > 0 && (r.kdc_name == null || !selKdc.has(r.kdc_name))) return false;
     const d = basis === 'end' ? r.end : r.start;
     if (ds && d && fmtDate(d) < ds) return false;
     if (de && d && fmtDate(d) > de) return false;
     return true;
   });
-
   const hasUnconfirmed = FILTERED.some(r => !r.confirmed && r.has_emp);
   document.getElementById('warnBadge').style.display = hasUnconfirmed ? '' : 'none';
   document.getElementById('totalBadge').style.display = '';
   document.getElementById('totalBadge').textContent = `${FILTERED.length.toLocaleString()}건`;
-
   pages.table1 = 1; pages.table4 = 1; pages.region = 1;
-
-  renderSummary();
-  renderTab1();
-  renderTab2();
-  renderTab3();
+  renderSummary(); renderTab1(); renderTab2(); renderTab3();
 }
 
 function resetFilters() {
@@ -1186,6 +1046,7 @@ function resetAll() {
   document.getElementById('dropZone').style.display      = '';
 }
 
+// ── 요약 카드 ─────────────────────────────────────────────
 function renderSummary() {
   const totalCourses  = FILTERED.length;
   const totalInsts    = new Set(FILTERED.map(r => r.inst)).size;
@@ -1205,6 +1066,7 @@ function renderSummary() {
   `;
 }
 
+// ── 분석 1 ───────────────────────────────────────────────
 function renderTab1() {
   const byType = groupBy(FILTERED.filter(r => r.has_emp), 'type');
   const typeLabels = Object.keys(byType).sort();
@@ -1216,42 +1078,35 @@ function renderTab1() {
   renderBar('chart1', typeLabels, typeRates, '취업률 (%)', ['#1e40af','#059669','#d97706','#7c3aed','#dc2626','#0891b2']);
   const bySido = groupBy(FILTERED, 'sido');
   const sidoLabels = Object.keys(bySido).sort((a,b) => bySido[b].length - bySido[a].length).slice(0,12);
-  const sidoCounts = sidoLabels.map(s => bySido[s].length);
-  renderBar('chart2', sidoLabels, sidoCounts, '과정 수', '#1e40af');
-
+  renderBar('chart2', sidoLabels, sidoLabels.map(s => bySido[s].length), '과정 수', '#1e40af');
   const byInst = groupBy(FILTERED, 'inst');
   const rows = Object.entries(byInst).map(([inst, rs]) => {
     const c = sumN(rs,'complete'), e = sumN(rs,'employ');
     const er = c > 0 ? e/c : null;
     const sc = avgN(rs.filter(r=>r.score!=null),'score');
     const hasUnc = rs.some(r => !r.confirmed && r.has_emp);
-    return {
-      inst, sido: rs[0].sido, type: rs[0].type, ncs: rs[0].ncs_name,
-      cnt: rs.length, sat: avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
-      complete: c, employ: e, emp_rate: er, score: sc, unconfirmed: hasUnc,
-    };
+    return { inst, sido: rs[0].sido, type: rs[0].type, ncs: rs[0].ncs_name,
+             cnt: rs.length, sat: avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
+             complete: c, employ: e, emp_rate: er, score: sc, unconfirmed: hasUnc };
   }).sort((a,b) => (b.score||0) - (a.score||0));
-
   document.getElementById('tableCount1').textContent = `${rows.length.toLocaleString()}개 기관`;
   renderPaginatedTable('tbody1', 'pag1', rows, 'table1', renderInstRow);
 }
-
 function renderInstRow(r) {
   return `<tr>
-    <td>${r.inst}</td>
-    <td>${r.sido}</td>
+    <td>${r.inst}</td><td>${r.sido}</td>
     <td><span class="badge ${typeBadge(r.type)}">${r.type}</span></td>
-    <td>${r.ncs||'-'}</td>
-    <td>${r.cnt}</td>
+    <td>${r.ncs||'-'}</td><td>${r.cnt}</td>
     <td>${r.sat!=null?r.sat.toFixed(1):'-'}</td>
     <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
     <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
-    <td>${rateBar(r.emp_rate, 'green')}${r.unconfirmed?'<span class="warn-dot" title="집계중 포함"></span>':''}</td>
+    <td>${rateBar(r.emp_rate,'green')}${r.unconfirmed?'<span class="warn-dot" title="집계중 포함"></span>':''}</td>
     <td>${r.score!=null?scoreBar(r.score):'-'}</td>
     <td>${r.unconfirmed?'<span class="badge badge-yellow">집계중</span>':'<span class="badge badge-green">확정</span>'}</td>
   </tr>`;
 }
 
+// ── 분석 2 ───────────────────────────────────────────────
 function switchSubtab(id) {
   ['cross','region','yoy'].forEach(t => {
     const panel = document.getElementById('subtab-'+t);
@@ -1259,71 +1114,54 @@ function switchSubtab(id) {
     if (!panel || !btn) return;
     const active = t === id;
     panel.style.display = active ? '' : 'none';
-    btn.style.background    = active ? 'var(--accent)' : 'transparent';
-    btn.style.color         = active ? '#fff' : 'var(--text2)';
-    btn.style.border        = active ? 'none' : '1px solid var(--border)';
+    btn.style.background = active ? 'var(--accent)' : 'transparent';
+    btn.style.color      = active ? '#fff' : 'var(--text2)';
+    btn.style.border     = active ? 'none' : '1px solid var(--border)';
   });
   if (id === 'region') renderRegionDetail();
   if (id === 'yoy')    renderYoY();
 }
 
 function renderTab2() {
-  const mode = document.getElementById('crossViewMode')?.value || 'emp_rate';
+  const modeEl = document.getElementById('crossViewMode');
+  const mode   = modeEl ? modeEl.value : 'emp_rate';
   const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
   const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
-
   const crossMap = {};
   FILTERED.forEach(r => {
-    const k = `${r.sido}|||${r.ncs_name}`;
+    const k = r.sido + '|||' + r.ncs_name;
     if (!crossMap[k]) crossMap[k] = [];
     crossMap[k].push(r);
   });
-
-  // ★ 지역/직종 집계는 calcAggByInst 사용 (기관 평균 방식)
   const ncsTotal = {};
-  ncsList.forEach(ncs => {
-    const rs = FILTERED.filter(r => r.ncs_name === ncs);
-    ncsTotal[ncs] = calcAggByInst(rs);
-  });
-
+  ncsList.forEach(ncs => { ncsTotal[ncs] = calcAggByInst(FILTERED.filter(r => r.ncs_name === ncs)); });
   const header = document.getElementById('crossHeader');
   header.innerHTML = `
     <th style="position:sticky;left:0;background:var(--surface2);z-index:10;min-width:80px;">시·도</th>
     ${ncsList.map(n => `<th style="font-size:11px;white-space:nowrap;min-width:90px;" title="${n}">${n.length>6?n.slice(0,6)+'..':n}</th>`).join('')}
     <th style="background:var(--surface2);font-weight:700;">합계</th>`;
-
-  const tbody2 = document.getElementById('tbody2');
   const modeLabel = {emp_rate:'취업률',score:'성과점수',satisfy:'만족도',complete:'수료',cnt:'과정수'}[mode];
-
   const allVals = [];
-  sidos.forEach(sido => {
-    ncsList.forEach(ncs => {
-      const rs = crossMap[`${sido}|||${ncs}`] || [];
-      if (rs.length) {
-        const agg = calcAgg(rs);
-        const v = getAggVal(agg, mode);
-        if (v != null) allVals.push(v);
-      }
-    });
-  });
+  sidos.forEach(sido => ncsList.forEach(ncs => {
+    const rs = crossMap[sido+'|||'+ncs] || [];
+    if (rs.length) { const v = getAggVal(calcAggByInst(rs), mode); if (v != null) allVals.push(v); }
+  }));
   const maxVal = allVals.length ? Math.max(...allVals) : 1;
   const minVal = allVals.length ? Math.min(...allVals) : 0;
-
+  const totalAgg = calcAggByInst(FILTERED);
+  const tbody2 = document.getElementById('tbody2');
   tbody2.innerHTML = sidos.map(sido => {
-    const sidoAll = FILTERED.filter(r => r.sido === sido);
-    const sidoAgg = calcAggByInst(sidoAll);  // ★ 기관 평균
+    const sidoAgg = calcAggByInst(FILTERED.filter(r => r.sido === sido));
     const cells = ncsList.map(ncs => {
-      const rs = crossMap[`${sido}|||${ncs}`] || [];
+      const rs = crossMap[sido+'|||'+ncs] || [];
       if (!rs.length) return `<td style="color:var(--text3);font-size:11px;text-align:center;">-</td>`;
-      const agg = calcAggByInst(rs);  // ★ 기관 평균
-      const v   = getAggVal(agg, mode);
-      const p   = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
+      const agg = calcAggByInst(rs);
+      const v = getAggVal(agg, mode);
+      const p = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
       const alpha = (0.08 + p * 0.35).toFixed(2);
-      const displayVal = fmtAggVal(v, mode);
       return `<td style="text-align:center;font-size:12px;background:rgba(79,142,247,${alpha});cursor:pointer;"
         onclick="quickDrillDown('${sido}','${ncs}')" title="${sido} · ${ncs}\n기관수:${agg.cnt} 취업률:${fmtAggVal(agg.emp_rate,'emp_rate')} 성과:${fmtAggVal(agg.score,'score')}">
-        ${displayVal}
-      </td>`;
+        ${fmtAggVal(v, mode)}</td>`;
     });
     return `<tr>
       <td style="position:sticky;left:0;background:#ffffff;font-weight:600;font-size:12px;z-index:5;white-space:nowrap;">${sido}</td>
@@ -1331,8 +1169,6 @@ function renderTab2() {
       <td style="background:var(--surface2);font-weight:700;text-align:center;font-size:12px;">${fmtAggVal(getAggVal(sidoAgg,mode),mode)}</td>
     </tr>`;
   }).join('');
-
-  const totalAgg = calcAggByInst(FILTERED);  // ★ 기관 평균
   const totalCells = ncsList.map(ncs => {
     const v = getAggVal(ncsTotal[ncs], mode);
     return `<td style="background:var(--surface2);font-weight:700;text-align:center;font-size:12px;">${fmtAggVal(v,mode)}</td>`;
@@ -1342,14 +1178,9 @@ function renderTab2() {
     ${totalCells}
     <td style="background:rgba(79,142,247,.2);font-weight:800;text-align:center;">${fmtAggVal(getAggVal(totalAgg,mode),mode)}</td>
   </tr>`;
-
   document.getElementById('tableCount2').textContent = `${sidos.length}개 지역 × ${ncsList.length}개 직종 · 기준: ${modeLabel}`;
-
-  const ncsRows = ncsList.map(ncs => {
-    const rs = FILTERED.filter(r => r.ncs_name === ncs);
-    return { label: ncs, ...calcAggByInst(rs) };  // ★ 기관 평균
-  }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
-
+  const ncsRows = ncsList.map(ncs => ({ label: ncs, ...calcAggByInst(FILTERED.filter(r => r.ncs_name === ncs)) }))
+    .sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
   document.getElementById('tableCount3').textContent = `${ncsRows.length}개 직무분류`;
   document.getElementById('tbody3').innerHTML = ncsRows.map(r => `<tr>
     <td style="cursor:pointer;color:var(--accent);" onclick="filterNcsAndDrill('${r.label}')">${r.label}</td>
@@ -1364,42 +1195,27 @@ function renderTab2() {
     <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
     <td>${r.score!=null?scoreBar(r.score):'-'}</td>
   </tr>`).join('');
-
   updateRegionSelects();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// calcAgg: 원시 행 기준 합산 (기관별 성과 상세에서 사용)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 집계 함수 ─────────────────────────────────────────────
 function calcAgg(rs) {
-  const quota    = sumN(rs,'quota');
-  const confirm  = sumN(rs,'confirm');
-  const complete = sumN(rs,'complete');
-  const employ   = sumN(rs,'employ');
+  const quota = sumN(rs,'quota'), confirm = sumN(rs,'confirm');
+  const complete = sumN(rs,'complete'), employ = sumN(rs,'employ');
   return {
-    cnt:       rs.length,
-    quota, confirm, complete, employ,
+    cnt: rs.length, quota, confirm, complete, employ,
     rec_rate:  quota > 0    ? confirm/quota    : null,
     comp_rate: confirm > 0  ? complete/confirm : null,
     emp_rate:  complete > 0 ? employ/complete  : null,
-    sat:       avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
-    score:     avgN(rs.filter(r=>r.score!=null),'score'),
+    sat:   avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
+    score: avgN(rs.filter(r=>r.score!=null),'score'),
   };
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// calcAggByInst: 지역/직종 단위 집계용
-//   과정수·정원·모집·수료·취업 → 합산
-//   취업률·만족도·성과점수     → 기관별 값의 평균
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function calcAggByInst(rs) {
-  // 1단계: 기관별로 먼저 합산
   const byInst = groupBy(rs, 'inst');
   const instAggs = Object.values(byInst).map(rows => {
-    const quota    = sumN(rows,'quota');
-    const confirm  = sumN(rows,'confirm');
-    const complete = sumN(rows,'complete');
-    const employ   = sumN(rows,'employ');
+    const quota = sumN(rows,'quota'), confirm = sumN(rows,'confirm');
+    const complete = sumN(rows,'complete'), employ = sumN(rows,'employ');
     const emp_rate = complete > 0 ? employ / complete : null;
     const sat      = avgN(rows.filter(r=>r.satisfy!=null),'satisfy');
     const empRows  = rows.filter(r => r.has_emp);
@@ -1408,39 +1224,31 @@ function calcAggByInst(rs) {
     const score    = scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
     return { quota, confirm, complete, employ, emp_rate, sat, score };
   });
-
-  // 2단계: 수량 → 합산, 비율 → 기관별 평균
   const quota    = instAggs.reduce((a,b)=>a+(b.quota||0),0);
   const confirm  = instAggs.reduce((a,b)=>a+(b.confirm||0),0);
   const complete = instAggs.reduce((a,b)=>a+(b.complete||0),0);
   const employ   = instAggs.reduce((a,b)=>a+(b.employ||0),0);
-
   const empRates = instAggs.map(a=>a.emp_rate).filter(v=>v!=null);
   const sats     = instAggs.map(a=>a.sat).filter(v=>v!=null);
   const scores   = instAggs.map(a=>a.score).filter(v=>v!=null);
-
   return {
-    cnt:       Object.keys(byInst).length,   // 기관 수
-    quota, confirm, complete, employ,
+    cnt: Object.keys(byInst).length, quota, confirm, complete, employ,
     rec_rate:  quota > 0    ? confirm/quota    : null,
     comp_rate: confirm > 0  ? complete/confirm : null,
-    // 취업률·만족도·성과점수 = 기관별 값의 평균
     emp_rate:  empRates.length ? empRates.reduce((a,b)=>a+b,0)/empRates.length : null,
     sat:       sats.length     ? sats.reduce((a,b)=>a+b,0)/sats.length         : null,
     score:     scores.length   ? scores.reduce((a,b)=>a+b,0)/scores.length     : null,
   };
 }
-
 function getAggVal(agg, mode) {
   if (!agg) return null;
-  return { emp_rate: agg.emp_rate, score: agg.score, satisfy: agg.sat, complete: agg.complete, cnt: agg.cnt }[mode] ?? null;
+  const map = { emp_rate: agg.emp_rate, score: agg.score, satisfy: agg.sat, complete: agg.complete, cnt: agg.cnt };
+  return map[mode] !== undefined ? map[mode] : null;
 }
-
 function fmtAggVal(v, mode) {
   if (v == null) return '-';
   if (mode === 'emp_rate') return (v*100).toFixed(1)+'%';
-  if (mode === 'score')    return v.toFixed(1);
-  if (mode === 'satisfy')  return v.toFixed(1);
+  if (mode === 'score' || mode === 'satisfy') return v.toFixed(1);
   if (mode === 'complete') return Math.round(v).toLocaleString();
   if (mode === 'cnt')      return v.toLocaleString();
   return v;
@@ -1450,13 +1258,12 @@ function quickDrillDown(sido, ncs) {
   switchSubtab('region');
   setTimeout(() => {
     const rs = document.getElementById('regionSelect');
-    if (rs) rs.value = sido;
     const rn = document.getElementById('regionNcsSelect');
+    if (rs) rs.value = sido;
     if (rn) rn.value = ncs;
     renderRegionDetail();
   }, 50);
 }
-
 function filterNcsAndDrill(ncs) {
   switchSubtab('region');
   setTimeout(() => {
@@ -1465,147 +1272,249 @@ function filterNcsAndDrill(ncs) {
     renderRegionDetail();
   }, 50);
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ★ 수정 1: updateRegionSelects - 직종 드롭다운을 ncs_name 기준으로 통일
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updateRegionSelects() {
   const sidos   = [...new Set(FILTERED.map(r => r.sido).filter(Boolean))].sort();
-  // ★ 변경: kdc_name 혼용 제거 → ncs_name 기준으로만 직종 목록 생성
   const ncsList = [...new Set(FILTERED.map(r => r.ncs_name).filter(Boolean))].sort();
   const rs = document.getElementById('regionSelect');
   const rn = document.getElementById('regionNcsSelect');
   if (!rs || !rn) return;
-
-  const curSido = rs.value;
-  const curNcs  = rn.value;
+  const curSido = rs.value, curNcs = rn.value;
   rs.innerHTML = '<option value="">지역 선택</option>' + sidos.map(s=>`<option value="${s}">${s}</option>`).join('');
   rn.innerHTML = '<option value="">직종 전체</option>' + ncsList.map(n=>`<option value="${n}">${n}</option>`).join('');
-  rs.value = curSido;
-  rn.value = curNcs;
+  rs.value = curSido; rn.value = curNcs;
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ★ 수정 2: renderRegionDetail - keyFn을 ncs_name 기준으로 통일 + kdc_name 별도 표시
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function renderRegionDetail() {
-  const sido = document.getElementById('regionSelect')?.value || '';
-  const ncs  = document.getElementById('regionNcsSelect')?.value || '';
-
+  const sidoEl = document.getElementById('regionSelect');
+  const ncsEl  = document.getElementById('regionNcsSelect');
+  const sido   = sidoEl ? sidoEl.value : '';
+  const ncs    = ncsEl  ? ncsEl.value  : '';
   let rows = FILTERED;
   if (sido) rows = rows.filter(r => r.sido === sido);
-  // ★ 변경: ncs_name 기준으로 필터
   if (ncs)  rows = rows.filter(r => r.ncs_name === ncs);
-
-  // ★ 핵심 수정: keyFn을 ncs_name + inst 기준으로 통일
-  //   (기존에는 kdc_name이 있으면 kdc_name을 키로 사용해서 같은 기관이 2개 행으로 분리되던 문제 해결)
-  const keyFn = r => `${r.ncs_name}|||${r.inst}`;
-
+  const keyFn = r => r.ncs_name + '|||' + r.inst;
   const byKey = groupBy(rows, keyFn);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
-    const [ncsLabel, inst] = k.split('|||');
+    const parts = k.split('|||');
+    const ncsLabel = parts[0], inst = parts[1];
     const agg = calcAgg(rs);
-    const type = rs[0].type;
-
-    // ★ 국기직종명 수집: 해당 그룹 내 kdc_name 중 null이 아닌 것 (여러 개면 쉼표로 합치기)
-    const kdcNames = [...new Set(rs.map(r => r.kdc_name).filter(Boolean))];
+    const kdcNames = [...new Set(rs.map(r=>r.kdc_name).filter(Boolean))];
     const kdcLabel = kdcNames.length > 0 ? kdcNames.join(', ') : '-';
-
-    const empRows    = rs.filter(r => EMP_TYPES.includes(r.type));
-    const scoreSat   = agg.sat != null && empRows.length > 0 ? (agg.sat / 100) * 20 : null;
-    const scoreEmp   = agg.emp_rate != null && empRows.length > 0 ? agg.emp_rate * 40 : null;
-    const scoreTotal = scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
-    return { ncs: ncsLabel, kdcLabel, inst, sido: rs[0].sido, type, ...agg, scoreSat, scoreEmp, scoreTotal };
-  }).sort((a,b) => {
-    if (a.ncs !== b.ncs) return a.ncs.localeCompare(b.ncs,'ko');
-    return (b.scoreTotal||0) - (a.scoreTotal||0);
-  });
-
+    const empRows   = rs.filter(r => EMP_TYPES.includes(r.type));
+    const scoreSat  = agg.sat != null && empRows.length > 0 ? (agg.sat/100)*20 : null;
+    const scoreEmp  = agg.emp_rate != null && empRows.length > 0 ? agg.emp_rate*40 : null;
+    const scoreTotal= scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
+    return { ncs: ncsLabel, kdcLabel, inst, sido: rs[0].sido, ...agg, scoreSat, scoreEmp, scoreTotal };
+  }).sort((a,b) => a.ncs.localeCompare(b.ncs,'ko') || (b.scoreTotal||0)-(a.scoreTotal||0));
   document.getElementById('regionTotalBadge').textContent =
     sido ? `${sido}${ncs?' · '+ncs:''} · ${aggRows.length}개 기관` : `전체 ${aggRows.length}개 기관`;
-
   pages['region'] = 1;
-  renderPaginatedTable('tbody-region','pag-region', aggRows, 'region', r => {
-    return `<tr>
-      <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs || '-'}</td>
-      <td style="font-size:11px;color:var(--text3);white-space:nowrap;">${r.kdcLabel}</td>
-      <td style="white-space:nowrap;">${r.inst}</td>
-      <td style="text-align:right;">${r.cnt}</td>
-      <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
-      <td style="text-align:right;">${r.quota!=null?r.quota.toLocaleString():'-'}</td>
-      <td style="text-align:right;">${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
-      <td style="text-align:right;">${r.complete!=null?r.complete.toLocaleString():'-'}</td>
-      <td style="text-align:right;">${r.employ!=null?r.employ.toLocaleString():'-'}</td>
-      <td>${rateBar(r.rec_rate,'')}</td>
-      <td>${rateBar(r.comp_rate,'')}</td>
-      <td>${rateBar(r.emp_rate,'green')}</td>
-      <td style="text-align:right;color:var(--accent2);">${r.scoreSat!=null?r.scoreSat.toFixed(1):'-'}</td>
-      <td style="text-align:right;color:var(--accent);">${r.scoreEmp!=null?r.scoreEmp.toFixed(1):'-'}</td>
-      <td>${r.scoreTotal!=null?scoreBar(r.scoreTotal):'-'}</td>
-    </tr>`;
-  });
+  renderPaginatedTable('tbody-region','pag-region', aggRows, 'region', r => `<tr>
+    <td style="font-size:11px;color:var(--text2);white-space:nowrap;">${r.ncs||'-'}</td>
+    <td style="font-size:11px;color:var(--text3);white-space:nowrap;">${r.kdcLabel}</td>
+    <td style="white-space:nowrap;">${r.inst}</td>
+    <td style="text-align:right;">${r.cnt}</td>
+    <td style="text-align:right;">${r.sat!=null?r.sat.toFixed(1):'-'}</td>
+    <td style="text-align:right;">${r.quota!=null?r.quota.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.confirm!=null?r.confirm.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.complete!=null?r.complete.toLocaleString():'-'}</td>
+    <td style="text-align:right;">${r.employ!=null?r.employ.toLocaleString():'-'}</td>
+    <td>${rateBar(r.rec_rate,'')}</td>
+    <td>${rateBar(r.comp_rate,'')}</td>
+    <td>${rateBar(r.emp_rate,'green')}</td>
+    <td style="text-align:right;color:var(--accent2);">${r.scoreSat!=null?r.scoreSat.toFixed(1):'-'}</td>
+    <td style="text-align:right;color:var(--accent);">${r.scoreEmp!=null?r.scoreEmp.toFixed(1):'-'}</td>
+    <td>${r.scoreTotal!=null?scoreBar(r.scoreTotal):'-'}</td>
+  </tr>`);
 }
 
+// ── 분석 3 ───────────────────────────────────────────────
 function renderTab3() {
-  const validRows = FILTERED.filter(r =>
-    r.complete > 0 && r.employ != null &&
-    r.emp_rate > 0 && r.emp_rate < 1
-  );
+  const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1);
   const byNcs = groupBy(validRows, 'ncs_name');
   const ncsCards = Object.entries(byNcs).map(([ncs, rs]) => {
     const rates = rs.map(r => r.emp_rate).sort((a,b)=>a-b);
     return { ncs, min: rates[0], max: rates[rates.length-1], cnt: rs.length };
   }).sort((a,b) => a.ncs.localeCompare(b.ncs));
-
   document.getElementById('ncsGrid').innerHTML = ncsCards.map(c => `
     <div class="ncs-card" onclick="filterNcs3('${c.ncs}')" style="cursor:pointer">
       <h5>${c.ncs}</h5>
       <div class="ncs-range">
         <span class="min">${pct(c.min)}</span>
-        <div class="ncs-range-bar">
-          <div class="ncs-range-fill" style="left:${pct(c.min)};width:${pct(c.max-c.min)}"></div>
-        </div>
+        <div class="ncs-range-bar"><div class="ncs-range-fill" style="left:${pct(c.min)};width:${pct(c.max-c.min)}"></div></div>
         <span class="max">${pct(c.max)}</span>
       </div>
       <div class="ncs-meta">기관 ${c.cnt}개 · 클릭하면 상세 보기</div>
     </div>
   `).join('') || '<div class="empty"><div class="icon">📭</div>데이터 없음</div>';
-
   renderNcsDetail(validRows);
 }
-
 function filterNcs3(ncs) {
-  const validRows = FILTERED.filter(r =>
-    r.complete > 0 && r.employ != null &&
-    r.emp_rate > 0 && r.emp_rate < 1 &&
-    r.ncs_name === ncs
-  );
+  const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1 && r.ncs_name === ncs);
   document.getElementById('ncsDetailTitle').textContent = `NCS 기관 취업률 상세 · ${ncs}`;
   renderNcsDetail(validRows);
 }
-
 function renderNcsDetail(rows) {
-  const key = r => `${r.ncs_name}|||${r.inst}`;
+  const key = r => r.ncs_name + '|||' + r.inst;
   const byKey = groupBy(rows, key);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
-    const [ncs, inst] = k.split('|||');
+    const parts = k.split('|||');
     const c = sumN(rs,'complete'), e = sumN(rs,'employ');
     const er = c > 0 ? e/c : null;
-    return { ncs, inst, cnt: rs.length, complete: c, employ: e, emp_rate: er };
+    return { ncs: parts[0], inst: parts[1], cnt: rs.length, complete: c, employ: e, emp_rate: er };
   }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
-
   document.getElementById('tableCount4').textContent = `${aggRows.length.toLocaleString()}개`;
   pages.table4 = 1;
   renderPaginatedTable('tbody4','pag4', aggRows, 'table4', r => `<tr>
-    <td>${r.ncs}</td>
-    <td>${r.inst}</td>
-    <td>${r.cnt}</td>
+    <td>${r.ncs}</td><td>${r.inst}</td><td>${r.cnt}</td>
     <td>${r.complete!=null?r.complete.toLocaleString():'-'}</td>
     <td>${r.employ!=null?r.employ.toLocaleString():'-'}</td>
     <td>${rateBar(r.emp_rate,'green')}</td>
   </tr>`);
 }
 
+// ── 엑셀 다운로드 ──────────────────────────────────────────
+function exportCSV(tableId) {
+  const table = document.getElementById(tableId);
+  const rows  = [...table.querySelectorAll('tr')];
+  const csv   = rows.map(r =>
+    [...r.querySelectorAll('th,td')].map(c => `"${c.textContent.trim().replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `훈련성과_${tableId}_${fmtDate(new Date())}.csv`;
+  a.click();
+}
+
+function exportAnalysis2Excel() {
+  if (!FILTERED.length) { alert('데이터가 없습니다. 파일을 업로드하고 필터를 적용하세요.'); return; }
+  try {
+    const wb    = XLSX.utils.book_new();
+    const today = fmtDate(new Date());
+    const pctVal = v => v != null ? parseFloat((v*100).toFixed(1)) : '';
+    const fmtNum = v => v != null ? parseFloat(v.toFixed(1)) : '';
+    const fmtInt = v => v != null ? Math.round(v) : '';
+    const sidoVal   = document.getElementById('sidoFilter').value || '전체';
+    const selKdcArr = Array.from(window.selectedKdcNames || new Set());
+    const kdcVal    = selKdcArr.length ? selKdcArr.join(', ') : '전체';
+    const ds        = document.getElementById('dateStart').value || '';
+    const de        = document.getElementById('dateEnd').value   || '';
+    const basisEl   = document.querySelector('input[name=dateBasis]:checked');
+    const basis     = basisEl && basisEl.value === 'end' ? '훈련종료일' : '훈련시작일';
+    const infoTxt   = '적용 필터 | 지역: '+sidoVal+' | 국기직종명: '+kdcVal+' | 기간기준: '+basis+' | '+ds+' ~ '+de+' | 추출일: '+today;
+    const sidos   = Array.from(new Set(FILTERED.map(r=>r.sido).filter(Boolean))).sort();
+    const ncsList = Array.from(new Set(FILTERED.map(r=>r.ncs_name).filter(Boolean))).sort();
+    const crossMap = {};
+    FILTERED.forEach(r => { const k=r.sido+'|||'+r.ncs_name; if(!crossMap[k]) crossMap[k]=[]; crossMap[k].push(r); });
+    const ncsTotal = {};
+    ncsList.forEach(ncs => { ncsTotal[ncs] = calcAggByInst(FILTERED.filter(r=>r.ncs_name===ncs)); });
+    const totalAgg = calcAggByInst(FILTERED);
+
+    function buildCrossSheet(label, valFn) {
+      const rows = [[infoTxt], [], ['[지역x직종] '+label+' · 기관 평균'], ['시도'].concat(ncsList).concat(['합계('+label+')'])];
+      sidos.forEach(function(sido) {
+        const row = [sido];
+        const sidoAgg = calcAggByInst(FILTERED.filter(r=>r.sido===sido));
+        ncsList.forEach(function(ncs) {
+          const rs = crossMap[sido+'|||'+ncs] || [];
+          const v = rs.length ? valFn(calcAggByInst(rs)) : null;
+          row.push(v != null ? v : '');
+        });
+        const sv = valFn(sidoAgg);
+        row.push(sv != null ? sv : '');
+        rows.push(row);
+      });
+      const tot = ['전체'];
+      ncsList.forEach(function(ncs) { const tv = valFn(ncsTotal[ncs]); tot.push(tv != null ? tv : ''); });
+      const totv = valFn(totalAgg); tot.push(totv != null ? totv : '');
+      rows.push(tot);
+      return rows;
+    }
+
+    const sh1Data = [].concat(
+      buildCrossSheet('취업률(%)', function(a) { return a.emp_rate!=null ? pctVal(a.emp_rate) : null; }),
+      [[],[]], buildCrossSheet('성과점수', function(a) { return a.score!=null ? fmtNum(a.score) : null; }),
+      [[],[]], buildCrossSheet('만족도',   function(a) { return a.sat!=null   ? fmtNum(a.sat)   : null; })
+    );
+    const ws1 = XLSX.utils.aoa_to_sheet(sh1Data);
+    ws1['!cols'] = [{wch:10}].concat(ncsList.map(function(){return {wch:13};})).concat([{wch:13}]);
+    XLSX.utils.book_append_sheet(wb, ws1, '①지역×직종');
+
+    const sh2Data = [[infoTxt],[],['[NCS 직무분류별] 취업률·만족도·성과점수 = 기관 평균'],
+      ['NCS 직무분류','기관수','과정수','정원','모집','수료','취업','모집률(%)','수료율(%)','취업률(%)','만족도','성과점수']];
+    ncsList.map(ncs => { const a=calcAggByInst(FILTERED.filter(r=>r.ncs_name===ncs)); return {label:ncs,...a,rawCnt:FILTERED.filter(r=>r.ncs_name===ncs).length}; })
+      .sort((a,b)=>(b.emp_rate||0)-(a.emp_rate||0))
+      .forEach(r => sh2Data.push([r.label,r.cnt,r.rawCnt,fmtInt(r.quota),fmtInt(r.confirm),fmtInt(r.complete),fmtInt(r.employ),
+        r.rec_rate!=null?pctVal(r.rec_rate):'', r.comp_rate!=null?pctVal(r.comp_rate):'',
+        r.emp_rate!=null?pctVal(r.emp_rate):'', r.sat!=null?fmtNum(r.sat):'', r.score!=null?fmtNum(r.score):'']));
+    const ws2 = XLSX.utils.aoa_to_sheet(sh2Data);
+    ws2['!cols'] = [{wch:16},{wch:7},{wch:7},{wch:8},{wch:8},{wch:8},{wch:8},{wch:9},{wch:9},{wch:9},{wch:9},{wch:9}];
+    XLSX.utils.book_append_sheet(wb, ws2, '②NCS직무분류별');
+
+    const sh3Data = [[infoTxt],[],['[지역별 기관 상세] 취업률·만족도·성과점수 = 기관별 계산값'],
+      ['시도','직종(NCS)','국기직종명','훈련기관','개설수','만족도','정원','모집','수료','취업','모집률(%)','수료율(%)','취업률(%)','성과(만족도)','성과(취업)','성과합계']];
+    const byKey3 = groupBy(FILTERED, r=>r.sido+'|||'+r.ncs_name+'|||'+r.inst);
+    Object.keys(byKey3).map(k => {
+      const rs = byKey3[k]; const p = k.split('|||'); const agg = calcAgg(rs);
+      const kdcL = Array.from(new Set(rs.map(r=>r.kdc_name).filter(Boolean))).join(', ')||'-';
+      const empR = rs.filter(r=>r.has_emp);
+      const sS = agg.sat!=null&&empR.length ? parseFloat(((agg.sat/100)*20).toFixed(1)) : null;
+      const sE = agg.emp_rate!=null&&empR.length ? parseFloat((agg.emp_rate*40).toFixed(1)) : null;
+      const sT = sS!=null&&sE!=null ? parseFloat((sS+sE).toFixed(1)) : null;
+      return {sido:p[0],ncs:p[1],inst:p[2],kdc:kdcL,agg,sS,sE,sT};
+    }).sort((a,b)=>a.sido.localeCompare(b.sido,'ko')||a.ncs.localeCompare(b.ncs,'ko')||(b.sT||0)-(a.sT||0))
+    .forEach(r => sh3Data.push([r.sido,r.ncs,r.kdc,r.inst,r.agg.cnt,
+      r.agg.sat!=null?fmtNum(r.agg.sat):'',fmtInt(r.agg.quota),fmtInt(r.agg.confirm),fmtInt(r.agg.complete),fmtInt(r.agg.employ),
+      r.agg.rec_rate!=null?pctVal(r.agg.rec_rate):'',r.agg.comp_rate!=null?pctVal(r.agg.comp_rate):'',r.agg.emp_rate!=null?pctVal(r.agg.emp_rate):'',
+      r.sS!=null?r.sS:'',r.sE!=null?r.sE:'',r.sT!=null?r.sT:'']));
+    const ws3 = XLSX.utils.aoa_to_sheet(sh3Data);
+    ws3['!cols'] = [{wch:7},{wch:14},{wch:14},{wch:20},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:9},{wch:9},{wch:9},{wch:11},{wch:11},{wch:9}];
+    XLSX.utils.book_append_sheet(wb, ws3, '③지역별기관상세');
+
+    if (YOY_PREV.length > 0) {
+      const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
+      const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
+      const currMap2  = buildCurrMap();
+      const currSidos2 = {};
+      FILTERED.forEach(r => { currSidos2[r.sido] = true; });
+      const sh4Data = [[infoTxt],[],['[직종별 전년 대비] '+labelPrev+' → '+labelCurr+' (비교연도: 필터 기간 전체)'],
+        ['시도','직종명',labelPrev+' 성과배점',labelPrev+' 개설수',labelPrev+' 만족도',labelPrev+' 수료',labelPrev+' 취업',labelPrev+' 취업률(%)',
+         labelCurr+' 성과배점',labelCurr+' 개설수',labelCurr+' 만족도',labelCurr+' 수료',labelCurr+' 취업',labelCurr+' 취업률(%)',
+         '전년대비 성과배점','전년대비 취업률(%p)']];
+      YOY_PREV.filter(p=>currSidos2[p.region])
+        .sort((a,b)=>a.region.localeCompare(b.region,'ko')||a.ncs.localeCompare(b.ncs,'ko'))
+        .forEach(p => {
+          const c      = currMap2[p.region+'|||'+normalizeNcsName(p.ncs)] || null;
+          const cScore = c ? c.score    : null;
+          const cCnt   = c ? c.cnt      : null;
+          const cSat   = c ? c.sat      : null;
+          const cComp  = c ? c.complete : null;
+          const cEmp   = c ? c.employ   : null;
+          const cEmpR  = c ? c.emp_rate : null;
+          const dS = p.score!=null&&cScore!=null ? parseFloat((cScore-p.score).toFixed(2)) : '';
+          const dE = p.emp_rate!=null&&cEmpR!=null ? parseFloat(((cEmpR-p.emp_rate)*100).toFixed(2)) : '';
+          sh4Data.push([p.region,p.ncs,
+            p.score!=null?parseFloat(p.score.toFixed(2)):'',p.cnt!=null?Math.round(p.cnt):'',
+            p.sat!=null?parseFloat(p.sat.toFixed(1)):'',p.complete!=null?Math.round(p.complete):'',
+            p.employ!=null?Math.round(p.employ):'',p.emp_rate!=null?parseFloat((p.emp_rate*100).toFixed(1)):'',
+            cScore!=null?parseFloat(cScore.toFixed(2)):'',cCnt!=null?Math.round(cCnt):'',
+            cSat!=null?parseFloat(cSat.toFixed(1)):'',cComp!=null?Math.round(cComp):'',
+            cEmp!=null?Math.round(cEmp):'',cEmpR!=null?parseFloat((cEmpR*100).toFixed(1)):'',
+            dS,dE]);
+        });
+      const ws4 = XLSX.utils.aoa_to_sheet(sh4Data);
+      ws4['!cols'] = [{wch:7},{wch:20},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:13},{wch:13}];
+      XLSX.utils.book_append_sheet(wb, ws4, '④전년대비('+labelCurr+')');
+    }
+
+    XLSX.writeFile(wb, '분석2_지역직종현황_'+today+'.xlsx');
+  } catch(err) {
+    alert('엑셀 생성 오류: ' + err.message);
+    console.error('exportAnalysis2Excel 오류:', err);
+  }
+}
+
+// ── 차트 / 테이블 / 유틸 ─────────────────────────────────
 function renderBar(id, labels, data, label, colors) {
   if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id).getContext('2d');
@@ -1613,46 +1522,38 @@ function renderBar(id, labels, data, label, colors) {
     type: 'bar',
     data: { labels, datasets: [{ label, data,
       backgroundColor: Array.isArray(colors) ? colors : labels.map(()=>colors+'33'),
-      borderColor:     Array.isArray(colors) ? colors.map(c=>c) : labels.map(()=>colors),
-      borderWidth: 1.5, borderRadius: 4,
-    }]},
-    options: {
-      responsive: true, maintainAspectRatio: true,
+      borderColor:     Array.isArray(colors) ? colors : labels.map(()=>colors),
+      borderWidth: 1.5, borderRadius: 4 }]},
+    options: { responsive: true, maintainAspectRatio: true,
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#e2e8f0' } },
-        y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#e2e8f0' } },
-      }
-    }
+        y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#e2e8f0' } } } }
   });
 }
-
 function renderPaginatedTable(tbodyId, pagId, rows, tableKey, rowFn) {
-  const page = pages[tableKey] || 1;
+  const page  = pages[tableKey] || 1;
   const total = Math.ceil(rows.length / PAGE_SIZE);
   const slice = rows.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
   document.getElementById(tbodyId).innerHTML = slice.length
     ? slice.map(rowFn).join('')
     : '<tr><td colspan="20" class="empty"><div class="icon">📭</div>데이터 없음</td></tr>';
   const pag = document.getElementById(pagId);
-  if (total <= 1) { pag.innerHTML=''; return; }
+  if (total <= 1) { pag.innerHTML = ''; return; }
   let btns = `<button class="page-btn" onclick="goPage('${tableKey}',${page-1})" ${page===1?'disabled':''}>‹</button>`;
-  const range = pageRange(page, total);
-  range.forEach(p => {
+  pageRange(page, total).forEach(p => {
     if (p === '...') btns += `<span style="color:var(--text3);padding:0 4px">…</span>`;
     else btns += `<button class="page-btn ${p===page?'active':''}" onclick="goPage('${tableKey}',${p})">${p}</button>`;
   });
   btns += `<button class="page-btn" onclick="goPage('${tableKey}',${page+1})" ${page===total?'disabled':''}>›</button>`;
   pag.innerHTML = btns;
 }
-
 function goPage(tableKey, page) {
   pages[tableKey] = page;
   if (tableKey==='table1') renderTab1();
   if (tableKey==='table4') renderTab3();
   if (tableKey==='region') renderRegionDetail();
 }
-
 function pageRange(cur, total) {
   const d = [];
   if (total <= 7) { for(let i=1;i<=total;i++) d.push(i); return d; }
@@ -1663,17 +1564,17 @@ function pageRange(cur, total) {
   d.push(total);
   return d;
 }
-
 let sortState = {};
 function sortTable(tableId, colIdx) {
   const table = document.getElementById(tableId);
-  const key = `${tableId}_${colIdx}`;
+  const key = tableId + '_' + colIdx;
   const asc = sortState[key] = !sortState[key];
   const tbody = table.querySelector('tbody');
-  const rows = [...tbody.querySelectorAll('tr')];
+  const rows  = [...tbody.querySelectorAll('tr')];
   rows.sort((a,b) => {
-    const av = a.cells[colIdx]?.textContent.trim() || '';
-    const bv = b.cells[colIdx]?.textContent.trim() || '';
+    const ac = a.cells[colIdx], bc = b.cells[colIdx];
+    const av = ac ? ac.textContent.trim() : '';
+    const bv = bc ? bc.textContent.trim() : '';
     const an = parseFloat(av.replace(/[%,]/g,'')), bn = parseFloat(bv.replace(/[%,]/g,''));
     if (!isNaN(an) && !isNaN(bn)) return asc ? an-bn : bn-an;
     return asc ? av.localeCompare(bv,'ko') : bv.localeCompare(av,'ko');
@@ -1685,269 +1586,34 @@ function sortTable(tableId, colIdx) {
     if (icon) icon.textContent = i===colIdx ? (asc?'↑':'↓') : '↕';
   });
 }
-
-function exportCSV(tableId) {
-  const table = document.getElementById(tableId);
-  const rows = [...table.querySelectorAll('tr')];
-  const csv = rows.map(r =>
-    [...r.querySelectorAll('th,td')].map(c =>
-      `"${c.textContent.trim().replace(/"/g,'""')}"`
-    ).join(',')
-  ).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `훈련성과_${tableId}_${fmtDate(new Date())}.csv`;
-  a.click();
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 분석 2 통합 엑셀 다운로드 (3개 시트)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function exportAnalysis2Excel() {
-  if (!FILTERED.length) { alert('데이터가 없습니다. 파일을 업로드하고 필터를 적용하세요.'); return; }
-  try {
-    var wb    = XLSX.utils.book_new();
-    var today = fmtDate(new Date());
-    var pctVal = function(v) { return v != null ? parseFloat((v*100).toFixed(1)) : ''; };
-    var fmtNum = function(v) { return v != null ? parseFloat(v.toFixed(1)) : ''; };
-    var fmtInt = function(v) { return v != null ? Math.round(v) : ''; };
-    var safeGet = function(obj, key) { return (obj && obj[key] != null) ? obj[key] : null; };
-
-    var sidoVal   = document.getElementById('sidoFilter').value || '전체';
-    var selKdcArr = Array.from(window.selectedKdcNames || new Set());
-    var kdcVal    = selKdcArr.length ? selKdcArr.join(', ') : '전체';
-    var ds        = document.getElementById('dateStart').value || '';
-    var de        = document.getElementById('dateEnd').value   || '';
-    var basis     = document.querySelector('input[name=dateBasis]:checked').value === 'end' ? '훈련종료일' : '훈련시작일';
-    var infoTxt   = '적용 필터 | 지역: ' + sidoVal + ' | 국기직종명: ' + kdcVal + ' | 기간기준: ' + basis + ' | ' + ds + ' ~ ' + de + ' | 추출일: ' + today;
-
-    var sidos   = Array.from(new Set(FILTERED.map(function(r){return r.sido;}).filter(Boolean))).sort();
-    var ncsList = Array.from(new Set(FILTERED.map(function(r){return r.ncs_name;}).filter(Boolean))).sort();
-
-    var crossMap = {};
-    FILTERED.forEach(function(r) {
-      var k = r.sido + '|||' + r.ncs_name;
-      if (!crossMap[k]) crossMap[k] = [];
-      crossMap[k].push(r);
-    });
-    var ncsTotal = {};
-    ncsList.forEach(function(ncs) {
-      ncsTotal[ncs] = calcAggByInst(FILTERED.filter(function(r){return r.ncs_name===ncs;}));
-    });
-    var totalAgg = calcAggByInst(FILTERED);
-
-    // buildCross: 지역×직종 크로스 테이블 한 블록 생성
-    function buildCross(label, valFn) {
-      var rows = [];
-      rows.push([infoTxt]);
-      rows.push([]);
-      rows.push(['[지역x직종] ' + label + ' · 기관 평균']);
-      var hdr = ['시도'].concat(ncsList).concat(['합계(' + label + ')']);
-      rows.push(hdr);
-      sidos.forEach(function(sido) {
-        var row = [sido];
-        var sidoAgg = calcAggByInst(FILTERED.filter(function(r){return r.sido===sido;}));
-        ncsList.forEach(function(ncs) {
-          var rs = crossMap[sido + '|||' + ncs] || [];
-          var v = '';
-          if (rs.length) {
-            var agg = calcAggByInst(rs);
-            var val = valFn(agg);
-            v = (val != null) ? val : '';
-          }
-          row.push(v);
-        });
-        var sv = valFn(sidoAgg);
-        row.push(sv != null ? sv : '');
-        rows.push(row);
-      });
-      var tot = ['전체'];
-      ncsList.forEach(function(ncs) {
-        var tv = valFn(ncsTotal[ncs]);
-        tot.push(tv != null ? tv : '');
-      });
-      var totv = valFn(totalAgg);
-      tot.push(totv != null ? totv : '');
-      rows.push(tot);
-      return rows;
-    }
-
-    var sh1Data = [].concat(
-      buildCross('취업률(%)', function(a) { return a.emp_rate!=null ? pctVal(a.emp_rate) : null; }),
-      [[],[]], 
-      buildCross('성과점수', function(a) { return a.score!=null ? fmtNum(a.score) : null; }),
-      [[],[]], 
-      buildCross('만족도', function(a) { return a.sat!=null ? fmtNum(a.sat) : null; })
-    );
-    var ws1 = XLSX.utils.aoa_to_sheet(sh1Data);
-    ws1['!cols'] = [{wch:10}].concat(ncsList.map(function(){return {wch:13};})).concat([{wch:13}]);
-    XLSX.utils.book_append_sheet(wb, ws1, '①지역×직종');
-
-    // ② NCS 직무분류별
-    var sh2Data = [
-      [infoTxt], [],
-      ['[NCS 직무분류별] 취업률·만족도·성과점수 = 기관 평균'],
-      ['NCS 직무분류','기관수','과정수','정원','모집','수료','취업','모집률(%)','수료율(%)','취업률(%)','만족도','성과점수'],
-    ];
-    var ncsRows2 = ncsList.map(function(ncs) {
-      var obj = {label:ncs};
-      var agg = calcAggByInst(FILTERED.filter(function(r){return r.ncs_name===ncs;}));
-      Object.keys(agg).forEach(function(k){obj[k]=agg[k];});
-      return obj;
-    }).sort(function(a,b){return (b.emp_rate||0)-(a.emp_rate||0);});
-    ncsRows2.forEach(function(r) {
-      sh2Data.push([
-        r.label, r.cnt,
-        FILTERED.filter(function(x){return x.ncs_name===r.label;}).length,
-        fmtInt(r.quota), fmtInt(r.confirm), fmtInt(r.complete), fmtInt(r.employ),
-        r.rec_rate  !=null ? pctVal(r.rec_rate)  : '',
-        r.comp_rate !=null ? pctVal(r.comp_rate) : '',
-        r.emp_rate  !=null ? pctVal(r.emp_rate)  : '',
-        r.sat   !=null ? fmtNum(r.sat)   : '',
-        r.score !=null ? fmtNum(r.score) : '',
-      ]);
-    });
-    var ws2 = XLSX.utils.aoa_to_sheet(sh2Data);
-    ws2['!cols'] = [{wch:16},{wch:7},{wch:7},{wch:8},{wch:8},{wch:8},{wch:8},{wch:9},{wch:9},{wch:9},{wch:9},{wch:9}];
-    XLSX.utils.book_append_sheet(wb, ws2, '②NCS직무분류별');
-
-    // ③ 지역별 기관 상세
-    var sh3Data = [
-      [infoTxt], [],
-      ['[지역별 기관 상세] 취업률·만족도·성과점수 = 기관별 계산값'],
-      ['시도','직종(NCS)','국기직종명','훈련기관','개설수','만족도','정원','모집','수료','취업','모집률(%)','수료율(%)','취업률(%)','성과(만족도)','성과(취업)','성과합계'],
-    ];
-    var byKey3 = groupBy(FILTERED, function(r){return r.sido+'|||'+r.ncs_name+'|||'+r.inst;});
-    var regionRows = Object.keys(byKey3).map(function(k) {
-      var rs  = byKey3[k];
-      var p   = k.split('|||');
-      var agg = calcAgg(rs);
-      var kdcL = Array.from(new Set(rs.map(function(r){return r.kdc_name;}).filter(Boolean))).join(', ') || '-';
-      var empR = rs.filter(function(r){return r.has_emp;});
-      var sS = (agg.sat!=null && empR.length) ? parseFloat(((agg.sat/100)*20).toFixed(1)) : null;
-      var sE = (agg.emp_rate!=null && empR.length) ? parseFloat((agg.emp_rate*40).toFixed(1)) : null;
-      var sT = (sS!=null && sE!=null) ? parseFloat((sS+sE).toFixed(1)) : null;
-      return {sido:p[0], ncs:p[1], inst:p[2], kdc:kdcL, agg:agg, sS:sS, sE:sE, sT:sT};
-    }).sort(function(a,b){
-      var sc = a.sido.localeCompare(b.sido,'ko');
-      if (sc !== 0) return sc;
-      var nc = a.ncs.localeCompare(b.ncs,'ko');
-      if (nc !== 0) return nc;
-      return (b.sT||0)-(a.sT||0);
-    });
-    regionRows.forEach(function(r) {
-      sh3Data.push([
-        r.sido, r.ncs, r.kdc, r.inst, r.agg.cnt,
-        r.agg.sat      !=null ? fmtNum(r.agg.sat)        : '',
-        fmtInt(r.agg.quota), fmtInt(r.agg.confirm), fmtInt(r.agg.complete), fmtInt(r.agg.employ),
-        r.agg.rec_rate  !=null ? pctVal(r.agg.rec_rate)  : '',
-        r.agg.comp_rate !=null ? pctVal(r.agg.comp_rate) : '',
-        r.agg.emp_rate  !=null ? pctVal(r.agg.emp_rate)  : '',
-        r.sS!=null ? r.sS : '', r.sE!=null ? r.sE : '', r.sT!=null ? r.sT : '',
-      ]);
-    });
-    var ws3 = XLSX.utils.aoa_to_sheet(sh3Data);
-    ws3['!cols'] = [{wch:7},{wch:14},{wch:14},{wch:20},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:9},{wch:9},{wch:9},{wch:11},{wch:11},{wch:9}];
-    XLSX.utils.book_append_sheet(wb, ws3, '③지역별기관상세');
-
-    // ④ 전년 대비 (전년 파일 업로드 시에만)
-    // 26년 비교연도 = 현재 필터 선택 기간 전체(FILTERED) 기준
-    if (YOY_PREV.length > 0) {
-      var labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
-      var labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
-      var currMap   = buildCurrMap();
-      var currSidos = {};
-      FILTERED.forEach(function(r){ currSidos[r.sido] = true; });
-
-      var sh4Data = [
-        [infoTxt], [],
-        ['[직종별 전년 대비] ' + labelPrev + ' → ' + labelCurr + ' (비교연도: 필터 기간 전체)'],
-        ['시도','직종명',
-         labelPrev+' 성과배점', labelPrev+' 개설수', labelPrev+' 만족도', labelPrev+' 수료', labelPrev+' 취업', labelPrev+' 취업률(%)',
-         labelCurr+' 성과배점', labelCurr+' 개설수', labelCurr+' 만족도', labelCurr+' 수료', labelCurr+' 취업', labelCurr+' 취업률(%)',
-         '전년대비 성과배점', '전년대비 취업률(%p)'],
-      ];
-
-      var prevRows = YOY_PREV.filter(function(p){ return currSidos[p.region]; })
-        .sort(function(a,b){
-          var rc = a.region.localeCompare(b.region,'ko');
-          return rc !== 0 ? rc : a.ncs.localeCompare(b.ncs,'ko');
-        });
-
-      prevRows.forEach(function(p) {
-        var c   = currMap[p.region + '|||' + normalizeNcsName(p.ncs)] || null;
-        var cScore    = safeGet(c, 'score');
-        var cCnt      = safeGet(c, 'cnt');
-        var cSat      = safeGet(c, 'sat');
-        var cComplete = safeGet(c, 'complete');
-        var cEmploy   = safeGet(c, 'employ');
-        var cEmpRate  = safeGet(c, 'emp_rate');
-
-        var dS = (p.score!=null && cScore!=null)    ? parseFloat((cScore - p.score).toFixed(2)) : '';
-        var dE = (p.emp_rate!=null && cEmpRate!=null) ? parseFloat(((cEmpRate - p.emp_rate)*100).toFixed(2)) : '';
-
-        sh4Data.push([
-          p.region, p.ncs,
-          p.score    !=null ? parseFloat(p.score.toFixed(2))           : '',
-          p.cnt      !=null ? Math.round(p.cnt)                         : '',
-          p.sat      !=null ? parseFloat(p.sat.toFixed(1))             : '',
-          p.complete !=null ? Math.round(p.complete)                    : '',
-          p.employ   !=null ? Math.round(p.employ)                      : '',
-          p.emp_rate !=null ? parseFloat((p.emp_rate*100).toFixed(1))  : '',
-          cScore    !=null ? parseFloat(cScore.toFixed(2))             : '',
-          cCnt      !=null ? Math.round(cCnt)                           : '',
-          cSat      !=null ? parseFloat(cSat.toFixed(1))              : '',
-          cComplete !=null ? Math.round(cComplete)                      : '',
-          cEmploy   !=null ? Math.round(cEmploy)                        : '',
-          cEmpRate  !=null ? parseFloat((cEmpRate*100).toFixed(1))     : '',
-          dS, dE,
-        ]);
-      });
-
-      var ws4 = XLSX.utils.aoa_to_sheet(sh4Data);
-      ws4['!cols'] = [{wch:7},{wch:20},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:11},{wch:7},{wch:7},{wch:7},{wch:7},{wch:10},{wch:13},{wch:13}];
-      XLSX.utils.book_append_sheet(wb, ws4, '④전년대비(' + labelCurr + ')');
-    }
-
-    XLSX.writeFile(wb, '분석2_지역직종현황_' + today + '.xlsx');
-
-  } catch(err) {
-    alert('엑셀 생성 오류: ' + err.message);
-    console.error('exportAnalysis2Excel 오류:', err);
-  }
-}
 function switchTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById(id).classList.add('active');
 }
-
 const sum  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; };
 const sumN = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.reduce((a,b)=>a+b,0); };
 const avg  = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 const avgN = (arr, k) => { const v = arr.map(r=>r[k]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 const pct  = v => v != null ? (v*100).toFixed(1)+'%' : '-';
 const fmtDate = d => { if (!d) return ''; const dt = d instanceof Date ? d : new Date(d); return dt.toISOString().slice(0,10); };
-const groupBy = (arr, key) => arr.reduce((acc, r) => { const k = typeof key==='function'?key(r):r[key]||''; (acc[k]=acc[k]||[]).push(r); return acc; }, {});
-
-function rateBar(v, color='') {
+const groupBy = (arr, key) => arr.reduce((acc,r) => { const k = typeof key==='function'?key(r):r[key]||''; (acc[k]=acc[k]||[]).push(r); return acc; }, {});
+function rateBar(v, color) {
   if (v == null) return '<span style="color:var(--text3)">-</span>';
   const w = Math.min(100, v*100).toFixed(0);
-  return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill ${color}" style="width:${w}%"></div></div><span class="bar-val">${pct(v)}</span></div>`;
+  return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill ${color||''}" style="width:${w}%"></div></div><span class="bar-val">${pct(v)}</span></div>`;
 }
-
 function scoreBar(v) {
   if (v == null) return '-';
   const w = (v/60*100).toFixed(0);
   const color = v>=45?'green':v>=30?'':' yellow';
   return `<div class="bar-cell"><div class="bar-bg"><div class="bar-fill${color}" style="width:${w}%"></div></div><span class="bar-val">${v.toFixed(1)}</span></div>`;
 }
-
 function typeBadge(t) {
-  return {계좌제:'badge-blue',국기:'badge-green',KDT:'badge-yellow',KDC:'badge-yellow',산대특:'badge-red',근로자:'badge-gray'}[t]||'badge-gray';
+  return ({계좌제:'badge-blue',국기:'badge-green',KDT:'badge-yellow',KDC:'badge-yellow',산대특:'badge-red',근로자:'badge-gray'})[t]||'badge-gray';
 }
+
 </script>
 </body>
 </html>
