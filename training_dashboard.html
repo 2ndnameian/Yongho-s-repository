@@ -484,16 +484,24 @@ function parseRows(rows) {
     const confirmed= endDate ? (TODAY - endDate) / (1000*60*60*24) >= 180 : false;
     const sido     = (r['지역'] || '').toString().split(/\s/)[0].replace('경기도','경기');
 
+    // ★ kdc_name: 국기직종명 (있는 경우)
+    const kdc_name = r['국기직종명'] ? r['국기직종명'].toString().trim() : null;
+
+    // ★ 핵심: 국기 과정은 kdc_name을 ncs_name으로 사용 → 같은 기관의 국기 과정이 항상 동일한 키로 집계됨
+    //   (예: ncs_name이 "디자인"이든 "디지털디자인"이든 kdc_name="디지털디자인"이면 "디지털디자인"으로 통일)
+    const raw_ncs = (r['NCS직무분류'] || '').toString();
+    const ncs_name = (kdc_name && type === '국기') ? kdc_name : raw_ncs;
+
     return {
       inst:      (r['훈련기관명'] || '').toString(),
       region:    (r['지역'] || '').toString(),
       sido,
       dept:      (r['주관부처'] || '').toString(),
       ncs_code:  (r['NCS 코드'] || '').toString(),
-      ncs_name:  (r['NCS직무분류'] || '').toString(),
+      ncs_name,        // ★ 국기 과정은 kdc_name으로 통일된 값
+      raw_ncs_name: raw_ncs,  // 원본 NCS직무분류 보존
       type,
-      // ★ kdc_name: 국기직종명 원본 보존 (표시용만 사용, 집계 키로는 사용 안 함)
-      kdc_name:  r['국기직종명'] ? r['국기직종명'].toString().trim() : null,
+      kdc_name,
       course:    (r['훈련과정명'] || '').toString(),
       course_id: (r['훈련과정ID'] || '').toString(),
       session:   toNum(r['회차']),
@@ -812,10 +820,11 @@ function renderTab2() {
     crossMap[k].push(r);
   });
 
+  // ★ 지역/직종 집계는 calcAggByInst 사용 (기관 평균 방식)
   const ncsTotal = {};
   ncsList.forEach(ncs => {
     const rs = FILTERED.filter(r => r.ncs_name === ncs);
-    ncsTotal[ncs] = calcAgg(rs);
+    ncsTotal[ncs] = calcAggByInst(rs);
   });
 
   const header = document.getElementById('crossHeader');
@@ -843,17 +852,17 @@ function renderTab2() {
 
   tbody2.innerHTML = sidos.map(sido => {
     const sidoAll = FILTERED.filter(r => r.sido === sido);
-    const sidoAgg = calcAgg(sidoAll);
+    const sidoAgg = calcAggByInst(sidoAll);  // ★ 기관 평균
     const cells = ncsList.map(ncs => {
       const rs = crossMap[`${sido}|||${ncs}`] || [];
       if (!rs.length) return `<td style="color:var(--text3);font-size:11px;text-align:center;">-</td>`;
-      const agg = calcAgg(rs);
+      const agg = calcAggByInst(rs);  // ★ 기관 평균
       const v   = getAggVal(agg, mode);
       const p   = maxVal > minVal ? (v - minVal) / (maxVal - minVal) : 0;
       const alpha = (0.08 + p * 0.35).toFixed(2);
       const displayVal = fmtAggVal(v, mode);
       return `<td style="text-align:center;font-size:12px;background:rgba(79,142,247,${alpha});cursor:pointer;"
-        onclick="quickDrillDown('${sido}','${ncs}')" title="${sido} · ${ncs}\n과정:${agg.cnt} 취업률:${fmtAggVal(agg.emp_rate,'emp_rate')} 성과:${fmtAggVal(agg.score,'score')}">
+        onclick="quickDrillDown('${sido}','${ncs}')" title="${sido} · ${ncs}\n기관수:${agg.cnt} 취업률:${fmtAggVal(agg.emp_rate,'emp_rate')} 성과:${fmtAggVal(agg.score,'score')}">
         ${displayVal}
       </td>`;
     });
@@ -864,7 +873,7 @@ function renderTab2() {
     </tr>`;
   }).join('');
 
-  const totalAgg = calcAgg(FILTERED);
+  const totalAgg = calcAggByInst(FILTERED);  // ★ 기관 평균
   const totalCells = ncsList.map(ncs => {
     const v = getAggVal(ncsTotal[ncs], mode);
     return `<td style="background:var(--surface2);font-weight:700;text-align:center;font-size:12px;">${fmtAggVal(v,mode)}</td>`;
@@ -879,7 +888,7 @@ function renderTab2() {
 
   const ncsRows = ncsList.map(ncs => {
     const rs = FILTERED.filter(r => r.ncs_name === ncs);
-    return { label: ncs, ...calcAgg(rs) };
+    return { label: ncs, ...calcAggByInst(rs) };  // ★ 기관 평균
   }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
 
   document.getElementById('tableCount3').textContent = `${ncsRows.length}개 직무분류`;
@@ -900,6 +909,9 @@ function renderTab2() {
   updateRegionSelects();
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// calcAgg: 원시 행 기준 합산 (기관별 성과 상세에서 사용)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function calcAgg(rs) {
   const quota    = sumN(rs,'quota');
   const confirm  = sumN(rs,'confirm');
@@ -913,6 +925,50 @@ function calcAgg(rs) {
     emp_rate:  complete > 0 ? employ/complete  : null,
     sat:       avgN(rs.filter(r=>r.satisfy!=null),'satisfy'),
     score:     avgN(rs.filter(r=>r.score!=null),'score'),
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// calcAggByInst: 지역/직종 단위 집계용
+//   과정수·정원·모집·수료·취업 → 합산
+//   취업률·만족도·성과점수     → 기관별 값의 평균
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function calcAggByInst(rs) {
+  // 1단계: 기관별로 먼저 합산
+  const byInst = groupBy(rs, 'inst');
+  const instAggs = Object.values(byInst).map(rows => {
+    const quota    = sumN(rows,'quota');
+    const confirm  = sumN(rows,'confirm');
+    const complete = sumN(rows,'complete');
+    const employ   = sumN(rows,'employ');
+    const emp_rate = complete > 0 ? employ / complete : null;
+    const sat      = avgN(rows.filter(r=>r.satisfy!=null),'satisfy');
+    const empRows  = rows.filter(r => r.has_emp);
+    const scoreSat = sat != null && empRows.length > 0 ? (sat/100)*20 : null;
+    const scoreEmp = emp_rate != null && empRows.length > 0 ? emp_rate*40 : null;
+    const score    = scoreSat != null && scoreEmp != null ? scoreSat + scoreEmp : null;
+    return { quota, confirm, complete, employ, emp_rate, sat, score };
+  });
+
+  // 2단계: 수량 → 합산, 비율 → 기관별 평균
+  const quota    = instAggs.reduce((a,b)=>a+(b.quota||0),0);
+  const confirm  = instAggs.reduce((a,b)=>a+(b.confirm||0),0);
+  const complete = instAggs.reduce((a,b)=>a+(b.complete||0),0);
+  const employ   = instAggs.reduce((a,b)=>a+(b.employ||0),0);
+
+  const empRates = instAggs.map(a=>a.emp_rate).filter(v=>v!=null);
+  const sats     = instAggs.map(a=>a.sat).filter(v=>v!=null);
+  const scores   = instAggs.map(a=>a.score).filter(v=>v!=null);
+
+  return {
+    cnt:       Object.keys(byInst).length,   // 기관 수
+    quota, confirm, complete, employ,
+    rec_rate:  quota > 0    ? confirm/quota    : null,
+    comp_rate: confirm > 0  ? complete/confirm : null,
+    // 취업률·만족도·성과점수 = 기관별 값의 평균
+    emp_rate:  empRates.length ? empRates.reduce((a,b)=>a+b,0)/empRates.length : null,
+    sat:       sats.length     ? sats.reduce((a,b)=>a+b,0)/sats.length         : null,
+    score:     scores.length   ? scores.reduce((a,b)=>a+b,0)/scores.length     : null,
   };
 }
 
