@@ -562,8 +562,8 @@ function initUI() {
   const types = [...new Set(RAW.map(r => r.type).filter(Boolean))].sort();
   const tf = document.getElementById('typeFilter');
   tf.innerHTML = types.map(t => `
-    <label class="cb-item active" onclick="toggleType(this,'${t}')">
-      <input type="checkbox" value="${t}" checked>
+    <label class="cb-item active">
+      <input type="checkbox" value="${t}" checked onchange="toggleType(this.parentElement,'${t}')">
       <span>${t}</span>
     </label>`).join('');
 
@@ -602,20 +602,24 @@ function initUI() {
 }
 
 function toggleType(el, type) {
-  el.classList.toggle('active');
-  el.querySelector('input').checked = el.classList.contains('active');
+  // label 클릭 시 input 체크 상태를 직접 읽어서 처리 (이중 이벤트 방지)
+  const input = el.querySelector('input');
+  const isChecked = input.checked;
+  el.classList.toggle('active', isChecked);
   applyFilters();
 }
 
-// ── NCS 다중선택 드롭다운 ──────────────────────────────────
+// ── NCS 다중선택 체크박스 드롭다운 ──────────────────────────
 function showNcsDropdown() {
   document.getElementById('ncsDropdown').style.display = 'block';
   renderNcsDropdown();
 }
 
 function renderNcsDropdown() {
-  const q = (document.getElementById('ncsSearchInput').value || '').toLowerCase();
+  const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
   const list = window.NCS_LIST || [];
+  const sel  = window.selectedNcsCodes || new Set();
+
   const filtered = q
     ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q))
     : list;
@@ -624,25 +628,70 @@ function renderNcsDropdown() {
   dd.style.display = 'block';
 
   if (!filtered.length) {
-    dd.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
+    dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">검색 결과 없음</div>';
     return;
   }
 
-  dd.innerHTML = filtered.slice(0, 100).map(n => {
-    const sel = window.selectedNcsCodes && window.selectedNcsCodes.has(n.code);
-    return `<div onclick="toggleNcs('${n.code}','${n.name.replace(/'/g,"\\'")}',this)"
-      style="padding:8px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;
-             background:${sel ? 'rgba(79,142,247,.15)' : 'transparent'};
-             color:${sel ? 'var(--accent)' : 'var(--text)'};"
-      onmouseover="this.style.background='${sel ? 'rgba(79,142,247,.2)' : 'var(--surface2)'}'"
-      onmouseout="this.style.background='${sel ? 'rgba(79,142,247,.15)' : 'transparent'}'">
-      <span style="font-size:11px;min-width:14px;">${sel ? '✓' : ''}</span>
-      <span style="color:var(--text3);min-width:56px;">${n.code}</span>
-      <span>${n.name}</span>
+  // 전체선택 / 전체해제 버튼
+  const allChecked = filtered.every(n => sel.has(n.code));
+  const headerHtml = `
+    <div style="padding:6px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--surface2);">
+      <span style="font-size:11px;color:var(--text3);">${filtered.length}개 표시</span>
+      <button onclick="selectAllNcs()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
+      <button onclick="clearAllNcs()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
     </div>`;
+
+  const itemsHtml = filtered.slice(0, 150).map(n => {
+    const checked = sel.has(n.code);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;
+                           background:${checked ? 'rgba(79,142,247,.1)' : 'transparent'};"
+              onmouseover="this.style.background='${checked ? 'rgba(79,142,247,.18)' : 'var(--surface2)'}'"
+              onmouseout="this.style.background='${checked ? 'rgba(79,142,247,.1)' : 'transparent'}'">
+      <input type="checkbox" ${checked ? 'checked' : ''}
+        onchange="toggleNcsByCode('${n.code}','${n.name.replace(/'/g,"\\'")}',this.checked)"
+        style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <span style="color:var(--text3);font-size:11px;min-width:60px;flex-shrink:0;">${n.code}</span>
+      <span style="font-size:12px;color:${checked ? 'var(--accent)' : 'var(--text)'};">${n.name}</span>
+    </label>`;
   }).join('');
+
+  dd.innerHTML = headerHtml + `<div style="max-height:180px;overflow-y:auto;">${itemsHtml}</div>`;
 }
 
+function selectAllNcs() {
+  const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
+  const list = window.NCS_LIST || [];
+  const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
+  filtered.forEach(n => window.selectedNcsCodes.add(n.code));
+  renderNcsDropdown();
+  renderNcsSelected();
+  applyFilters();
+}
+
+function clearAllNcs() {
+  const q    = (document.getElementById('ncsSearchInput').value || '').toLowerCase().trim();
+  const list = window.NCS_LIST || [];
+  const filtered = q ? list.filter(n => n.code.includes(q) || n.name.toLowerCase().includes(q)) : list;
+  filtered.forEach(n => window.selectedNcsCodes.delete(n.code));
+  renderNcsDropdown();
+  renderNcsSelected();
+  applyFilters();
+}
+
+function toggleNcsByCode(code, name, checked) {
+  if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
+  if (checked) {
+    window.selectedNcsCodes.add(code);
+  } else {
+    window.selectedNcsCodes.delete(code);
+  }
+  // 드롭다운 배경색만 갱신 (닫지 않음)
+  renderNcsDropdown();
+  renderNcsSelected();
+  applyFilters();
+}
+
+// 기존 toggleNcs는 하위 호환용으로 유지
 function toggleNcs(code, name, el) {
   if (!window.selectedNcsCodes) window.selectedNcsCodes = new Set();
   if (window.selectedNcsCodes.has(code)) {
