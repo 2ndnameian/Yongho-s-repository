@@ -25,7 +25,7 @@
   body { background: var(--bg); color: var(--text); font-family: 'Pretendard', 'Noto Sans KR', sans-serif; font-size: 14px; min-height: 100vh; }
 
   /* ── 헤더 ── */
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+  .header { background: #1e40af; border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .header-title { font-size: 18px; font-weight: 700; color: var(--text); }
   .header-sub { font-size: 12px; color: var(--text3); }
   .header-badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
@@ -153,13 +153,22 @@
 
 <!-- 헤더 -->
 <div class="header">
-  <div>
-    <div class="header-title">📊 직업훈련 성과 현황</div>
-    <div class="header-sub">고용24 수집 데이터 기반 분석</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div style="width:36px;height:36px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📊</div>
+    <div>
+      <div class="header-title">직업훈련 성과 현황</div>
+      <div class="header-sub">고용24 수집 데이터 기반 분석</div>
+    </div>
   </div>
-  <div class="header-right">
+  <div style="display:flex;gap:8px;flex-shrink:0;margin-left:auto;align-items:center;">
+    <a href="/" style="font-size:12px;color:#93c5fd;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.25);border-radius:6px;white-space:nowrap;">📰 뉴스</a>
+    <a href="/policy.html" style="font-size:12px;color:#93c5fd;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.25);border-radius:6px;white-space:nowrap;">📋 정책</a>
+    <a href="/market.html" style="font-size:12px;color:#93c5fd;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.25);border-radius:6px;white-space:nowrap;">📊 시장</a>
+    <a href="/competitor.html" style="font-size:12px;color:#93c5fd;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.25);border-radius:6px;white-space:nowrap;">🎯 경쟁</a>
+    <a href="/analysis.html" style="font-size:12px;color:#93c5fd;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.25);border-radius:6px;white-space:nowrap;">🧠 종합분석</a>
+    <a href="/training_dashboard.html" style="font-size:12px;color:white;font-weight:700;text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,0.5);border-radius:6px;background:rgba(255,255,255,0.2);white-space:nowrap;">📈 훈련성과</a>
     <span class="header-badge" id="totalBadge" style="display:none"></span>
-    <button class="btn btn-ghost" onclick="resetAll()" id="resetBtn" style="display:none">↩ 초기화</button>
+    <button class="btn btn-ghost" onclick="resetAll()" id="resetBtn" style="display:none;color:#93c5fd;border-color:rgba(255,255,255,0.25);">↩ 초기화</button>
   </div>
 </div>
 
