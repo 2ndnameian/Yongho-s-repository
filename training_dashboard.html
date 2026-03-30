@@ -750,11 +750,13 @@ function renderKdcSelected() {
   const el  = document.getElementById('kdcSelected');
   if (!el) return;
   if (sel.size === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = [...sel].map(n =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent2);">
-      ${n}<span onclick="removeKdc('${n.replace(/'/g,"\\'")}')'' style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>
-    </span>`
-  ).join('');
+  el.innerHTML = [...sel].map(function(n) {
+    const escaped = n.replace(/'/g, "\'");
+    return '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.4);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--accent2);">'
+      + n
+      + '<span onclick="removeKdc(\'' + escaped + '\')" style="cursor:pointer;font-size:13px;line-height:1;opacity:.7;margin-left:2px;">×</span>'
+      + '</span>';
+  }).join('');
 }
 
 // ── YoY 전년 대비 ────────────────────────────────────────
