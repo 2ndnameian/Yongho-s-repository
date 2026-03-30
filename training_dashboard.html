@@ -1423,67 +1423,121 @@ function renderRegionDetail() {
 // ── 분석 3 ───────────────────────────────────────────────
 function exportTab3Excel() {
   if (!checkXLSX()) return;
-  if (!FILTERED.length) { alert('데이터가 없습니다.'); return; }
+  if (!FILTERED.length) { showMsg('데이터가 없습니다.', false); return; }
   try {
     const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1);
-    const byNcs = groupBy(validRows, 'ncs_name');
     const wb    = XLSX.utils.book_new();
     const today = fmtDate(new Date());
     const S     = xlsxStyles();
 
-    // ① NCS 직종별 요약
-    const hdr1 = [
-      xC('NCS 직무분류', S.hdrBase), xC('기관수', S.hdrBase), xC('과정수', S.hdrBase),
-      xC('수료인원', S.hdrBase), xC('취업인원', S.hdrBase),
-      xC('최저 취업률(%)', S.hdrDiff), xC('평균 취업률(%)', S.hdrCurr), xC('최고 취업률(%)', S.hdrDiff),
-    ];
-    const sh1 = [[xC('NCS 직종별 취업률 현황 (0%·100% 기관 제외)',S.title)],[],[ xC('※ 취업률 0%·100% 기관 및 수료인원 0인 기관 제외',S.sub)],[],hdr1];
-    Object.entries(byNcs).map(([ncs, rs]) => {
-      const rates = rs.map(r=>r.emp_rate).filter(v=>v!=null).sort((a,b)=>a-b);
-      const avg   = rates.length ? rates.reduce((a,b)=>a+b,0)/rates.length : null;
-      return { ncs, instCnt: new Set(rs.map(r=>r.inst)).size, cnt: rs.length,
-               complete: rs.reduce((a,r)=>a+(r.complete||0),0), employ: rs.reduce((a,r)=>a+(r.employ||0),0),
-               min: rates[0]||null, avg, max: rates[rates.length-1]||null };
-    }).sort((a,b)=>a.ncs.localeCompare(b.ncs,'ko')).forEach(r => sh1.push([
-      xC(r.ncs, S.ncs),
-      xN(r.instCnt, S.prev), xN(r.cnt, S.prev),
-      xN(r.complete, S.prev), xN(r.employ, S.prev),
-      xN(r.min!=null?parseFloat((r.min*100).toFixed(1)):'', S.diffDown),
-      xN(r.avg!=null?parseFloat((r.avg*100).toFixed(1)):'', S.curr),
-      xN(r.max!=null?parseFloat((r.max*100).toFixed(1)):'', S.diffUp),
-    ]));
-    const ws1 = XLSX.utils.aoa_to_sheet(sh1);
-    ws1['!cols'] = [{wch:20},{wch:8},{wch:8},{wch:10},{wch:10},{wch:13},{wch:13},{wch:13}];
-    ws1['!merges'] = [{s:{r:0,c:0},e:{r:0,c:7}}];
-    ws1['!rows'] = [{hpx:24},{hpx:8},{hpx:14},{hpx:8},{hpx:30}];
-    XLSX.utils.book_append_sheet(wb, ws1, '①NCS직종별요약');
+    // ── NCS 코드 기준으로 그룹핑 ─────────────────────────────
+    // ncs_code + ncs_name 조합 키 사용
+    const byCode = groupBy(validRows, r => (r.ncs_code || '미분류') + '|||' + (r.ncs_name || '미분류'));
 
-    // ② 기관별 상세
-    const key = r => r.ncs_name + '|||' + r.inst;
-    const byKey = groupBy(validRows, key);
-    const hdr2 = [
-      xC('NCS 직무분류',S.hdrBase), xC('시도',S.hdrBase), xC('훈련기관',S.hdrBase),
-      xC('과정수',S.hdrBase), xC('만족도',S.hdrBase),
-      xC('수료인원',S.hdrCurr), xC('취업인원',S.hdrCurr), xC('취업률(%)',S.hdrCurr),
+    // ① NCS 코드별 요약
+    const hdr1 = [
+      xC('NCS 코드',      S.hdrBase),
+      xC('NCS 직무분류',  S.hdrBase),
+      xC('기관수',        S.hdrBase),
+      xC('과정수',        S.hdrBase),
+      xC('수료인원',      S.hdrBase),
+      xC('취업인원',      S.hdrBase),
+      xC('최저 취업률(%)', S.hdrDiff),
+      xC('평균 취업률(%)', S.hdrCurr),
+      xC('최고 취업률(%)', S.hdrDiff),
     ];
-    const sh2 = [[xC('NCS 기관별 취업률 상세 (0%·100% 기관 제외)',S.title)],[],[],hdr2];
-    Object.entries(byKey).map(([k,rs]) => {
-      const parts=k.split('|||');
-      const c=sumN(rs,'complete'),e=sumN(rs,'employ');
-      const er=c>0?e/c:null;
-      const sat=avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
-      return {ncs:parts[0],sido:rs[0].sido,inst:parts[1],cnt:rs.length,sat,complete:c,employ:e,emp_rate:er};
-    }).sort((a,b)=>(b.emp_rate||0)-(a.emp_rate||0)).forEach(r => sh2.push([
-      xC(r.ncs, S.ncs), xC(r.sido, {}), xC(r.inst, {}),
-      xN(r.cnt, S.prev),
-      xN(r.sat!=null?parseFloat(r.sat.toFixed(1)):'', S.prev),
-      xN(r.complete, S.curr), xN(r.employ, S.curr),
-      xN(r.emp_rate!=null?parseFloat((r.emp_rate*100).toFixed(1)):'', S.currB),
+    const sh1 = [
+      [xC('NCS 코드별 취업률 현황 (0%·100% 기관 제외)', S.title)],
+      [],
+      [xC('※ 취업률 0%·100% 기관 및 수료인원 0인 기관 제외', S.sub)],
+      [],
+      hdr1,
+    ];
+
+    Object.entries(byCode).map(([key, rs]) => {
+      const parts = key.split('|||');
+      const code  = parts[0];
+      const name  = parts[1];
+      const rates = rs.map(r => r.emp_rate).filter(v => v != null).sort((a,b) => a-b);
+      const avg   = rates.length ? rates.reduce((a,b) => a+b, 0) / rates.length : null;
+      return {
+        code, name,
+        instCnt:  new Set(rs.map(r => r.inst)).size,
+        cnt:      rs.length,
+        complete: rs.reduce((a,r) => a+(r.complete||0), 0),
+        employ:   rs.reduce((a,r) => a+(r.employ||0),   0),
+        min: rates[0]  || null,
+        avg,
+        max: rates[rates.length-1] || null,
+      };
+    })
+    .sort((a,b) => a.code.localeCompare(b.code))
+    .forEach(r => sh1.push([
+      xC(r.code,  S.sido),
+      xC(r.name,  S.ncs),
+      xN(r.instCnt,  S.prev),
+      xN(r.cnt,      S.prev),
+      xN(r.complete, S.prev),
+      xN(r.employ,   S.prev),
+      xN(r.min != null ? parseFloat((r.min*100).toFixed(1)) : '', S.diffDown),
+      xN(r.avg != null ? parseFloat((r.avg*100).toFixed(1)) : '', S.curr),
+      xN(r.max != null ? parseFloat((r.max*100).toFixed(1)) : '', S.diffUp),
     ]));
+
+    const ws1 = XLSX.utils.aoa_to_sheet(sh1);
+    ws1['!cols'] = [{wch:14},{wch:18},{wch:8},{wch:8},{wch:10},{wch:10},{wch:13},{wch:13},{wch:13}];
+    ws1['!merges'] = [{s:{r:0,c:0},e:{r:0,c:8}}];
+    ws1['!rows']   = [{hpx:24},{hpx:8},{hpx:14},{hpx:8},{hpx:30}];
+    XLSX.utils.book_append_sheet(wb, ws1, '①NCS코드별요약');
+
+    // ② 기관별 상세 (NCS 코드 포함)
+    const hdr2 = [
+      xC('NCS 코드',    S.hdrBase),
+      xC('NCS 직무분류', S.hdrBase),
+      xC('시도',        S.hdrBase),
+      xC('훈련기관',    S.hdrBase),
+      xC('과정수',      S.hdrBase),
+      xC('만족도',      S.hdrBase),
+      xC('수료인원',    S.hdrCurr),
+      xC('취업인원',    S.hdrCurr),
+      xC('취업률(%)',   S.hdrCurr),
+    ];
+    const sh2 = [
+      [xC('NCS 기관별 취업률 상세 (0%·100% 기관 제외)', S.title)],
+      [],
+      [],
+      hdr2,
+    ];
+
+    const byKey2 = groupBy(validRows, r => (r.ncs_code||'미분류') + '|||' + (r.ncs_name||'미분류') + '|||' + r.inst);
+    Object.entries(byKey2).map(([k, rs]) => {
+      const parts = k.split('|||');
+      const c   = sumN(rs, 'complete');
+      const e   = sumN(rs, 'employ');
+      const er  = c > 0 ? e / c : null;
+      const sat = avgN(rs.filter(r => r.satisfy != null), 'satisfy');
+      return {
+        code: parts[0], name: parts[1], inst: parts[2],
+        sido: rs[0].sido, cnt: rs.length, sat, complete: c, employ: e, emp_rate: er,
+      };
+    })
+    .sort((a,b) => a.code.localeCompare(b.code) || (b.emp_rate||0) - (a.emp_rate||0))
+    .forEach(r => sh2.push([
+      xC(r.code, S.sido),
+      xC(r.name, S.ncs),
+      xC(r.sido, {}),
+      xC(r.inst, {}),
+      xN(r.cnt,  S.prev),
+      xN(r.sat  != null ? parseFloat(r.sat.toFixed(1))            : '', S.prev),
+      xN(r.complete, S.curr),
+      xN(r.employ,   S.curr),
+      xN(r.emp_rate != null ? parseFloat((r.emp_rate*100).toFixed(1)) : '', S.currB),
+    ]));
+
     const ws2 = XLSX.utils.aoa_to_sheet(sh2);
-    ws2['!cols'] = [{wch:18},{wch:7},{wch:22},{wch:7},{wch:8},{wch:10},{wch:10},{wch:10}];
-    ws2['!merges'] = [{s:{r:0,c:0},e:{r:0,c:7}}];
-    ws2['!rows'] = [{hpx:24},{hpx:8},{hpx:8},{hpx:30}];
+    ws2['!cols'] = [{wch:14},{wch:18},{wch:7},{wch:22},{wch:7},{wch:8},{wch:10},{wch:10},{wch:10}];
+    ws2['!merges'] = [{s:{r:0,c:0},e:{r:0,c:8}}];
+    ws2['!rows']   = [{hpx:24},{hpx:8},{hpx:8},{hpx:30}];
     XLSX.utils.book_append_sheet(wb, ws2, '②기관별상세');
 
     XLSX.writeFile(wb, `NCS취업률현황_${today}.xlsx`);
