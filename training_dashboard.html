@@ -1432,7 +1432,7 @@ function exportTab3Excel() {
 
     // ── NCS 코드 기준으로 그룹핑 ─────────────────────────────
     // ncs_code + ncs_name 조합 키 사용
-    const byCode = groupBy(validRows, r => (r.ncs_code || '미분류') + '|||' + (r.ncs_name || '미분류'));
+    const byCode = groupBy(validRows, r => (r.ncs_code || '미분류') + '|||' + (r.raw_ncs_name || r.ncs_name || '미분류'));
 
     // ① NCS 코드별 요약
     const hdr1 = [
@@ -1509,7 +1509,7 @@ function exportTab3Excel() {
       hdr2,
     ];
 
-    const byKey2 = groupBy(validRows, r => (r.ncs_code||'미분류') + '|||' + (r.ncs_name||'미분류') + '|||' + r.inst);
+    const byKey2 = groupBy(validRows, r => (r.ncs_code||'미분류') + '|||' + (r.raw_ncs_name||r.ncs_name||'미분류') + '|||' + r.inst);
     Object.entries(byKey2).map(([k, rs]) => {
       const parts = k.split('|||');
       const c   = sumN(rs, 'complete');
