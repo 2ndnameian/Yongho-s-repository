@@ -898,7 +898,8 @@ function renderYoY() {
     const p = r.prev, c = r.curr;
     const pScore = p.score, pCnt = p.cnt, pSat = p.sat, pComp = p.complete, pEmp = p.employ, pEmpR = p.emp_rate;
     const cScore = c ? c.score    : null;
-    const cCnt   = c ? c.cnt      : null;
+    const cCnt       = c ? c.cnt       : null;
+    const cCourseCnt = c ? c.courseCnt : null;
     const cSat   = c ? c.sat      : null;
     const cComp  = c ? c.complete : null;
     const cEmp   = c ? c.employ   : null;
@@ -920,7 +921,7 @@ function renderYoY() {
       <td style="text-align:right;background:#fffde7;font-size:12px;">${cv(pEmp)}</td>
       <td style="text-align:right;background:#fffde7;font-size:12px;font-weight:600;border-right:2px solid #d97706;">${cp(pEmpR)}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;font-weight:600;">${c ? cf(cScore) : '-'}</td>
-      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cCnt) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cCourseCnt) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cf(cSat) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cComp) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;font-weight:600;border-right:2px solid #1e40af;">${c ? cp(cEmpR) : '-'}</td>
@@ -978,7 +979,7 @@ function exportYoyExcel() {
   ];
   rows.forEach(function(p){
     var c=cMap[p.region+'|||'+normalizeNcsName(p.ncs)]||null;
-    var cSc=c?c.score:null,cCn=c?c.cnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
+    var cSc=c?c.score:null,cCn=c?c.courseCnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
     var dS=(p.score!=null&&cSc!=null)?parseFloat((cSc-p.score).toFixed(2)):null;
     var dE=(p.emp_rate!=null&&cER!=null)?parseFloat(((cER-p.emp_rate)*100).toFixed(2)):null;
     wd.push([
@@ -1325,7 +1326,9 @@ function calcAggByInst(rs) {
   const sats     = instAggs.map(a=>a.sat).filter(v=>v!=null);
   const scores   = instAggs.map(a=>a.score).filter(v=>v!=null);
   return {
-    cnt: Object.keys(byInst).length, quota, confirm, complete, employ,
+    cnt: Object.keys(byInst).length,
+    courseCnt: rs.length,
+    quota, confirm, complete, employ,
     rec_rate:  quota > 0    ? confirm/quota    : null,
     comp_rate: confirm > 0  ? complete/confirm : null,
     emp_rate:  empRates.length ? empRates.reduce((a,b)=>a+b,0)/empRates.length : null,
@@ -1736,7 +1739,7 @@ function exportAnalysis2Excel() {
         .sort(function(a,b){var r=a.region.localeCompare(b.region,'ko');return r!==0?r:a.ncs.localeCompare(b.ncs,'ko');})
         .forEach(function(p){
           var c=cM[p.region+'|||'+normalizeNcsName(p.ncs)]||null;
-          var cSc=c?c.score:null,cCn=c?c.cnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
+          var cSc=c?c.score:null,cCn=c?c.courseCnt:null,cSa=c?c.sat:null,cCo=c?c.complete:null,cEm=c?c.employ:null,cER=c?c.emp_rate:null;
           var dS=(p.score!=null&&cSc!=null)?parseFloat((cSc-p.score).toFixed(2)):null;
           var dE=(p.emp_rate!=null&&cER!=null)?parseFloat(((cER-p.emp_rate)*100).toFixed(2)):null;
           d4.push([
