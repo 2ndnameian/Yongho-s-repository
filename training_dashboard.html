@@ -812,8 +812,24 @@ function handleYoyFile(file) {
 }
 
 function normalizeNcsName(s) {
-  return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-          .replace(/\u00a0|\u3000/g,' ').replace(/\s+/g,' ').trim();
+  // 기본 정규화: 특수문자, 공백 처리
+  let r = s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+            .replace(/\u00a0|\u3000/g,' ').replace(/\s+/g,' ').trim();
+
+  // 전년도 파일의 직종명 → 원본 국기직종명 매핑
+  // (전년도 파일에서 이름이 다르게 기재된 경우 통일)
+  const MAP = {
+    'AI활용 소프트웨어 개발 및 응용': 'AI 활용',
+    'AI활용소프트웨어개발및응용':     'AI 활용',
+    'AI활용':                        'AI 활용',
+    '스마트웹&콘텐츠개발':            '스마트웹&콘텐츠',
+    '스마트웹 & 콘텐츠개발':          '스마트웹&콘텐츠',
+    '스마트웹&콘텐츠 개발':           '스마트웹&콘텐츠',
+    '정보시스템 구축':                 '정보시스템구축',
+    '정보시스템  구축':                '정보시스템구축',
+  };
+
+  return MAP[r] || r;
 }
 
 function buildCurrMap() {
