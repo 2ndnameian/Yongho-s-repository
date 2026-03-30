@@ -669,7 +669,7 @@ function initUI() {
   renderKdcSelected();
 
   const ncsMap = {};
-  RAW.forEach(r => { if (r.ncs_code && r.ncs_name) ncsMap[r.ncs_code] = r.ncs_name; });
+  RAW.forEach(r => { if (r.ncs_code && (r.raw_ncs_name || r.ncs_name)) ncsMap[r.ncs_code] = r.raw_ncs_name || r.ncs_name; });
   window.NCS_LIST = Object.entries(ncsMap).map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   window.selectedNcsCodes = new Set();
