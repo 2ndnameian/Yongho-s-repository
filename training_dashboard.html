@@ -1578,28 +1578,34 @@ function exportTab3Excel() {
 
 function renderTab3() {
   const validRows = FILTERED.filter(r => r.complete > 0 && r.employ != null && r.emp_rate > 0 && r.emp_rate < 1);
-  const byNcs = groupBy(validRows, 'ncs_name');
 
-  // NCS 직종별 집계 (기관 평균 방식)
+  // ★ 문제1 수정: raw_ncs_name(원본 NCS직무분류) 기준으로 그룹핑
+  const byNcs = groupBy(validRows, r => r.raw_ncs_name || r.ncs_name);
+
+  // ★ 문제2 수정: 기관별 집계 후 최저/최고/평균 산출 → 상세 테이블과 동일 기준
   const ncsRows = Object.entries(byNcs).map(([ncs, rs]) => {
-    const rates = rs.map(r => r.emp_rate).filter(v => v != null).sort((a,b) => a-b);
-    const instSet = new Set(rs.map(r => r.inst));
-    const avgRate = rates.length ? rates.reduce((a,b)=>a+b,0)/rates.length : null;
+    // 기관별 취업률 집계
+    const byInst = groupBy(rs, 'inst');
+    const instRates = Object.values(byInst).map(rows => {
+      const c = sumN(rows,'complete'), e = sumN(rows,'employ');
+      return c > 0 ? e/c : null;
+    }).filter(v => v != null).sort((a,b) => a-b);
+
     return {
       ncs,
-      instCnt:  instSet.size,
+      instCnt:   Object.keys(byInst).length,
       courseCnt: rs.length,
-      minRate:  rates[0]    || null,
-      maxRate:  rates[rates.length-1] || null,
-      avgRate,
-      complete: rs.reduce((a,r)=>a+(r.complete||0),0),
-      employ:   rs.reduce((a,r)=>a+(r.employ||0),0),
+      minRate:   instRates.length ? instRates[0]                  : null,
+      maxRate:   instRates.length ? instRates[instRates.length-1] : null,
+      avgRate:   instRates.length ? instRates.reduce((a,b)=>a+b,0)/instRates.length : null,
+      complete:  rs.reduce((a,r)=>a+(r.complete||0),0),
+      employ:    rs.reduce((a,r)=>a+(r.employ||0),0),
     };
   }).sort((a,b) => a.ncs.localeCompare(b.ncs,'ko'));
 
   document.getElementById('tableCount3b').textContent = `${ncsRows.length}개 직무분류`;
 
-  document.getElementById('tbody3b').innerHTML = ncsRows.map(r => `<tr style="cursor:pointer;" onclick="filterNcs3('${r.ncs.replace(/'/g,"\'")}')">
+  document.getElementById('tbody3b').innerHTML = ncsRows.map(r => `<tr style="cursor:pointer;" onclick="filterNcs3('${r.ncs.replace(/'/g,"\\'")}')">
     <td style="color:var(--accent);font-weight:600;">${r.ncs}</td>
     <td style="text-align:right;">${r.instCnt}</td>
     <td style="text-align:right;">${r.courseCnt}</td>
@@ -1616,16 +1622,16 @@ function filterNcs3(ncs) {
   const validRows = FILTERED.filter(r =>
     r.complete > 0 && r.employ != null &&
     r.emp_rate > 0 && r.emp_rate < 1 &&
-    r.ncs_name === ncs
+    (r.raw_ncs_name || r.ncs_name) === ncs
   );
-  document.getElementById('ncsDetailTitle').textContent = `NCS 기관 취업률 상세 · ${ncs}`;
+  document.getElementById('ncsDetailTitle').textContent = `NCS 기관별 취업률 상세 · ${ncs}`;
   renderNcsDetail(validRows);
-  // 상세 테이블로 스크롤
   const el = document.getElementById('ncsDetailSection');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 function renderNcsDetail(rows) {
-  const key = r => r.ncs_name + '|||' + r.inst;
+  // ★ raw_ncs_name 기준으로 그룹핑 (ncs_name = 국기직종명 혼입 방지)
+  const key = r => (r.raw_ncs_name || r.ncs_name) + '|||' + r.inst;
   const byKey = groupBy(rows, key);
   const aggRows = Object.entries(byKey).map(([k, rs]) => {
     const parts = k.split('|||');
@@ -1634,6 +1640,7 @@ function renderNcsDetail(rows) {
     const sat = avgN(rs.filter(r=>r.satisfy!=null),'satisfy');
     return { ncs: parts[0], inst: parts[1], sido: rs[0].sido, cnt: rs.length, complete: c, employ: e, emp_rate: er, sat };
   }).sort((a,b) => (b.emp_rate||0) - (a.emp_rate||0));
+
   document.getElementById('tableCount4').textContent = `${aggRows.length.toLocaleString()}개`;
   pages.table4 = 1;
   renderPaginatedTable('tbody4','pag4', aggRows, 'table4', r => `<tr>
