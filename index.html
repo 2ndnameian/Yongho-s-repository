@@ -228,7 +228,7 @@ let selectedKws={}, activeGroup="vocational", allResults={}, analysisMap={}, sel
     filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
 let dateFrom=null, dateTo=null, datePreset="7d"; // ← 날짜 상태
 
-selectedKws = Object.fromEntries(GROUPS.map(g=>[g.id, g.keywords.slice(0,3)]));
+selectedKws = Object.fromEntries(GROUPS.map(g=>[g.id, [...g.keywords]]));
 
 /* ── URL 정규화 ── */
 function cleanUrl(originallink, link) {
