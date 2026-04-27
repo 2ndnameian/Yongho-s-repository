@@ -299,7 +299,7 @@ function isInDateRange(pubDateStr) {
 }
 /* ══════════════════════════════════════════ */
 
-let selectedKws=Object.fromEntries(GROUPS.map(g=>[g.id,g.keywords.slice(0,2)])), activeGroup="vocational_policy", allResults={}, analysisMap={}, selectedNews=null, filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
+let selectedKws=Object.fromEntries(GROUPS.map(g=>[g.id,[...g.keywords]])), activeGroup="vocational_policy", allResults={}, analysisMap={}, selectedNews=null, filterGroup="all", filterUrgency="all", tickerTimer=null, tickerIdx=0;
 
 /* ──────────────────────────────────────────
    [수정 1] URL 정규화 헬퍼 함수
