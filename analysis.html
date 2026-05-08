@@ -282,8 +282,9 @@ JSON으로만 출력 (백틱 금지):
 [수집 데이터]
 ${data}
 
-JSON으로만 출력 (백틱 금지):
-{"opportunities":[{"name":"사업명","level":"높음|보통|낮음","deadline":"마감","prep":"준비사항"}],"must_apply":"반드시 참여할 사업","reason":"이유","action":"즉시 해야 할 행동","summary":"핵심요약(2문장)"}`,
+규칙: JSON만 출력. 백틱·마크다운·줄바꿈·설명문 절대 금지. 문자열 값 안에 큰따옴표 사용 금지(홑따옴표 사용).
+출력 형식:
+{"opportunities":[{"name":"사업명","level":"높음","deadline":"마감일","prep":"준비사항 한줄"},{"name":"사업명2","level":"보통","deadline":"","prep":"준비사항"}],"must_apply":"최우선 사업명","reason":"선정 이유 한줄","action":"즉시 해야 할 행동 한줄","summary":"핵심 요약 두 문장"}`,
 
   market: (data, orgInfo) => `당신은 대한민국 직업훈련 시장 분석 전문가입니다.
 아래 수집 데이터를 분석하여 "직업훈련 시장 구조 분석"을 작성하세요.${orgInfo}
@@ -318,8 +319,9 @@ JSON으로만 출력 (백틱 금지):
 [수집 데이터]
 ${data}
 
-JSON으로만 출력 (백틱 금지):
-{"immediate":[{"name":"사업명","reason":"이유","action":"해야할일"}],"mid_term":[{"name":"사업명","reason":"이유"}],"long_term":["장기사업1","장기사업2"],"top_pick":{"name":"최우선사업","reason":"선정이유","steps":["단계1","단계2","단계3"]},"risk_level":"높음|보통|낮음","risk_reason":"리스크이유","summary":"최종요약(3문장)"}`,
+규칙: JSON만 출력. 백틱·마크다운·줄바꿈·설명문 절대 금지. 문자열 값 안에 큰따옴표 사용 금지(홑따옴표 사용).
+출력 형식:
+{"immediate":[{"name":"즉시참여사업명","reason":"이유 한줄","action":"해야할일 한줄"}],"mid_term":[{"name":"준비후사업명","reason":"이유 한줄"}],"long_term":["장기사업1","장기사업2"],"top_pick":{"name":"최우선사업명","reason":"선정이유 한줄","steps":["단계1","단계2","단계3"]},"risk_level":"높음","risk_reason":"리스크 이유 한줄","summary":"최종 요약 세 문장"}`,
 };
 
 let analysisResults = {}, isAnalyzing = false;
@@ -420,11 +422,30 @@ function getAllData() {
 
 function extractJSON(raw) {
   if (!raw) return null;
-  const s = raw.trim();
+
+  // 1. 마크다운 코드블록 제거
+  let s = raw.trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/, '')
+    .trim();
+
+  // 2. JSON 후보 문자열 추출 (첫 { ~ 마지막 })
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  const candidate = (a !== -1 && b > a) ? s.slice(a, b + 1) : s;
+
+  // 3. 시도 목록: 원본 → 후보 → 후보 수정본
+  const repaired = candidate
+    .replace(/,\s*([}\]])/g, '$1')          // trailing comma 제거
+    .replace(/[\r\n]+/g, ' ')               // 줄바꿈 → 공백
+    .replace(/([^\\])\\'/g, "$1'")          // 잘못된 이스케이프 수정
+    .replace(/:\s*"([^"]*)"(?=[,}\]])/g,    // 값 안의 따옴표 → 홑따옴표
+      (_, v) => `: "${v.replace(/"/g, '’')}"`);
+
   const tries = [
     () => JSON.parse(s),
+    () => JSON.parse(candidate),
+    () => JSON.parse(repaired),
     () => { const m=s.match(/```(?:json)?\s*([\s\S]*?)```/i); if(m) return JSON.parse(m[1].trim()); throw 0; },
-    () => { const a=s.indexOf("{"),b=s.lastIndexOf("}"); if(a!==-1&&b>a) return JSON.parse(s.slice(a,b+1)); throw 0; },
   ];
   for (const fn of tries) { try { return fn(); } catch(_) {} }
   return null;
@@ -535,12 +556,18 @@ function renderResults() {
   document.getElementById("analysis-results").innerHTML = ANALYSIS_ITEMS.map(item=>{
     const data = analysisResults[item.id];
     if (!data||data.error) return `
-      <div class="analysis-section">
+      <div class="analysis-section" id="section-${item.id}">
         <div class="section-header" style="background:${item.headerBg};">
           <span style="font-size:22px;">${item.icon}</span>
-          <div><div style="font-size:15px;font-weight:800;color:${item.color};">${item.num} ${item.label}</div></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:800;color:${item.color};">${item.num} ${item.label}</div>
+          </div>
+          <span style="font-size:11px;padding:3px 9px;background:white;border:1px solid #fecaca;border-radius:5px;color:#dc2626;font-weight:600;">분석 오류</span>
         </div>
-        <div class="section-body"><p style="color:#dc2626;">⚠️ 분석 오류: ${data?.error||"알 수 없는 오류"}</p></div>
+        <div class="section-body">
+          <p style="color:#dc2626;">⚠️ 분석 오류: ${data?.error||"알 수 없는 오류"}</p>
+          ${data?.raw ? `<details style="margin-top:8px;"><summary style="font-size:11px;color:#94a3b8;cursor:pointer;">원본 응답 보기</summary><pre style="font-size:11px;color:#64748b;background:#f8fafc;padding:10px;border-radius:6px;overflow:auto;margin-top:6px;white-space:pre-wrap;">${(data.raw||"").slice(0,800)}</pre></details>` : ""}
+        </div>
       </div>`;
     return renderSection(item, data);
   }).join("");
