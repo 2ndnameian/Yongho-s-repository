@@ -87,7 +87,8 @@
     </div>
   </div>
   <div class="nav-links">
-    <a href="/" class="nav-link">📰 뉴스</a>
+    <a href="/" class="nav-link">🏠 홈</a>
+    <a href="/news.html" class="nav-link">📰 뉴스</a>
     <a href="/policy.html" class="nav-link active">📋 정책</a>
     <a href="/market.html" class="nav-link">📊 시장</a>
     <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
@@ -188,6 +189,7 @@
           <input type="text" id="search-filter" oninput="renderResults()" placeholder="결과 내 검색..." style="width:160px;">
           <button onclick="showTab('search')" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#065f46;font-size:12px;cursor:pointer;font-weight:600;">🔄 재수집</button>
           <button onclick="sendToAnalysis()" style="padding:7px 14px;background:#f59e0b;border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;font-weight:700;">🧠 분석창으로</button>
+          <button onclick="saveAsJson()" style="padding:7px 14px;background:#10b981;border:none;border-radius:8px;color:white;font-size:12px;cursor:pointer;font-weight:700;">💾 json 파일 생성</button>
         </div>
       </div>
       <div id="error-log" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;"></div>
@@ -698,6 +700,36 @@ function startTicker(){
   document.getElementById("ticker").style.display="block";
   clearInterval(tickerTimer);
   tickerTimer=setInterval(()=>{tickerIdx=(tickerIdx+1)%all.length;document.getElementById("ticker-text").textContent=all[tickerIdx]?.title||"";},3800);
+}
+
+async function saveAsJson() {
+  const allNews = Object.values(allResults).flat();
+  if (!allNews.length) { alert("먼저 정책을 수집해주세요!"); return; }
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+  const filename = `policy_${ts}.json`;
+  const data = {
+    source: "policy",
+    collectedAt: now.toISOString(),
+    period: { preset: datePreset, from: dateFrom?.toISOString(), to: dateTo?.toISOString() },
+    totalCount: allNews.length,
+    groups: GROUPS.map(g => ({ id: g.id, label: g.label, items: allResults[g.id] || [] }))
+  };
+  try {
+    if ('showDirectoryPicker' in window) {
+      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+      alert(`✅ ${filename} 저장 완료!\n선택한 폴더에 저장되었습니다.`);
+    } else {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch(e) { if (e.name !== 'AbortError') alert('저장 실패: ' + e.message); }
 }
 
 init();
