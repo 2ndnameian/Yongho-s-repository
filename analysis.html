@@ -47,6 +47,16 @@
   .data-badge.empty  { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; }
   /* 불러오기 배너 */
   .load-banner { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  /* JSON 결과 뷰어 */
+  .json-item-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .json-priority-상 { border-left:4px solid #dc2626; }
+  .json-priority-중 { border-left:4px solid #d97706; }
+  .json-priority-하 { border-left:4px solid #94a3b8; }
+  .json-type-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+  .json-type-정책   { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+  .json-type-공모사업 { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
+  .json-type-뉴스   { background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4; }
+  .json-type-경쟁기관 { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
 </style>
 </head>
 <body>
@@ -100,6 +110,9 @@
 
   <div class="main">
 
+    <!-- 숨겨진 파일 입력 -->
+    <input type="file" id="json-file-input" accept=".json" style="display:none" onchange="onJsonFileSelected(event)">
+
     <!-- 히어로 -->
     <div class="hero">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
@@ -137,6 +150,32 @@
         <button onclick="loadFromStorage()" style="padding:7px 14px;background:#065f46;border:none;border-radius:7px;color:white;font-size:12px;font-weight:700;cursor:pointer;">📥 불러오기</button>
         <button onclick="clearStorage()" style="padding:7px 10px;background:white;border:1px solid #e2e8f0;border-radius:7px;color:#94a3b8;font-size:12px;cursor:pointer;">✕</button>
       </div>
+    </div>
+
+    <!-- Claude Code 분석 결과 불러오기 배너 -->
+    <div class="load-banner" style="background:#eff6ff; border-color:#bfdbfe; margin-bottom:16px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:3px;">📂 Claude Code 분석 결과 불러오기</div>
+        <div style="font-size:12px;color:#374151;">/전략분석 커맨드로 생성한 <code style="background:#dbeafe;padding:1px 5px;border-radius:3px;">output/analysis_YYYY-MM-DD.json</code> 파일을 선택하세요</div>
+      </div>
+      <button onclick="document.getElementById('json-file-input').click()" style="padding:7px 14px;background:#1e40af;border:none;border-radius:7px;color:white;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;">📥 파일 선택</button>
+    </div>
+
+    <!-- JSON 결과 뷰어 (불러오기 후 표시) -->
+    <div id="json-result-section" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:18px;font-weight:800;color:#1e293b;">📂 전략분석 결과 (Claude Code)</div>
+          <div style="font-size:12px;color:#94a3b8;" id="json-report-date"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="printReport()" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;font-size:12px;cursor:pointer;font-weight:600;">🖨️ 인쇄·PDF</button>
+          <button onclick="document.getElementById('json-result-section').style.display='none'" style="padding:7px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;">✕ 닫기</button>
+        </div>
+      </div>
+      <div id="json-stats-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
+      <div id="json-gemini-review" style="display:none;" class="card" style="border-left:4px solid #7c3aed;"></div>
+      <div id="json-items-container"></div>
     </div>
 
     <!-- 데이터 입력 -->
@@ -391,16 +430,39 @@ function extractJSON(raw) {
   return null;
 }
 
-async function callClaude(prompt) {
-  const res = await fetch(CLAUDE_API, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ prompt, max_tokens:1500 }),
-  });
-  if (!res.ok) throw new Error("API " + res.status);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.text || "";
+async function callClaude(prompt, retries = 3) {
+  let lastErr;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    if (attempt > 0) {
+      // 지수 백오프: 5s, 15s, 30s
+      const wait = [5000, 15000, 30000][attempt - 1] || 30000;
+      await new Promise(r => setTimeout(r, wait));
+    }
+    try {
+      const res = await fetch(CLAUDE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, max_tokens: 1500 }),
+      });
+      // 429 Too Many Requests → 재시도
+      if (res.status === 429) {
+        const retryAfter = res.headers.get("retry-after");
+        const wait = retryAfter ? parseInt(retryAfter) * 1000 : 20000;
+        lastErr = new Error(`API 429 (Rate Limit) - ${wait / 1000}초 후 재시도 (${attempt + 1}/${retries})`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      if (!res.ok) throw new Error("API " + res.status);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.text || "";
+    } catch (e) {
+      lastErr = e;
+      if (e.message.includes("429")) continue; // already handled above
+      if (attempt < retries - 1) continue;
+    }
+  }
+  throw lastErr || new Error("API 호출 실패");
 }
 
 async function runAnalysis() {
@@ -688,6 +750,121 @@ function resetAnalysis() {
 }
 
 function printReport() { window.print(); }
+
+/* ── JSON 결과 불러오기 (Claude Code /전략분석 출력) ── */
+function onJsonFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const json = JSON.parse(e.target.result);
+      renderJsonResult(json, file.name);
+    } catch(err) {
+      alert("JSON 파일을 읽을 수 없습니다: " + err.message);
+    }
+  };
+  reader.readAsText(file, "utf-8");
+  event.target.value = ""; // 같은 파일 재선택 허용
+}
+
+function renderJsonResult(json, fileName) {
+  const items = json.items || [];
+  const date  = json["조사일"] || fileName;
+  const tool  = json["조사도구"] || "Claude";
+
+  // 날짜 표시
+  document.getElementById("json-report-date").textContent =
+    `조사일: ${date}  |  분석도구: ${tool}  |  파일: ${fileName}`;
+
+  // 통계 바
+  const byType = {};
+  const byPriority = { 상:0, 중:0, 하:0 };
+  items.forEach(item => {
+    const t = item["자료유형"] || "기타";
+    byType[t] = (byType[t] || 0) + 1;
+    const p = item["우선순위"];
+    if (p in byPriority) byPriority[p]++;
+  });
+  const typeColors = { 정책:"#065f46", 공모사업:"#1e40af", 뉴스:"#0f766e", 경쟁기관:"#92400e" };
+  const typeBg = { 정책:"#ecfdf5", 공모사업:"#eff6ff", 뉴스:"#f0fdfa", 경쟁기관:"#fffbeb" };
+  document.getElementById("json-stats-bar").innerHTML = [
+    ...Object.entries(byType).map(([t,n]) =>
+      `<span style="padding:4px 10px;background:${typeBg[t]||"#f8fafc"};border-radius:6px;font-size:12px;font-weight:700;color:${typeColors[t]||"#374151"};">${t} ${n}건</span>`),
+    `<span style="padding:4px 10px;background:#fef2f2;border-radius:6px;font-size:12px;font-weight:700;color:#dc2626;">우선순위 상 ${byPriority["상"]}건</span>`,
+    `<span style="padding:4px 10px;background:#f8fafc;border-radius:6px;font-size:12px;color:#64748b;">전체 ${items.length}건</span>`,
+  ].join("");
+
+  // Gemini 검토 표시
+  const gr = json.geminiReview;
+  const grEl = document.getElementById("json-gemini-review");
+  if (gr && gr.검토완료) {
+    const s = gr.종합검토;
+    grEl.style.display = "block";
+    grEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:18px;">🤖</span>
+        <div style="font-size:14px;font-weight:700;color:#7c3aed;">Gemini 검토 결과</div>
+        <span style="font-size:11px;color:#94a3b8;">${gr.검토모델 || ""} · ${gr.검토일 || ""}</span>
+      </div>
+      ${s ? `
+      <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:8px;">${s.종합의견 || ""}</div>
+      ${s.추가권장액션 ? `<div style="padding:8px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:7px;font-size:12px;color:#5b21b6;"><strong>추가 권장:</strong> ${s.추가권장액션}</div>` : ""}
+      ` : ""}`;
+  } else {
+    grEl.style.display = "none";
+  }
+
+  // 항목 렌더링
+  const priorityOrder = { "상": 0, "중": 1, "하": 2 };
+  const sorted = [...items].sort((a, b) => {
+    const pa = priorityOrder[a["우선순위"]] ?? 3;
+    const pb = priorityOrder[b["우선순위"]] ?? 3;
+    return pa - pb;
+  });
+
+  document.getElementById("json-items-container").innerHTML = sorted.map(item => {
+    const type = item["자료유형"] || "기타";
+    const priority = item["우선순위"] || "중";
+    const review = item.review;
+    const reviewHtml = (review && review.동의 === false) ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:7px;">
+        <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:3px;">🤖 Gemini 검토 의견</div>
+        <div style="font-size:12px;color:#374151;">${review.보완의견 || ""}</div>
+        ${review.우선순위조정 && review.우선순위조정 !== "유지"
+          ? `<div style="font-size:11px;color:#d97706;margin-top:3px;">우선순위 조정 제안: ${review.우선순위조정}</div>`
+          : ""}
+      </div>` : "";
+
+    return `<div class="json-item-card json-priority-${priority}">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <span class="json-type-tag json-type-${type}">${type}</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${priority==='상'?'#fef2f2':priority==='중'?'#fffbeb':'#f8fafc'};color:${priority==='상'?'#dc2626':priority==='중'?'#d97706':'#94a3b8'};border:1px solid ${priority==='상'?'#fecaca':priority==='중'?'#fde68a':'#e2e8f0'};font-weight:700;">우선순위 ${priority}</span>
+        ${item["기관"] ? `<span style="font-size:11px;color:#94a3b8;">${item["기관"]}</span>` : ""}
+        ${item["발표일"] ? `<span style="font-size:11px;color:#94a3b8;">📅 ${item["발표일"]}</span>` : ""}
+        ${item["접수마감일"] ? `<span style="font-size:11px;color:#dc2626;font-weight:700;">⏰ 마감 ${item["접수마감일"]}</span>` : ""}
+      </div>
+      <div style="font-size:14px;font-weight:800;color:#1e293b;margin-bottom:8px;line-height:1.4;">
+        ${item["출처URL"] ? `<a href="${item["출처URL"]}" target="_blank" style="color:#1e293b;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${item["제목"] || "(제목 없음)"}</a>` : (item["제목"] || "(제목 없음)")}
+      </div>
+      <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:10px;">${item["핵심내용"] || ""}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        ${item["직업훈련관련성"] ? `<div style="padding:8px 10px;background:#f8fafc;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:3px;">직업훈련 관련성</div><div style="font-size:12px;color:#374151;">${item["직업훈련관련성"]}</div></div>` : ""}
+        ${item["활용가능성"] ? `<div style="padding:8px 10px;background:#f0fdf4;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#059669;margin-bottom:3px;">활용 가능성</div><div style="font-size:12px;color:#374151;">${item["활용가능성"]}</div></div>` : ""}
+        ${item["정책시사점"] ? `<div style="padding:8px 10px;background:#ecfdf5;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#065f46;margin-bottom:3px;">정책 시사점</div><div style="font-size:12px;color:#374151;">${item["정책시사점"]}</div></div>` : ""}
+        ${item["공모기회"] ? `<div style="padding:8px 10px;background:#eff6ff;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:3px;">공모 기회</div><div style="font-size:12px;color:#374151;">${item["공모기회"]}</div></div>` : ""}
+        ${item["시장변화"] ? `<div style="padding:8px 10px;background:#f0fdfa;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#0f766e;margin-bottom:3px;">시장 변화</div><div style="font-size:12px;color:#374151;">${item["시장변화"]}</div></div>` : ""}
+        ${item["경쟁기관동향"] ? `<div style="padding:8px 10px;background:#fffbeb;border-radius:7px;"><div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:3px;">경쟁기관 동향</div><div style="font-size:12px;color:#374151;">${item["경쟁기관동향"]}</div></div>` : ""}
+      </div>
+      ${item["권장액션"] ? `<div style="padding:10px 14px;background:#1e293b;border-radius:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px;">⚡ 권장 액션</div><div style="font-size:13px;color:#e2e8f0;line-height:1.6;">${item["권장액션"]}</div></div>` : ""}
+      ${reviewHtml}
+      ${item["검토메모"] ? `<div style="margin-top:8px;font-size:11px;color:#94a3b8;">📝 ${item["검토메모"]}</div>` : ""}
+    </div>`;
+  }).join("");
+
+  document.getElementById("json-result-section").style.display = "block";
+  document.getElementById("json-result-section").scrollIntoView({ behavior: "smooth" });
+}
 
 /* ── 초기화 ── */
 checkStorage();
