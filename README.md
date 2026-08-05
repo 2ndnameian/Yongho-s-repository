@@ -26,13 +26,15 @@ claude_guide.html         "Claude 조사 도우미" 페이지. Claude 조사 지
                            2026-08-05: news/policy/market/competitor/analysis.html
                            5개 페이지 nav에 링크를 추가해 정식 통합함.
 api/
-  news.js        네이버 뉴스 검색 (NAVER_CLIENT_ID/SECRET 필요)
-  policy.js      정책/공모사업 수집
-  market.js      시장동향 수집
-  competitor.js  경쟁기관 수집
-  analyze.js     수집 결과 종합분석
+  news.js           네이버 뉴스 검색 (NAVER_CLIENT_ID/SECRET 필요)
+  policy.js         정책/공모사업 수집
+  market.js         시장동향 수집
+  competitor.js     경쟁기관 수집
+  analyze.js        수집 결과 종합분석
+  save-snapshot.js  수집 결과를 Vercel Blob에 일별 스냅샷으로 저장 (POST)
+  snapshot.js       저장된 스냅샷 조회 (GET, ?source=&date=)
 vercel.json      api/analyze.js 런타임 지정
-package.json
+package.json     @vercel/blob 의존성 포함
 ```
 
 ## 개선 작업 계획 (2026-08-05 논의)
@@ -44,7 +46,8 @@ package.json
 
 ### 개선 범위 (우선순위순)
 
-1. **수집 결과 영속 저장** — 지금은 새로고침하면 결과가 사라짐. Vercel은 서버리스라 로컬 파일에 못 쓰므로, Vercel KV/Blob Storage 또는 GitHub API로 이 저장소에 직접 커밋하는 방식으로 일별 스냅샷을 쌓는다.
+1. **수집 결과 영속 저장** — ✅ 구현 완료(2026-08-05). Vercel Blob으로 결정. `api/save-snapshot.js`가 `snapshots/{source}/{YYYY-MM-DD}.json`와 `snapshots/{source}/latest.json` 두 곳에 씀. `api/snapshot.js`로 조회(`?source=news&date=...`, date 생략 시 최신). news/policy/market/competitor.html에 기존 "💾 json 파일 생성"(로컬 다운로드) 버튼은 그대로 두고 "☁️ 서버에 저장" 버튼을 추가로 붙임(Fix-Only 원칙 — 기존 로컬 저장 로직은 건드리지 않음).
+   ⚠️ **사용자 확인 필요**: Vercel 대시보드 → 이 프로젝트 → Storage에서 Blob Storage를 연결해야 `BLOB_READ_WRITE_TOKEN`이 자동 주입됨. 연결 전까지는 "☁️ 서버에 저장" 버튼이 500 에러를 반환함.
 2. **변경 감지(diff) 알림** — 매번 전체 재조회 결과를 다 보여주지 말고, 어제 대비 새로 뜬 항목만 하이라이트. smartHRD의 checksum 비교 로직과 동일한 아이디어.
 3. **자동 정기 수집** — 지금은 사람이 버튼을 눌러야 수집됨. `vercel.json`의 `crons` 필드로 매일 아침 자동 수집 → 1번 저장까지 연결하면 "출근하면 이미 정리돼 있는" 형태가 됨.
 4. **실행 로그** — 언제 몇 건 수집됐는지, API 실패는 없었는지 기록. 지금은 실패해도 콘솔에만 찍히고 흔적이 안 남음.
