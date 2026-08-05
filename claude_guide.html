@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude 조사 도우미 | 직업훈련 인텔리전스</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#1e293b; min-height:100vh; }
+
+  /* ── 헤더 ── */
+  .header { background:#1e40af; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+  .logo { width:36px; height:36px; border-radius:8px; background:white; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .header-title { font-size:15px; font-weight:800; color:white; line-height:1; }
+  .header-sub { font-size:10px; color:#93c5fd; }
+  .nav-links { display:flex; gap:8px; flex-shrink:0; margin-left:auto; flex-wrap:wrap; }
+  .nav-link { font-size:12px; color:#93c5fd; text-decoration:none; padding:5px 10px; border:1px solid rgba(255,255,255,0.25); border-radius:6px; white-space:nowrap; }
+  .nav-link:hover { background:rgba(255,255,255,0.1); color:white; }
+  .nav-link.active { background:rgba(255,255,255,0.2); color:white; font-weight:700; border-color:rgba(255,255,255,0.5); }
+
+  /* ── 레이아웃 ── */
+  .main-wrap { max-width:960px; margin:0 auto; padding:28px 24px 60px; }
+  .page-hero { margin-bottom:24px; }
+  .page-hero h1 { font-size:20px; font-weight:800; color:#1e293b; margin-bottom:6px; }
+  .page-hero p { font-size:13px; color:#64748b; line-height:1.8; }
+  .flow-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px; margin-top:12px; }
+  .flow-step { font-size:12px; font-weight:700; color:#1e40af; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:4px 12px; white-space:nowrap; }
+  .flow-arrow { color:#94a3b8; font-size:14px; }
+
+  /* ── 카드 ── */
+  .card { background:white; border:1px solid #e2e8f0; border-radius:14px; padding:22px 26px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .card-title { font-size:15px; font-weight:800; color:#1e293b; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+  .card-sub { font-size:12px; color:#64748b; font-weight:400; }
+
+  /* ── 섹션 번호 ── */
+  .sec-num { width:28px; height:28px; border-radius:50%; background:#1e40af; color:white; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sec-num.done { background:#059669; }
+
+  /* ── 자료유형 버튼 ── */
+  .type-btn { padding:9px 20px; border-radius:8px; border:2px solid #e2e8f0; background:white; color:#64748b; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .type-btn:hover:not(.active) { border-color:#bfdbfe; color:#1e40af; }
+  .type-btn.active { border-color:#1e40af; background:#eff6ff; color:#1e40af; }
+
+  /* ── 폼 ── */
+  .form-group { margin-bottom:14px; }
+  label { font-size:12px; color:#475569; font-weight:700; display:block; margin-bottom:6px; }
+  .label-req { color:#dc2626; margin-left:3px; }
+  input[type=text], input[type=date], textarea {
+    width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+    padding:10px 13px; color:#1e293b; font-size:13px; outline:none; font-family:inherit; transition:border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=date]:focus, textarea:focus { border-color:#93c5fd; background:white; }
+  textarea { min-height:80px; resize:vertical; line-height:1.6; }
+  input[type=text].error { border-color:#dc2626; }
+
+  /* ── 버튼 ── */
+  .btn-primary {
+    padding:10px 22px; border-radius:8px; border:none; font-size:13px; font-weight:700;
+    color:white; cursor:pointer; background:linear-gradient(135deg,#1e40af,#3b82f6);
+    transition:all 0.2s; box-shadow:0 2px 8px rgba(30,64,175,0.2); font-family:inherit; white-space:nowrap;
+  }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(30,64,175,0.3); }
+  .btn-secondary {
+    padding:10px 18px; border-radius:8px; border:1px solid #e2e8f0; font-size:13px;
+    font-weight:600; color:#475569; cursor:pointer; background:white; transition:all 0.15s; font-family:inherit; white-space:nowrap;
+  }
+  .btn-secondary:hover { background:#f8fafc; border-color:#bfdbfe; color:#1e40af; }
+  .btn-outline {
+    padding:8px 16px; border-radius:7px; border:1px solid #bfdbfe; font-size:12px;
+    font-weight:600; color:#1e40af; cursor:pointer; background:white; transition:all 0.15s; font-family:inherit; white-space:nowrap;
+  }
+  .btn-outline:hover { background:#eff6ff; }
+  .btn-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+  .copy-msg { font-size:11px; color:#059669; font-weight:700; margin-left:4px; }
+
+  /* ── 지시문 출력 박스 ── */
+  .prompt-box {
+    background:#1e293b; border-radius:10px; padding:18px 20px; color:#e2e8f0;
+    font-size:12px; line-height:1.75; font-family:'Consolas','Monaco',monospace;
+    white-space:pre-wrap; word-break:break-all; max-height:340px; overflow-y:auto;
+    border:1px solid #334155;
+  }
+
+  /* ── JSON 박스 ── */
+  .json-box {
+    background:#0f172a; border-radius:10px; padding:18px 20px; color:#a5f3fc;
+    font-size:12px; line-height:1.75; font-family:'Consolas','Monaco',monospace;
+    white-space:pre-wrap; word-break:break-all; max-height:420px; overflow-y:auto;
+    border:1px solid #1e293b;
+  }
+
+  /* ── 출력 규칙 목록 ── */
+  .rule-item {
+    display:flex; align-items:flex-start; gap:10px; padding:9px 0;
+    border-bottom:1px solid #f1f5f9; font-size:13px; color:#334155; line-height:1.6;
+  }
+  .rule-item:last-child { border-bottom:none; }
+  .rule-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
+
+  /* ── 매핑 탭 ── */
+  .map-tab {
+    padding:7px 18px; border-radius:7px; border:1px solid #e2e8f0; background:white;
+    color:#64748b; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit;
+  }
+  .map-tab.active { background:#1e40af; color:white; border-color:#1e40af; }
+  .map-tab:hover:not(.active) { background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
+
+  /* ── 매핑 테이블 ── */
+  .map-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .map-table th {
+    background:#f1f5f9; color:#475569; font-weight:700; padding:9px 14px;
+    text-align:left; border-bottom:2px solid #e2e8f0;
+  }
+  .map-table td { padding:9px 14px; border-bottom:1px solid #f8fafc; color:#334155; }
+  .map-table tr:last-child td { border-bottom:none; }
+  .map-table tr:hover td { background:#f8fafc; }
+  .tag-req { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:700; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .tag-opt { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+  code.fld { font-size:11.5px; background:#f1f5f9; padding:2px 7px; border-radius:4px; font-family:'Consolas','Monaco',monospace; color:#1e293b; }
+
+  /* ── 검토 결과 ── */
+  .check-item { display:flex; align-items:flex-start; gap:10px; padding:9px 14px; border-radius:8px; margin-bottom:6px; font-size:13px; line-height:1.5; }
+  .check-pass { background:#f0fdf4; border:1px solid #bbf7d0; color:#065f46; }
+  .check-warn { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+  .check-fail { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
+  .result-badge { font-size:14px; font-weight:800; padding:8px 20px; border-radius:8px; display:inline-block; margin-bottom:14px; }
+  .badge-pass { background:#dcfce7; color:#166534; border:2px solid #16a34a; }
+  .badge-warn { background:#fef9c3; color:#854d0e; border:2px solid #ca8a04; }
+  .badge-hold { background:#fee2e2; color:#991b1b; border:2px solid #dc2626; }
+
+  /* ── 안내 박스 ── */
+  .info-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; font-size:12.5px; color:#1e40af; line-height:1.7; }
+  .warn-box { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 16px; font-size:12.5px; color:#92400e; line-height:1.7; }
+
+  /* ── 그리드 ── */
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:700px) { .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ── 헤더 네비게이션 ── -->
+<div class="header">
+  <div class="logo">🤖</div>
+  <div>
+    <div class="header-title">직업훈련 뉴스 인텔리전스</div>
+    <div class="header-sub">Claude 조사 도우미 · Notion 연동 기준</div>
+  </div>
+  <div class="nav-links">
+    <a href="/" class="nav-link">📰 뉴스</a>
+    <a href="/policy.html" class="nav-link">📋 정책</a>
+    <a href="/market.html" class="nav-link">📊 시장</a>
+    <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
+    <a href="/claude_guide.html" class="nav-link active">🤖 조사도우미</a>
+  </div>
+</div>
+
+<!-- ── 메인 콘텐츠 ── -->
+<div class="main-wrap">
+
+  <!-- 상단 안내 -->
+  <div class="page-hero">
+    <h1>🤖 Claude 조사 도우미</h1>
+    <p>Claude에게 조사를 지시하고, 결과를 Notion 수집 DB에 바로 넣을 수 있는 <strong>고정 JSON 형식</strong>으로 받아보세요.<br>
+    아래 순서대로 사용하면 됩니다.</p>
+    <div class="flow-bar">
+      <span class="flow-step">① 조사 주제 입력</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">② 지시문 생성·복사</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">③ Claude에게 붙여넣기</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">④ 결과 JSON 검토</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">⑤ Notion 반영</span>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       ① 조사 실행 영역
+  ════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">
+      <div class="sec-num">1</div>
+      조사 설정
+      <span class="card-sub">— 자료유형과 주제를 입력하면 Claude 지시문을 자동으로 만들어 드립니다</span>
+    </div>
+
+    <!-- 자료유형 선택 -->
+    <div class="form-group">
+      <label>자료유형 선택 <span class="label-req">*</span></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="type-btn active" onclick="setType(this,'전체')" data-type="전체">📂 전체</button>
+        <button class="type-btn" onclick="setType(this,'정책')" data-type="정책">📋 정책</button>
+        <button class="type-btn" onclick="setType(this,'공모사업')" data-type="공모사업">💼 공모사업</button>
+        <button class="type-btn" onclick="setType(this,'뉴스')" data-type="뉴스">📰 뉴스</button>
+        <button class="type-btn" onclick="setType(this,'경쟁기관')" data-type="경쟁기관">🎯 경쟁기관</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="form-group">
+        <label for="topic">조사 주제 <span class="label-req">*</span></label>
+        <input type="text" id="topic" placeholder="예: 2026년 직업훈련 예산 확대 정책">
+      </div>
+      <div class="form-group">
+        <label for="survey-date">조사일</label>
+        <input type="date" id="survey-date">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="memo">조사 목적 또는 메모 <span style="color:#94a3b8;font-weight:400;">(선택)</span></label>
+      <textarea id="memo" placeholder="예: 5월 전략회의 자료 준비 · 공모사업 참여 검토용"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="generateAndShow()">📝 Claude 조사 지시문 생성</button>
+      <button class="btn-secondary" onclick="copyPrompt()">📋 지시문 복사</button>
+      <button class="btn-secondary" onclick="copyJsonTemplate()">📄 JSON 양식 복사</button>
+      <button class="btn-outline" onclick="scrollToSection('mapping-section')">🗂 Notion 매핑 확인 ↓</button>
+      <span id="action-msg" class="copy-msg" style="display:none;"></span>
+    </div>
+  </div>
+
+  <!-- 생성된 지시문 출력 -->
+  <div class="card" id="prompt-output-card" style="display:none;">
+    <div class="card-title">
+      <div class="sec-num done">✓</div>
+      Claude 조사 지시문
+      <span class="card-sub">— 아래 내용 전체를 복사해서 Claude 대화창에 붙여넣으세요</span>
+    </div>
+    <div class="info-box" style="margin-bottom:12px;">
+      💡 이 지시문을 그대로 Claude에게 주면, <strong>Notion에 바로 넣을 수 있는 고정 JSON</strong>으로 조사 결과를 받을 수 있습니다.
+    </div>
+    <div class="prompt-box" id="prompt-output"></div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn-primary" onclick="copyPrompt()">📋 지시문 전체 복사</button>
+      <span id="action-msg2" class="copy-msg" style="display:none;"></span>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       ② Claude 고정양식 안내
+  ════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">
+      <div class="sec-num">2</div>
+      Claude 출력 원칙
+      <span class="card-sub">— Claude가 반드시 지켜야 하는 JSON 작성 규칙입니다</span>
+    </div>
+
+    <div class="rule-item"><span class="rule-icon">📦</span><span><strong>JSON 객체 하나만 출력</strong>합니다. JSON 밖에 설명·말을 붙이지 않습니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">🗂</span><span><strong>자료유형</strong>은 정책, 공모사업, 뉴스, 경쟁기관 중 정확히 하나로만 작성합니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">🔗</span><span><strong>출처URL은 반드시 작성</strong>합니다. 공식 출처가 없으면 빈 문자열("")로 표기합니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">📅</span><span><strong>날짜는 YYYY-MM-DD 형식</strong>으로 작성합니다. (예: 2026-05-07)</span></div>
+    <div class="rule-item"><span class="rule-icon">✅</span><span><strong>검토상태 기본값은 "검토필요"</strong>로 고정합니다. 임의로 바꾸지 않습니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">🤖</span><span><strong>조사도구는 "Claude"</strong>로 고정합니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">❓</span><span>확인되지 않은 값은 <strong>빈 문자열("")</strong>로 작성합니다. 임의로 채우지 않습니다.</span></div>
+    <div class="rule-item"><span class="rule-icon">📊</span><span><strong>활용가능성·우선순위</strong>는 "상", "중", "하" 중 하나로만 작성합니다.</span></div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;">
+        📄 JSON 출력 구조 예시
+        <span style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:6px;">공모사업 1건 기준</span>
+      </div>
+      <div class="json-box" id="example-json">{
+  "조사일": "2026-05-07",
+  "조사도구": "Claude",
+  "조사주제": "직업훈련 공모사업 조사",
+  "items": [
+    {
+      "자료유형": "공모사업",
+      "제목": "예시 공모사업명",
+      "기관": "예시 기관",
+      "발표일": "2026-05-01",
+      "접수마감일": "2026-05-31",
+      "출처URL": "https://example.com/notice",
+      "원문URL": "https://example.com/file.pdf",
+      "핵심내용": "직업훈련기관을 대상으로 신규 과정 운영을 지원하는 공모사업이다.",
+      "직업훈련관련성": "국비훈련 과정개발 및 기관 운영 전략과 직접 관련된다.",
+      "활용가능성": "상",
+      "정책시사점": "",
+      "공모기회": "참여요건 확인 후 제안서 작성 여부를 검토할 수 있다.",
+      "시장변화": "",
+      "경쟁기관동향": "",
+      "권장액션": "공고문 원문 확인 후 참여 가능 여부를 1차 판단한다.",
+      "우선순위": "상",
+      "검토상태": "검토필요",
+      "검토메모": ""
+    }
+  ]
+}</div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-outline" onclick="copyExampleJson()">📋 예시 JSON 복사</button>
+        <span id="json-copy-msg" class="copy-msg" style="display:none;"></span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       ③ Notion 매핑표 요약
+  ════════════════════════════════════ -->
+  <div class="card" id="mapping-section">
+    <div class="card-title">
+      <div class="sec-num">3</div>
+      Notion 반영 기준표
+      <span class="card-sub">— Claude JSON 항목 → Notion DB 필드 연결 기준</span>
+    </div>
+    <div class="info-box" style="margin-bottom:16px;">
+      📌 Claude가 출력한 JSON 항목이 Notion DB의 어느 필드에 연결되는지 보여줍니다.
+      자료유형 탭을 선택해서 확인하세요.
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <button class="map-tab active" onclick="showMapTab(this,'정책')">📋 정책</button>
+      <button class="map-tab" onclick="showMapTab(this,'공모사업')">💼 공모사업</button>
+      <button class="map-tab" onclick="showMapTab(this,'뉴스')">📰 뉴스</button>
+      <button class="map-tab" onclick="showMapTab(this,'경쟁기관')">🎯 경쟁기관</button>
+    </div>
+
+    <div id="mapping-content"></div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       ④ 결과 검토 영역
+  ════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">
+      <div class="sec-num">4</div>
+      조사 결과 검토
+      <span class="card-sub">— Claude 결과 JSON을 붙여넣고 Notion 반영 전 필수 항목을 확인합니다</span>
+    </div>
+
+    <div class="info-box" style="margin-bottom:14px;">
+      💡 Claude가 출력한 JSON을 그대로 붙여넣으면, <strong>누락 항목·형식 오류</strong>를 자동으로 점검해 드립니다.
+      <strong>통과</strong> 판정이 나야 Notion에 반영하세요.
+    </div>
+
+    <div class="form-group">
+      <label for="result-json">Claude 조사 결과 JSON 붙여넣기 <span class="label-req">*</span></label>
+      <textarea id="result-json" style="min-height:200px;font-family:'Consolas','Monaco',monospace;font-size:12px;"
+        placeholder='Claude가 출력한 JSON을 여기 붙여넣으세요.&#10;&#10;{&#10;  "조사일": "2026-05-07",&#10;  "조사도구": "Claude",&#10;  "조사주제": "...",&#10;  "items": [...]&#10;}'
+        oninput="clearValidation()"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="validateResult()">🔍 필수 항목 확인</button>
+      <button class="btn-secondary" onclick="clearResult()">🗑 초기화</button>
+    </div>
+
+    <div id="validation-result" style="display:none;margin-top:18px;"></div>
+  </div>
+
+</div><!-- /main-wrap -->
+
+
+<script>
+/* ══════════════════════════════════════════
+   상태값
+══════════════════════════════════════════ */
+let selectedType = '전체';
+let generatedPrompt = '';
+
+/* ══════════════════════════════════════════
+   초기화
+══════════════════════════════════════════ */
+function init() {
+  // 오늘 날짜 기본값
+  const today = new Date();
+  const yyyy  = today.getFullYear();
+  const mm    = String(today.getMonth() + 1).padStart(2, '0');
+  const dd    = String(today.getDate()).padStart(2, '0');
+  document.getElementById('survey-date').value = `${yyyy}-${mm}-${dd}`;
+
+  // 매핑표 초기 렌더
+  renderMappingTable('정책');
+}
+
+/* ══════════════════════════════════════════
+   자료유형 선택
+══════════════════════════════════════════ */
+function setType(btn, type) {
+  selectedType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ══════════════════════════════════════════
+   지시문 생성
+══════════════════════════════════════════ */
+function getDateValue() {
+  return document.getElementById('survey-date').value || new Date().toISOString().slice(0,10);
+}
+
+function getTypeInstruction(type) {
+  const map = {
+    '전체': '정책, 공모사업, 뉴스, 경쟁기관 자료를 모두 조사한다. 각 항목의 자료유형을 정확히 구분해서 작성한다.',
+    '정책': '정책 자료만 조사한다. 자료유형은 반드시 "정책"으로 작성한다. 정책 발표일·핵심내용·정책시사점을 중심으로 작성한다.',
+    '공모사업': '공모사업 자료만 조사한다. 자료유형은 반드시 "공모사업"으로 작성한다. 접수마감일을 반드시 확인하고 기재한다. 공모기회·권장액션을 명확히 작성한다.',
+    '뉴스': '뉴스 자료만 조사한다. 자료유형은 반드시 "뉴스"로 작성한다. 시장변화 유형과 직업훈련 정책 연계 가능성을 핵심내용에 포함한다.',
+    '경쟁기관': '경쟁기관 자료만 조사한다. 자료유형은 반드시 "경쟁기관"으로 작성한다. 경쟁기관동향·차별화 포인트·권장액션을 중심으로 작성한다.'
+  };
+  return map[type] || map['전체'];
+}
+
+function buildJsonStructure(type, topic, date) {
+  const base = {
+    "조사일": date,
+    "조사도구": "Claude",
+    "조사주제": topic || "(조사주제 입력)",
+    "items": [buildItemTemplate(type)]
+  };
+  return JSON.stringify(base, null, 2);
+}
+
+function buildItemTemplate(type) {
+  const t = type === '전체' ? '(정책|공모사업|뉴스|경쟁기관 중 하나)' : type;
+  const obj = {
+    "자료유형": t,
+    "제목": "",
+    "기관": "",
+    "발표일": "",
+    "출처URL": "",
+    "원문URL": "",
+    "핵심내용": "",
+    "직업훈련관련성": "",
+    "활용가능성": "(상|중|하)",
+    "정책시사점": "",
+    "공모기회": "",
+    "시장변화": "",
+    "경쟁기관동향": "",
+    "권장액션": "",
+    "우선순위": "(상|중|하)",
+    "검토상태": "검토필요",
+    "검토메모": ""
+  };
+  if (type === '공모사업' || type === '전체') {
+    // 접수마감일을 발표일 뒤에 삽입
+    const result = {};
+    for (const k of Object.keys(obj)) {
+      result[k] = obj[k];
+      if (k === '발표일') result['접수마감일'] = '';
+    }
+    return result;
+  }
+  return obj;
+}
+
+function generatePrompt() {
+  const topic  = document.getElementById('topic').value.trim();
+  const date   = getDateValue();
+  const memo   = document.getElementById('memo').value.trim();
+  const type   = selectedType;
+  const typeLabel = type === '전체' ? '정책, 공모사업, 뉴스, 경쟁기관 자료' : type + ' 자료';
+
+  generatedPrompt =
+`너는 직업훈련 분야 조사 담당자다.
+아래 조사주제에 맞춰 ${typeLabel}를 조사하고 Notion 자동반영이 가능한 고정 JSON으로 작성해줘.
+
+조사주제: ${topic || '(조사주제를 입력하세요)'}
+자료유형: ${type}
+조사일: ${date}${memo ? '\n조사 목적: ' + memo : ''}
+
+자료유형별 작성 지침:
+${getTypeInstruction(type)}
+
+출력 규칙:
+- 반드시 JSON 객체 하나만 출력한다.
+- JSON 밖에 설명·말을 붙이지 않는다.
+- 날짜는 YYYY-MM-DD 형식으로 작성한다.
+- 확인되지 않은 값은 빈 문자열("")로 둔다.
+- 출처URL은 반드시 작성한다. 공식 출처가 없으면 빈 문자열("")로 둔다.
+- 검토상태는 반드시 "검토필요"로 작성한다.
+- 조사도구는 반드시 "Claude"로 작성한다.
+- 활용가능성·우선순위는 "상", "중", "하" 중 하나로 작성한다.
+
+반드시 아래 JSON 구조를 사용한다:
+${buildJsonStructure(type, topic, date)}`;
+}
+
+function generateAndShow() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) {
+    const el = document.getElementById('topic');
+    el.classList.add('error');
+    el.focus();
+    el.placeholder = '⚠️ 조사 주제를 먼저 입력해주세요';
+    setTimeout(() => { el.classList.remove('error'); el.placeholder = '예: 2026년 직업훈련 예산 확대 정책'; }, 2500);
+    return;
+  }
+  generatePrompt();
+  const card = document.getElementById('prompt-output-card');
+  document.getElementById('prompt-output').textContent = generatedPrompt;
+  card.style.display = 'block';
+  setTimeout(() => card.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+/* ══════════════════════════════════════════
+   복사 기능
+══════════════════════════════════════════ */
+function showMsg(id, msg, duration) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'inline';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display = 'none', duration || 2500);
+}
+
+function copyPrompt() {
+  generatePrompt();
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) { generateAndShow(); return; }
+  navigator.clipboard.writeText(generatedPrompt).then(() => {
+    showMsg('action-msg', '✅ 지시문 복사 완료!');
+    showMsg('action-msg2', '✅ 복사 완료!');
+  }).catch(() => showMsg('action-msg', '❌ 복사 실패 — 브라우저 권한을 확인해주세요'));
+}
+
+function copyJsonTemplate() {
+  const topic = document.getElementById('topic').value.trim();
+  const date  = getDateValue();
+  const json  = buildJsonStructure(selectedType, topic, date);
+  navigator.clipboard.writeText(json).then(() => {
+    showMsg('action-msg', '✅ JSON 양식 복사 완료!');
+  }).catch(() => showMsg('action-msg', '❌ 복사 실패'));
+}
+
+function copyExampleJson() {
+  const text = document.getElementById('example-json').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showMsg('json-copy-msg', '✅ 복사 완료!');
+  }).catch(() => showMsg('json-copy-msg', '❌ 복사 실패'));
+}
+
+function scrollToSection(id) {
+  document.getElementById(id).scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ══════════════════════════════════════════
+   Notion 매핑표
+══════════════════════════════════════════ */
+const MAPPINGS = {
+  '정책': [
+    { json:'자료유형',    notion:'자료유형 (DB 분류)',  req:true,  note:'"정책" 고정' },
+    { json:'제목',       notion:'정책명',             req:true  },
+    { json:'기관',       notion:'기관',              req:true  },
+    { json:'발표일',      notion:'발표일',             req:false },
+    { json:'핵심내용',    notion:'핵심내용',            req:true  },
+    { json:'정책시사점',   notion:'정책방향_변화',       req:false },
+    { json:'활용가능성',   notion:'활용가능성',          req:false, note:'상/중/하' },
+    { json:'직업훈련관련성',notion:'직업훈련관련성',      req:false },
+    { json:'권장액션',    notion:'권장액션',            req:false },
+    { json:'출처URL',    notion:'출처URL',             req:true  },
+    { json:'원문URL',    notion:'원문URL',             req:false },
+    { json:'검토상태',    notion:'검토상태',            req:true,  note:'"검토필요" 기본값' },
+    { json:'조사도구',    notion:'조사도구',            req:true,  note:'"Claude" 고정' },
+    { json:'검토메모',    notion:'검토메모',            req:false },
+  ],
+  '공모사업': [
+    { json:'자료유형',    notion:'자료유형 (DB 분류)',  req:true,  note:'"공모사업" 고정' },
+    { json:'제목',       notion:'사업명',             req:true  },
+    { json:'기관',       notion:'기관',              req:true  },
+    { json:'발표일',      notion:'발표일',             req:false },
+    { json:'접수마감일',   notion:'마감일',             req:true,  note:'⚠️ 공모사업 필수 확인' },
+    { json:'핵심내용',    notion:'핵심내용',            req:true  },
+    { json:'공모기회',    notion:'전략활용 (공모기회)',  req:false },
+    { json:'권장액션',    notion:'전략활용 (권장액션)',  req:false },
+    { json:'활용가능성',   notion:'참여가능성',          req:false, note:'상/중/하' },
+    { json:'우선순위',    notion:'참여우선순위',         req:false, note:'상/중/하' },
+    { json:'직업훈련관련성',notion:'직업훈련관련성',      req:false },
+    { json:'출처URL',    notion:'출처URL',             req:true  },
+    { json:'원문URL',    notion:'원문URL',             req:false },
+    { json:'검토상태',    notion:'검토상태',            req:true,  note:'"검토필요" 기본값' },
+    { json:'조사도구',    notion:'조사도구',            req:true,  note:'"Claude" 고정' },
+    { json:'검토메모',    notion:'검토메모',            req:false },
+  ],
+  '뉴스': [
+    { json:'자료유형',    notion:'자료유형 (DB 분류)',  req:true,  note:'"뉴스" 고정' },
+    { json:'제목',       notion:'기사명',             req:true  },
+    { json:'발표일',      notion:'날짜',              req:false },
+    { json:'기관',       notion:'출처 (언론사)',       req:true  },
+    { json:'핵심내용',    notion:'핵심내용',            req:true  },
+    { json:'시장변화',    notion:'시장변화_유형',        req:false },
+    { json:'활용가능성',   notion:'정책연계_가능성',     req:false, note:'상/중/하' },
+    { json:'직업훈련관련성',notion:'직업훈련관련성',      req:false },
+    { json:'권장액션',    notion:'권장액션',            req:false },
+    { json:'출처URL',    notion:'출처URL',             req:true  },
+    { json:'원문URL',    notion:'원문URL',             req:false },
+    { json:'검토상태',    notion:'검토상태',            req:true,  note:'"검토필요" 기본값' },
+    { json:'조사도구',    notion:'조사도구',            req:true,  note:'"Claude" 고정' },
+    { json:'검토메모',    notion:'검토메모',            req:false },
+  ],
+  '경쟁기관': [
+    { json:'자료유형',     notion:'자료유형 (DB 분류)',  req:true,  note:'"경쟁기관" 고정' },
+    { json:'기관',        notion:'기관명',             req:true  },
+    { json:'제목',        notion:'과정명',             req:true  },
+    { json:'핵심내용',     notion:'교육내용',            req:true  },
+    { json:'경쟁기관동향',  notion:'특징',              req:false },
+    { json:'시장변화',     notion:'차별화_포인트',        req:false },
+    { json:'권장액션',     notion:'경쟁전략_메모',        req:false },
+    { json:'활용가능성',    notion:'분석가능성',          req:false, note:'상/중/하' },
+    { json:'출처URL',     notion:'출처URL',             req:true  },
+    { json:'원문URL',     notion:'원문URL',             req:false },
+    { json:'검토상태',     notion:'검토상태',            req:true,  note:'"검토필요" 기본값' },
+    { json:'조사도구',     notion:'조사도구',            req:true,  note:'"Claude" 고정' },
+    { json:'검토메모',     notion:'검토메모',            req:false },
+  ]
+};
+
+function showMapTab(btn, type) {
+  document.querySelectorAll('.map-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMappingTable(type);
+}
+
+function renderMappingTable(type) {
+  const rows = MAPPINGS[type] || [];
+  const isGrant = (type === '공모사업');
+  document.getElementById('mapping-content').innerHTML = `
+    ${isGrant ? `<div class="warn-box" style="margin-bottom:12px;">
+      ⚠️ <strong>공모사업 주의:</strong> 접수마감일은 반드시 확인해야 합니다.
+      비어 있을 경우 Notion 반영 전 원문 공고에서 직접 확인하세요.
+    </div>` : ''}
+    <div style="overflow-x:auto;">
+    <table class="map-table">
+      <thead>
+        <tr>
+          <th>Claude JSON 항목</th>
+          <th>Notion DB 필드명</th>
+          <th>구분</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td><code class="fld">${r.json}</code></td>
+            <td><strong>${r.notion}</strong></td>
+            <td><span class="${r.req ? 'tag-req' : 'tag-opt'}">${r.req ? '필수' : '선택'}</span></td>
+            <td style="color:#64748b;font-size:12px;">${r.note || '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════
+   결과 검토 / JSON 유효성 검사
+══════════════════════════════════════════ */
+function validateResult() {
+  const raw = document.getElementById('result-json').value.trim();
+  if (!raw) {
+    alert('Claude 조사 결과 JSON을 먼저 붙여넣어 주세요.');
+    return;
+  }
+
+  let parsed = null;
+  const checks = [];
+
+  // ① JSON 형식 확인
+  try {
+    parsed = JSON.parse(raw);
+    checks.push({ ok:true, msg:'JSON 형식이 올바릅니다.' });
+  } catch (e) {
+    checks.push({ ok:false, msg:'JSON 형식 오류: ' + e.message + ' — Claude에게 "JSON만 다시 출력해줘"라고 요청해보세요.' });
+    renderValidation(checks, 'hold');
+    return;
+  }
+
+  // ② 최상위 필드
+  const dateOk = !!parsed.조사일;
+  checks.push({ ok:dateOk, msg: dateOk ? `조사일 확인: ${parsed.조사일}` : '조사일이 비어 있습니다.' });
+
+  const toolOk = parsed.조사도구 === 'Claude';
+  checks.push({
+    ok: toolOk,
+    warn: !!parsed.조사도구 && !toolOk,
+    msg: toolOk
+      ? '조사도구: Claude ✅'
+      : `조사도구 오류: "${parsed.조사도구}" → 반드시 "Claude"여야 합니다.`
+  });
+
+  const subjectOk = !!parsed.조사주제;
+  checks.push({ ok:subjectOk, msg: subjectOk ? `조사주제: "${parsed.조사주제}"` : '조사주제가 비어 있습니다.' });
+
+  const itemsOk = Array.isArray(parsed.items) && parsed.items.length > 0;
+  checks.push({ ok:itemsOk, msg: itemsOk ? `items 항목 ${parsed.items.length}건 확인` : 'items 배열이 없거나 비어 있습니다.' });
+
+  if (!itemsOk) { renderValidation(checks, 'hold'); return; }
+
+  const validTypes = ['정책', '공모사업', '뉴스', '경쟁기관'];
+  let hasError = !dateOk || !toolOk || !subjectOk;
+  let hasWarn  = (!!parsed.조사도구 && !toolOk);
+
+  parsed.items.forEach((item, idx) => {
+    const lbl = `[항목 ${idx + 1}${item.제목 ? ' · ' + String(item.제목).slice(0,20) : ''}]`;
+
+    // 자료유형
+    const typeOk = validTypes.includes(item.자료유형);
+    checks.push({
+      ok: typeOk,
+      warn: !typeOk && !!item.자료유형,
+      msg: typeOk
+        ? `${lbl} 자료유형: ${item.자료유형} ✅`
+        : `${lbl} 자료유형 오류: "${item.자료유형}" → 정책/공모사업/뉴스/경쟁기관 중 하나여야 합니다.`
+    });
+    if (!typeOk) hasError = true;
+
+    // 제목
+    const titleOk = !!item.제목;
+    checks.push({ ok:titleOk, msg: titleOk ? `${lbl} 제목 확인 완료` : `${lbl} 제목이 비어 있습니다.` });
+    if (!titleOk) hasError = true;
+
+    // 기관
+    const orgOk = !!item.기관;
+    checks.push({ ok:orgOk, warn:!orgOk, msg: orgOk ? `${lbl} 기관: ${item.기관}` : `${lbl} 기관이 비어 있습니다.` });
+    if (!orgOk) hasWarn = true;
+
+    // 핵심내용
+    const contentOk = !!item.핵심내용;
+    checks.push({ ok:contentOk, msg: contentOk ? `${lbl} 핵심내용 확인 완료` : `${lbl} 핵심내용이 비어 있습니다.` });
+    if (!contentOk) hasError = true;
+
+    // 출처URL
+    const urlOk = !!item.출처URL;
+    checks.push({
+      ok:urlOk, warn:!urlOk,
+      msg: urlOk ? `${lbl} 출처URL 확인 완료` : `${lbl} 출처URL이 비어 있습니다 — 반영 전 원문 출처를 확인하세요.`
+    });
+    if (!urlOk) hasWarn = true;
+
+    // 공모사업 전용: 접수마감일
+    if (item.자료유형 === '공모사업') {
+      const dlOk = !!item.접수마감일;
+      checks.push({
+        ok:dlOk, warn:!dlOk,
+        msg: dlOk
+          ? `${lbl} 접수마감일: ${item.접수마감일} ✅`
+          : `${lbl} ⚠️ 공모사업인데 접수마감일이 비어 있습니다 — Notion 반영 전 반드시 원문 공고에서 확인하세요!`
+      });
+      if (!dlOk) hasWarn = true;
+    }
+
+    // 검토상태
+    const reviewOk = !!item.검토상태;
+    checks.push({ ok:reviewOk, warn:!reviewOk, msg: reviewOk ? `${lbl} 검토상태: ${item.검토상태}` : `${lbl} 검토상태가 비어 있습니다.` });
+    if (!reviewOk) hasWarn = true;
+
+    // 조사도구 (items 레벨에는 없어도 되지만 있으면 확인)
+    if (item.조사도구 !== undefined) {
+      const itoolOk = item.조사도구 === 'Claude';
+      checks.push({ ok:itoolOk, warn:!itoolOk, msg: itoolOk ? `${lbl} 조사도구: Claude ✅` : `${lbl} 조사도구 오류: "${item.조사도구}"` });
+    }
+  });
+
+  const status = hasError ? 'hold' : hasWarn ? 'warn' : 'pass';
+  renderValidation(checks, status);
+}
+
+function renderValidation(checks, status) {
+  const statusMap = {
+    pass: { label:'✅ 통과 — Notion 반영 준비 완료', cls:'badge-pass' },
+    warn: { label:'⚠️ 확인 필요 — 일부 항목을 점검한 뒤 반영하세요', cls:'badge-warn' },
+    hold: { label:'🚫 반영 보류 — 필수 항목 오류를 먼저 수정하세요', cls:'badge-hold' },
+  };
+  const s = statusMap[status];
+  const el = document.getElementById('validation-result');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div><span class="result-badge ${s.cls}">${s.label}</span></div>
+    ${checks.map(c => `
+      <div class="check-item ${c.ok ? 'check-pass' : c.warn ? 'check-warn' : 'check-fail'}">
+        <span style="font-size:16px;flex-shrink:0;">${c.ok ? '✅' : c.warn ? '⚠️' : '❌'}</span>
+        <span>${c.msg}</span>
+      </div>`).join('')}`;
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function clearValidation() {
+  document.getElementById('validation-result').style.display = 'none';
+}
+
+function clearResult() {
+  document.getElementById('result-json').value = '';
+  document.getElementById('validation-result').style.display = 'none';
+}
+
+/* 시작 */
+init();
+</script>
+</body>
+</html>
