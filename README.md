@@ -17,17 +17,16 @@
 ## 구조
 
 ```
-index.html                메인 진입 페이지 (뉴스/정책/시장/경쟁/종합분석 메뉴)
-news.html / policy.html / market.html / competitor.html / analysis.html
-training_dashboard.html   훈련 대시보드
-claude_guide.html         "Claude 조사 도우미" 페이지. Claude 조사 지시문 생성,
-                           JSON 양식 복사, Notion 필드 매핑표, 결과 JSON 검증까지
-                           갖춘 완성된 클라이언트 사이드 도구(API 의존성 없음).
-                           2026-08-05: news/policy/market/competitor/analysis.html
-                           5개 페이지 nav에 링크를 추가해 정식 통합함.
-logs.html                 실행 로그 조회 페이지 (수동 저장·자동 수집 이력). 2026-08-06 추가.
-                           news/policy/market/competitor/analysis/claude_guide.html
-                           nav에 링크 통합.
+pages/                    모든 .html 페이지가 모여있는 폴더 (2026-08-06 정리)
+  index.html                메인 진입 페이지 (뉴스/정책/시장/경쟁/종합분석 메뉴)
+  news.html / policy.html / market.html / competitor.html / analysis.html
+  training_dashboard.html   훈련 대시보드
+  claude_guide.html         "Claude 조사 도우미" 페이지. Claude 조사 지시문 생성,
+                             JSON 양식 복사, Notion 필드 매핑표, 결과 JSON 검증까지
+                             갖춘 완성된 클라이언트 사이드 도구(API 의존성 없음).
+  logs.html                 실행 로그 조회 페이지 (수동 저장·자동 수집 이력)
+  ※ URL은 그대로 유지됨 — vercel.json의 rewrites가 /news.html 등 기존 경로를
+    /pages/news.html로 투명하게 연결. 북마크·nav 링크 수정 불필요.
 api/
   news.js             네이버 뉴스 검색 (NAVER_CLIENT_ID/SECRET 필요). competitor.html도 이 API를 재사용.
   policy.js           정책/공모사업 수집 (RSS 기반, category 파라미터로 필터)
@@ -39,7 +38,7 @@ api/
   cleanup-snapshots.js 1년 지난 일별 스냅샷 자동 삭제 (2026-08-06 추가)
   logs.js             실행 로그 조회 (GET)
   _lib/log.js         실행 로그 append 헬퍼 (save-snapshot.js가 사용)
-vercel.json      crons(주간 자동 수집 + 월간 정리) 설정. api/auto-collect.js는 maxDuration:60.
+vercel.json      rewrites(pages/ 폴더 URL 매핑) + crons(주간 자동 수집 + 월간 정리) 설정. api/auto-collect.js는 maxDuration:60.
 package.json     @vercel/blob(2.6.1) 의존성 포함
 ```
 

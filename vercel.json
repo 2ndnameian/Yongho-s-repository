@@ -1,5 +1,16 @@
 {
   "version": 2,
+  "rewrites": [
+    { "source": "/", "destination": "/pages/index.html" },
+    { "source": "/news.html", "destination": "/pages/news.html" },
+    { "source": "/policy.html", "destination": "/pages/policy.html" },
+    { "source": "/market.html", "destination": "/pages/market.html" },
+    { "source": "/competitor.html", "destination": "/pages/competitor.html" },
+    { "source": "/analysis.html", "destination": "/pages/analysis.html" },
+    { "source": "/training_dashboard.html", "destination": "/pages/training_dashboard.html" },
+    { "source": "/claude_guide.html", "destination": "/pages/claude_guide.html" },
+    { "source": "/logs.html", "destination": "/pages/logs.html" }
+  ],
   "crons": [
     {
       "path": "/api/cleanup-snapshots",
