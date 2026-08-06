@@ -394,6 +394,14 @@ async function runSearch(){
   const btn=document.getElementById("search-btn");
   btn.disabled=true; btn.textContent="⏳ 수집 중...";
   allResults={}; analysisMap={};
+  let previousItemKeys=null;
+  try{
+    const prevRes=await fetch(`/api/snapshot?source=policy`);
+    if(prevRes.ok){
+      const prev=await prevRes.json();
+      previousItemKeys=new Set((prev.groups||[]).flatMap(g=>g.items||[]).map(it=>it.url||it.title));
+    }
+  }catch(e){}
   const panel=document.getElementById("progress-panel");
   panel.style.display="block";
   const total=activeGroups.length+1;
@@ -453,7 +461,8 @@ async function runSearch(){
           try{ source=new URL(url || item.link).hostname.replace("www.",""); }catch{}
           const date=(()=>{try{const d=new Date(item.pubDate);return isNaN(d)?"":`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;}catch{return "";}})();
           const urgency=title.includes("긴급")||title.includes("마감")||title.includes("즉시")?"critical":title.includes("공고")||title.includes("모집")||title.includes("선정")?"high":title.includes("발표")||title.includes("시행")||title.includes("추진")?"medium":"low";
-          return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url,date,urgency,tags:[group.label]};
+          const isNew=previousItemKeys?!previousItemKeys.has(url||title):false;
+          return {id:`${group.id}-${i}-${Date.now()}`,groupId:group.id,groupLabel:group.label,groupColor:group.color,groupBg:group.bg,groupBorder:group.border,title,summary,source,url,date,urgency,tags:[group.label],isNew};
         });
         steps[gi].status="done";
       } else { allResults[group.id]=[]; steps[gi].status="error"; }
@@ -478,9 +487,11 @@ function renderResults(){
   if(el) el.textContent=`총 ${allNews.length}건 수집됨`;
   const crit=allNews.filter(n=>n.urgency==="critical").length;
   const high=allNews.filter(n=>n.urgency==="high").length;
+  const isNewCount=allNews.filter(n=>n.isNew).length;
   const analyzed=Object.keys(analysisMap).filter(k=>!analysisMap[k]?.error&&!analysisMap[k]?.loading).length;
   document.getElementById("stats-row").innerHTML=[
     {label:"전체",count:allNews.length,bg:"#f0fdf4",border:"#bbf7d0",color:"#059669",icon:"📋"},
+    {label:"신규",count:isNewCount,bg:"#ecfdf5",border:"#a7f3d0",color:"#059669",icon:"🆕"},
     {label:"긴급",count:crit,bg:"#fef2f2",border:"#fecaca",color:"#dc2626",icon:"🔴"},
     {label:"주의",count:high,bg:"#fffbeb",border:"#fde68a",color:"#d97706",icon:"🟡"},
     {label:"분석완료",count:analyzed,bg:"#eff6ff",border:"#bfdbfe",color:"#1d4ed8",icon:"🤖"},
@@ -527,6 +538,7 @@ function renderNewsCard(news){
     <div class="news-header" style="background:${u.bg};">
       <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
         <span class="urgency-badge" style="background:white;border:1px solid ${u.border};color:${u.text};">${u.label}</span>
+        ${news.isNew?`<span style="font-size:10px;font-weight:700;color:#059669;background:#ecfdf5;border:1px solid #a7f3d0;padding:2px 7px;border-radius:4px;">🆕 NEW</span>`:""}
         <span style="font-size:11px;color:#64748b;">📅 ${news.date}</span>
         <span style="font-size:11px;color:#94a3b8;">· ${news.source}</span>
         ${news.url
