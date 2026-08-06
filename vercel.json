@@ -4,6 +4,15 @@
     {
       "path": "/api/cleanup-snapshots",
       "schedule": "0 3 1 * *"
+    },
+    {
+      "path": "/api/auto-collect",
+      "schedule": "0 16 * * 5"
     }
-  ]
+  ],
+  "functions": {
+    "api/auto-collect.js": {
+      "maxDuration": 60
+    }
+  }
 }
