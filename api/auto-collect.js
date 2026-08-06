@@ -183,12 +183,12 @@ export default async function handler(req, res) {
       collectNews(base), collectPolicy(base), collectMarket(base), collectCompetitor(base),
     ]);
 
-    const results = await Promise.all([
-      saveSnapshot(base, newsData),
-      saveSnapshot(base, policyData),
-      saveSnapshot(base, marketData),
-      saveSnapshot(base, competitorData),
-    ]);
+    // 순차 저장: 병렬로 호출하면 execution-log.json에 대한 동시 read-modify-write가
+    // 서로를 덮어써 일부 소스의 로그 기록이 유실된다.
+    const results = [];
+    for (const data of [newsData, policyData, marketData, competitorData]) {
+      results.push(await saveSnapshot(base, data));
+    }
 
     res.status(200).json({ ok: true, results });
   } catch (e) {
