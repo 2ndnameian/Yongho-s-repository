@@ -1,4 +1,4 @@
-import { list } from "@vercel/blob";
+import { get } from "@vercel/blob";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -13,11 +13,12 @@ export default async function handler(req, res) {
   const pathname = `snapshots/${source}/${filename}`;
 
   try {
-    const { blobs } = await list({ prefix: pathname, limit: 1 });
-    const blob = blobs.find(b => b.pathname === pathname);
-    if (!blob) return res.status(404).json({ error: "스냅샷을 찾을 수 없습니다" });
+    const result = await get(pathname, { access: "private" });
+    if (!result || result.statusCode !== 200) {
+      return res.status(404).json({ error: "스냅샷을 찾을 수 없습니다" });
+    }
 
-    const response = await fetch(blob.url);
+    const response = new Response(result.stream);
     const data = await response.json();
     res.status(200).json(data);
   } catch (e) {

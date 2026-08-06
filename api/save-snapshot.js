@@ -20,13 +20,13 @@ export default async function handler(req, res) {
 
     const [dated, latest] = await Promise.all([
       put(`snapshots/${source}/${date}.json`, json, {
-        access: "public",
+        access: "private",
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: "application/json",
       }),
       put(`snapshots/${source}/latest.json`, json, {
-        access: "public",
+        access: "private",
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: "application/json",
