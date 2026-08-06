@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실행 로그</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans KR','Malgun Gothic',sans-serif; background:#f1f5f9; color:#1e293b; }
+  .header { background:#1e293b; padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,0.20); }
+  .logo { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .header-title { font-size:15px; font-weight:800; color:white; }
+  .header-sub { font-size:11px; color:#94a3b8; }
+  .nav-links { margin-left:auto; display:flex; gap:4px; flex-wrap:wrap; }
+  .nav-link { font-size:12px; color:#cbd5e1; text-decoration:none; padding:6px 10px; border-radius:6px; }
+  .nav-link:hover { background:rgba(255,255,255,0.08); }
+  .nav-link.active { background:#3b82f6; color:white; font-weight:700; }
+  .main { max-width:960px; margin:24px auto; padding:0 20px 40px; }
+  .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; }
+  .card h1 { font-size:16px; margin-bottom:4px; }
+  .card p { font-size:12px; color:#64748b; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #f1f5f9; }
+  th { color:#64748b; font-weight:700; background:#f8fafc; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:700; }
+  .badge.auto { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
+  .badge.manual { background:#f0fdf4; color:#059669; border:1px solid #bbf7d0; }
+  .badge.ok { background:#ecfdf5; color:#059669; }
+  .badge.fail { background:#fef2f2; color:#dc2626; }
+  .empty { text-align:center; padding:40px 0; color:#94a3b8; font-size:13px; }
+  .refresh-btn { font-size:12px; padding:6px 14px; background:#1e293b; color:white; border:none; border-radius:6px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">🪵</div>
+  <div>
+    <div class="header-title">실행 로그</div>
+    <div class="header-sub">수집·저장 실행 이력</div>
+  </div>
+  <div class="nav-links">
+    <a href="/" class="nav-link">🏠 홈</a>
+    <a href="/news.html" class="nav-link">📰 뉴스</a>
+    <a href="/policy.html" class="nav-link">📋 정책</a>
+    <a href="/market.html" class="nav-link">📊 시장</a>
+    <a href="/competitor.html" class="nav-link">🎯 경쟁</a>
+    <a href="/analysis.html" class="nav-link">🧠 종합분석</a>
+    <a href="/claude_guide.html" class="nav-link">🤖 조사도우미</a>
+    <a href="/training_dashboard.html" class="nav-link">📈 훈련성과</a>
+    <a href="/logs.html" class="nav-link active">🪵 실행 로그</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="card">
+    <h1>수집·저장 실행 이력</h1>
+    <p>수동 저장("☁️ 서버에 저장")과 매주 토요일 자동 수집(cron) 실행 기록입니다. 최근 200건까지 보관됩니다.</p>
+    <button class="refresh-btn" onclick="load()">🔄 새로고침</button>
+    <div id="table-wrap" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<script>
+function fmt(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("ko-KR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+  } catch { return iso; }
+}
+const SOURCE_LABEL = { news:"📰 뉴스", policy:"📋 정책", market:"📊 시장", competitor:"🎯 경쟁" };
+
+async function load() {
+  const wrap = document.getElementById("table-wrap");
+  wrap.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  try {
+    const res = await fetch("/api/logs");
+    const entries = await res.json();
+    if (!Array.isArray(entries) || entries.length === 0) {
+      wrap.innerHTML = `<div class="empty">아직 기록된 실행 로그가 없습니다.</div>`;
+      return;
+    }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>시각</th><th>소스</th><th>트리거</th><th>수집 건수</th><th>상태</th></tr></thead>
+      <tbody>${entries.map(e => `
+        <tr>
+          <td>${fmt(e.timestamp)}</td>
+          <td>${SOURCE_LABEL[e.source] || e.source}</td>
+          <td><span class="badge ${e.trigger === "auto" ? "auto" : "manual"}">${e.trigger === "auto" ? "자동" : "수동"}</span></td>
+          <td>${e.ok ? (e.itemCount ?? "-") + "건" : "-"}</td>
+          <td>${e.ok ? `<span class="badge ok">✅ 성공</span>` : `<span class="badge fail" title="${e.error || ""}">❌ 실패</span>`}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  } catch (e) {
+    wrap.innerHTML = `<div class="empty">불러오기 실패: ${e.message}</div>`;
+  }
+}
+load();
+</script>
+</body>
+</html>

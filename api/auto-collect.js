@@ -157,6 +157,7 @@ async function saveSnapshot(base, payload) {
   const from = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const body = {
     ...payload,
+    trigger: "auto",
     collectedAt: now.toISOString(),
     period: { preset: "7d", from: from.toISOString(), to: now.toISOString() },
     totalCount: (payload.groups || payload.orgs || []).flatMap(g => g.items || []).length,

@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { appendLog } from "./_lib/log.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -33,8 +34,12 @@ export default async function handler(req, res) {
       }),
     ]);
 
+    const itemCount = data.totalCount ?? (data.groups || data.orgs || []).flatMap(g => g.items || []).length;
+    await appendLog({ source, trigger: data.trigger === "auto" ? "auto" : "manual", itemCount, ok: true });
+
     res.status(200).json({ ok: true, source, date, url: dated.url, latestUrl: latest.url });
   } catch (e) {
+    await appendLog({ source: req.body?.source || "unknown", trigger: req.body?.trigger === "auto" ? "auto" : "manual", ok: false, error: e.message }).catch(() => {});
     res.status(500).json({ error: e.message });
   }
 }
