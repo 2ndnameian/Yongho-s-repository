@@ -4,6 +4,8 @@
  * 그대로 서버에서 재현해 사람이 버튼을 누르지 않아도 최신 스냅샷이 쌓이게 한다.
  */
 
+import { fetchWork24Courses } from "./_lib/work24.js";
+
 const stripTags = (s) => (s || "").replace(/<[^>]+>/g, "");
 const cleanUrl = (originallink, link) =>
   (originallink || link || "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
@@ -76,6 +78,20 @@ async function safeJson(res) {
   try { const d = await res.json(); return Array.isArray(d) ? d : []; } catch { return []; }
 }
 
+// format=full 응답({ items, feedErrors })을 읽는다. 배열이 오면 items로 감싸 하위 호환을 유지한다.
+async function safeObj(res) {
+  if (!res.ok) return { items: [], feedErrors: [] };
+  try {
+    const d = await res.json();
+    if (Array.isArray(d)) return { items: d, feedErrors: [] };
+    return { items: d.items || [], feedErrors: d.feedErrors || [] };
+  } catch { return { items: [], feedErrors: [] }; }
+}
+
+// 기관명 한 단어로만 검색하면 동명이의 기사(연예·게임 등)가 섞인다. 교육 맥락어로 걸러낸다.
+const ORG_CONTEXT = ["교육","훈련","과정","수강","취업","개발자","아카데미","캠퍼스","부트캠프",
+                     "수료","IT","코딩","강의","커리큘럼","학원","인재","채용연계","국비","스쿨"];
+
 async function collectNews(base) {
   const groups = await Promise.all(NEWS_GROUPS.map(async (group) => {
     const res = await fetch(`${base}/api/news?keywords=${encodeURIComponent(group.keywords.slice(0, 6).join(","))}`);
@@ -98,9 +114,15 @@ async function collectNews(base) {
 }
 
 async function collectPolicy(base) {
+  const feedErrors = [];
   const groups = await Promise.all(POLICY_GROUPS.map(async (group) => {
-    const res = await fetch(`${base}/api/policy?category=${group.id}`);
-    const items = (await safeJson(res)).slice(0, 10).map((item, i) => {
+    // format=full 이어야 죽은 피드 정보(feedErrors)가 함께 온다.
+    const res = await fetch(`${base}/api/policy?category=${group.id}&format=full`);
+    const payload = await safeObj(res);
+    if (Array.isArray(payload.feedErrors)) {
+      for (const err of payload.feedErrors) feedErrors.push({ ...err, category: group.id });
+    }
+    const items = (payload.items || []).slice(0, 10).map((item, i) => {
       const title = stripTags(item.title || "");
       const summary = stripTags(item.description || "");
       const url = cleanUrl(item.originallink, item.link);
@@ -115,11 +137,15 @@ async function collectPolicy(base) {
     });
     return { id: group.id, label: group.label, items };
   }));
-  return { source: "policy", groups };
+  return { source: "policy", groups, feedErrors };
 }
 
 async function collectMarket(base) {
-  const groups = await Promise.all(MARKET_GROUPS.map(async (group) => {
+  // 15개 그룹을 동시 발사하면 각 호출이 네이버 API를 1회씩 때려 429가 난다(실측 2026-09-23).
+  // market.js에는 재시도가 없어 429가 그대로 빈 그룹이 되므로 순차 호출한다.
+  const groups = [];
+  for (const group of MARKET_GROUPS) {
+    groups.push(await (async () => {
     const res = await fetch(`${base}/api/market?category=${group.id}`);
     const items = (await safeJson(res)).slice(0, 10).map((item, i) => {
       const title = stripTags(item.title || "");
@@ -134,22 +160,50 @@ async function collectMarket(base) {
         title, summary, source, url, date: fmtDate(item.pubDate), urgency, tags: [group.label] };
     });
     return { id: group.id, label: group.label, items };
-  }));
+    })());
+    await new Promise((r) => setTimeout(r, 150));
+  }
   return { source: "market", groups: groups.filter(g => g.items.length > 0) };
 }
 
 async function collectCompetitor(base) {
-  const orgs = await Promise.all(ORGS.map(async (org) => {
-    const res = await fetch(`${base}/api/news?keywords=${encodeURIComponent(org.name)}`);
-    const items = (await safeJson(res)).slice(0, 5).map((it) => ({
-      title: stripTags(it.title || ""),
-      link: cleanUrl(it.originallink, it.link),
-      pub: fmtDate(it.pubDate),
-      desc: stripTags(it.description || "").slice(0, 80),
-    }));
-    return { id: org.id, name: org.name, items };
-  }));
-  return { source: "competitor", orgs };
+  // 31개 기관을 동시에 발사하면 네이버 429가 대량으로 난다(실측 2026-09-23). 순차 호출한다.
+  const orgs = [];
+  for (const org of ORGS) {
+    orgs.push(await (async () => {
+    // 구문검색(따옴표)으로 1차 좁히고, 기관명 포함 + 교육 맥락어 조건으로 오탐을 걸러낸다.
+    const res = await fetch(`${base}/api/news?keywords=${encodeURIComponent(`"${org.name}"`)}`);
+    const items = (await safeJson(res))
+      .map((it) => ({
+        title: stripTags(it.title || ""),
+        link: cleanUrl(it.originallink, it.link),
+        pub: fmtDate(it.pubDate),
+        desc: stripTags(it.description || "").slice(0, 80),
+        _hay: stripTags(`${it.title || ""} ${it.description || ""}`),
+      }))
+      .filter((it) => it._hay.includes(org.name) && ORG_CONTEXT.some((k) => it._hay.includes(k)))
+      .slice(0, 5)
+      .map(({ _hay, ...rest }) => rest);
+      return { id: org.id, name: org.name, items };
+    })());
+  }
+
+  // 고용24 실제 개설 과정 병합 — 뉴스 언급보다 경쟁 분석에 직접 쓰이는 데이터다.
+  // 기관 수가 100개를 넘으므로 기존 경쟁기관 명단과 겹치는 곳을 먼저 넣고, 나머지는 과정 수 상위로 채운다.
+  const { orgs: w24Orgs, errors: work24Errors, stats: work24Stats } = await fetchWork24Courses({ days: 7 });
+  const knownNames = ORGS.map((o) => o.name);
+  const isKnown = (name) => knownNames.some((k) => name.includes(k) || k.includes(name));
+  const ranked = [...w24Orgs].sort((a, b) => {
+    const ka = isKnown(a.name) ? 1 : 0;
+    const kb = isKnown(b.name) ? 1 : 0;
+    if (ka !== kb) return kb - ka;
+    return b.items.length - a.items.length;
+  });
+  for (const o of ranked.slice(0, 40)) {
+    orgs.push({ id: `work24-${o.name}`, name: `[고용24] ${o.name}`, items: o.items.slice(0, 5) });
+  }
+
+  return { source: "competitor", orgs, work24Errors, work24Stats };
 }
 
 async function saveSnapshot(base, payload) {

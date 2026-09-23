@@ -1,10 +1,12 @@
+import { searchNewsAll, hasNaverKeys } from "./_lib/naver.js";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { category, keywords } = req.query;
+  const { category, keywords, format } = req.query;
 
   const CATEGORY_KEYWORDS = {
     org_large:     ["직업훈련기관 신규과정","훈련기관 확장","훈련기관 협약 2026","직업훈련 과정 개설 2026"],
@@ -28,36 +30,65 @@ export default async function handler(req, res) {
     ? keywords.split(",").map(k=>k.trim()).filter(Boolean)
     : (CATEGORY_KEYWORDS[category] || CATEGORY_KEYWORDS.trend_digital);
 
-  const query = kwList.slice(0,3).join(" ");
+  if (!hasNaverKeys()) {
+    const err = { error: "NAVER_CLIENT_ID/SECRET 미설정" };
+    return res.status(500).json(format === "full" ? { items: [], errors: [err] } : []);
+  }
+
   const now   = new Date();
   const start = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
+  const decodeEntities = (s) => (s || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
+
+  const titleKey = (s) => decodeEntities(s || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[^0-9A-Za-z가-힣]/g, "")
+    .slice(0, 30);
+
   try {
-    const url = `https://openapi.naver.com/v1/search/news.json`
-      + `?query=${encodeURIComponent(query)}`
-      + `&display=30`
-      + `&sort=date`;
+    // 키워드를 공백으로 이어 붙이면 네이버가 AND로 처리해 최근 기사가 거의 안 걸린다.
+    // (실측 2026-09-23: 3개 결합 질의는 7일 내 2건, 개별 질의는 각 19~30건)
+    const { results, errors } = await searchNewsAll(kwList.slice(0, 4), { display: 30 });
 
-    const response = await fetch(url, {
-      headers: {
-        "X-Naver-Client-Id":     process.env.NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET,
-      },
-    });
+    const seenLink  = new Set();
+    const seenTitle = new Set();
+    const merged = [];
 
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    const data = await response.json();
-
-    // 7일 필터 엄격 적용
-    const filtered = (data.items || []).filter(item => {
-      try {
+    for (const { keyword, items } of results) {
+      for (const item of items) {
         const pub = new Date(item.pubDate);
-        return !isNaN(pub) && pub >= start && pub <= now;
-      } catch { return false; }
-    });
+        if (isNaN(pub) || pub < start || pub > now) continue;
 
-    res.status(200).json(filtered.slice(0, 8));
+        const link = (item.originallink || item.link || "").trim();
+        const tkey = titleKey(item.title);
+        if (link && seenLink.has(link)) continue;
+        if (tkey && seenTitle.has(tkey)) continue;
+        if (link) seenLink.add(link);
+        if (tkey) seenTitle.add(tkey);
+
+        merged.push({
+          ...item,
+          title:       decodeEntities(item.title),
+          description: decodeEntities(item.description),
+          keyword,
+        });
+      }
+    }
+
+    merged.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    const top = merged.slice(0, 8);
+
+    // 기존 호출부(market.html, auto-collect)는 배열을 기대하므로 format=full일 때만 래핑한다.
+    if (format === "full") return res.status(200).json({ items: top, errors });
+    res.status(200).json(top);
   } catch(e) {
+    if (format === "full") return res.status(500).json({ items: [], errors: [{ error: e.message }] });
     res.status(500).json({ error: e.message });
   }
 }
