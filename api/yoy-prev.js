@@ -28,12 +28,16 @@ export default async function handler(req, res) {
 
     if (req.method === "POST") {
       const body = req.body || {};
-      if (!Array.isArray(body.rows) || body.rows.length === 0) {
-        return res.status(400).json({ error: "rows(전기 지역·직종 배열)가 필요합니다" });
+      const hasRows = Array.isArray(body.rows) && body.rows.length > 0;
+      const hasGroups = Array.isArray(body.groups) && body.groups.length > 0;
+      if (!hasRows && !hasGroups) {
+        return res.status(400).json({ error: "rows(집계표) 또는 groups(원본 집계) 중 하나가 필요합니다" });
       }
-      // 형식 검사: 한글 시도명 + 성과 값이 있는 행이 하나도 없으면 전기 자료로 보지 않는다
-      const valid = body.rows.filter(p => p && /[가-힣]/.test(String(p.region || "")) &&
-        ["score", "cnt", "complete", "emp_rate"].some(k => p[k] != null));
+      // 형식 검사: 한글 시도명 + 성과 값이 있는 항목이 하나도 없으면 전기 자료로 보지 않는다
+      const valid = hasGroups
+        ? body.groups.filter(g => g && /[가-힣]/.test(String(g.s || "")) && Number(g.rows) > 0)
+        : body.rows.filter(p => p && /[가-힣]/.test(String(p.region || "")) &&
+            ["score", "cnt", "complete", "emp_rate"].some(k => p[k] != null));
       if (!valid.length) {
         return res.status(400).json({ error: "전기 형식이 아닙니다(지역·직종 성과 값 없음). 저장하지 않았습니다" });
       }
@@ -54,7 +58,7 @@ export default async function handler(req, res) {
         fileName: String(body.fileName || ""),
         sheetName: String(body.sheetName || ""),
         registeredAt: new Date().toISOString(),
-        rows: body.rows,
+        ...(hasGroups ? { groups: body.groups } : { rows: body.rows }),
       };
       await put(CURRENT, JSON.stringify(data), {
         access: "private",
@@ -62,7 +66,7 @@ export default async function handler(req, res) {
         allowOverwrite: true,
         contentType: "application/json",
       });
-      return res.status(200).json({ ok: true, count: data.rows.length, registeredAt: data.registeredAt });
+      return res.status(200).json({ ok: true, count: (data.groups || data.rows).length, registeredAt: data.registeredAt });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

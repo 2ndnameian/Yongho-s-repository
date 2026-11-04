@@ -778,15 +778,20 @@ function handleYoyFile(file) {
   if (!file) return;
   const reader = new FileReader();
   const beforePrev = YOY_PREV;
+  const beforeGroups = YOY_PREV_GROUPS;
   const beforeLabel = document.getElementById('yoyLabelPrev').value;
   reader.onload = e => {
     try {
-      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
       const sheetName = wb.SheetNames.find(s => s.includes('전년대비'))
         || wb.SheetNames.find(s => s.includes('직종별'));
+      // 고용24_크롤링 (원본-데이터) 파일: '통합추가본' 탭에서 전기 기간 종료분을 직접 집계
+      const rawSheet = !sheetName && wb.SheetNames.find(s => s.includes('통합추가본'));
+      if (rawSheet) { registerPrevFromRaw(wb, rawSheet, file); return; }
       if (!sheetName) throw new Error(
         `전기 형식이 아닙니다 (탭 목록: ${wb.SheetNames.join(', ')}). ` +
-        `'전년대비' 또는 '직종별' 탭이 있는 지역·직종 집계표를 올려주세요. 등록하지 않았습니다.`);
+        `'통합추가본'(원본-데이터), '전년대비' 또는 '직종별' 탭이 있는 파일을 올려주세요. 등록하지 않았습니다.`);
+      YOY_PREV_GROUPS = null;
       const ws  = wb.Sheets[sheetName];
       const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
       let dataStart = -1, hdrIdx = -1;
@@ -862,6 +867,7 @@ function handleYoyFile(file) {
       saveYoyPrev(file.name, sheetName);
     } catch(err) {
       YOY_PREV = beforePrev;
+      YOY_PREV_GROUPS = beforeGroups;
       document.getElementById('yoyLabelPrev').value = beforeLabel;
       syncYoyCurrLabel();
       document.getElementById('yoyFileName').textContent = `❌ ${err.message}`;
@@ -869,6 +875,84 @@ function handleYoyFile(file) {
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ── 원본-데이터 파일로 전기 등록 ────────────────────────────
+//    기관×직종×유형 단위 합계(YOY_PREV_GROUPS)로 보관하고, 전년 대비를 볼 때마다
+//    현재 화면 필터(훈련유형, 국기직종명, NCS)를 똑같이 적용해 다시 집계한다.
+//    집계 방식은 calcAggByInst(당기)와 동일: 기관별 지표 → 기관 평균.
+let YOY_PREV_GROUPS = null;
+const GROUP_FIELDS = ['rows','q','cf','cp','em','ss','sn','he'];
+
+function registerPrevFromRaw(wb, sheetName, file) {
+  const R = parseRows(XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null }));
+  // 기준연도: 파일명의 'AA~BB'(종료 AA-BB년) → (BB+1)년 운영성과, 없으면 자료의 최종 종료연도+1
+  const m = file.name.match(/(\d{2})\s*~\s*(\d{2})/);
+  let yy = m ? parseInt(m[2]) + 1 : null;
+  if (!yy) {
+    const ends = R.map(r => r.end).filter(Boolean).map(d => parseInt(fmtDate(d).slice(2, 4)));
+    if (ends.length) yy = Math.max(...ends) + 1;
+  }
+  if (!yy) throw new Error('자료에서 훈련종료일을 찾지 못했습니다. 등록하지 않았습니다.');
+  const pad = n => String(n).padStart(2, '0');
+  const from = `20${pad(yy-2)}-01-01`, to = `20${pad(yy-1)}-12-31`;
+  const rs = R.filter(r => r.end && fmtDate(r.end) >= from && fmtDate(r.end) <= to);
+  const g = {};
+  rs.forEach(r => {
+    const n = normalizeNcsName(r.ncs_name || '');
+    if (!r.sido || !n) return;
+    const k = [r.type, r.sido, n, r.kdc_name || '', r.ncs_code, r.inst].join('|');
+    const o = g[k] || (g[k] = { t: r.type, s: r.sido, n, k: r.kdc_name || '', c: r.ncs_code, i: r.inst,
+                                rows: 0, q: 0, cf: 0, cp: 0, em: 0, ss: 0, sn: 0, he: 0 });
+    o.rows++; o.q += r.quota || 0; o.cf += r.confirm || 0; o.cp += r.complete || 0; o.em += r.employ || 0;
+    if (r.satisfy != null) { o.ss += r.satisfy; o.sn++; }
+    if (r.has_emp) o.he++;
+  });
+  const groups = Object.values(g);
+  if (!groups.some(x => /[가-힣]/.test(x.s))) throw new Error(
+    `${from} ~ ${to} 종료 과정이 없습니다. 전기 기간 자료가 아니어서 등록하지 않았습니다.`);
+  YOY_PREV_GROUPS = groups;
+  document.getElementById('yoyLabelPrev').value = yy + '년';
+  syncYoyCurrLabel();
+  refreshYoyPrev();
+  document.getElementById('yoyFileName').textContent =
+    `✅ ${file.name} | ${sheetName} | ${from.slice(0,7)}~${to.slice(0,7)} 종료 ${rs.length.toLocaleString()}건 (${groups.length.toLocaleString()}개 기관·직종 단위)`;
+  document.getElementById('yoyStatus').textContent = '⏳ 서버에 전기 자료 등록 중...';
+  renderYoY();
+  saveYoyPrev(file.name, sheetName);
+}
+
+function refreshYoyPrev() {
+  if (!YOY_PREV_GROUPS) return;
+  const allTypes = document.querySelectorAll('#typeFilter input');
+  const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
+  const selNcs = window.selectedNcsCodes || new Set();
+  const selKdc = window.selectedKdcNames || new Set();
+  const gs = YOY_PREV_GROUPS.filter(x =>
+    (!allTypes.length || selTypes.includes(x.t)) &&
+    (selNcs.size === 0 || selNcs.has(x.c)) &&
+    (selKdc.size === 0 || (x.k && selKdc.has(x.k))));
+  const bySN = {};
+  gs.forEach(x => {
+    const key = x.s + '|||' + x.n;
+    const m = bySN[key] || (bySN[key] = { region: x.s, ncs: x.n, inst: {} });
+    const a = m.inst[x.i] || (m.inst[x.i] = { rows: 0, q: 0, cf: 0, cp: 0, em: 0, ss: 0, sn: 0, he: 0 });
+    GROUP_FIELDS.forEach(f => { a[f] += x[f] || 0; });
+  });
+  YOY_PREV = Object.values(bySN).map(m => {
+    const insts = Object.values(m.inst).map(a => {
+      const er  = a.cp > 0 ? a.em / a.cp : null;
+      const sat = a.sn ? a.ss / a.sn : null;
+      const sS  = sat != null && a.he > 0 ? (sat / 100) * 20 : null;
+      const sE  = er  != null && a.he > 0 ? er * 40 : null;
+      return Object.assign({}, a, { er, sat, score: sS != null && sE != null ? sS + sE : null });
+    });
+    const avgOf = k => { const v = insts.map(x => x[k]).filter(x => x != null); return v.length ? v.reduce((p, c) => p + c, 0) / v.length : null; };
+    const sum = k => insts.reduce((p, x) => p + x[k], 0);
+    const cf = sum('cf'), cp = sum('cp');
+    return { region: m.region, ncs: m.ncs, score: avgOf('score'), cnt: sum('rows'), sat: avgOf('sat'),
+             recruit: cf, complete: cp, employ: sum('em'), comp_rate: cf > 0 ? cp / cf : null, emp_rate: avgOf('er') };
+  });
 }
 
 // ── 전기 등록값 서버 저장·불러오기 (api/yoy-prev.js) ────────
@@ -881,7 +965,8 @@ async function saveYoyPrev(fileName, sheetName) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         label: document.getElementById('yoyLabelPrev').value || '',
-        fileName, sheetName, rows: YOY_PREV,
+        fileName, sheetName,
+        ...(YOY_PREV_GROUPS ? { groups: YOY_PREV_GROUPS } : { rows: YOY_PREV }),
       }),
     });
     const result = await res.json();
@@ -897,8 +982,13 @@ async function loadYoyPrev() {
     const res = await fetch('/api/yoy-prev');
     if (!res.ok) return;
     const data = await res.json();
-    if (!Array.isArray(data.rows) || !data.rows.length) return;
-    YOY_PREV = data.rows;
+    if (Array.isArray(data.groups) && data.groups.length) {
+      YOY_PREV_GROUPS = data.groups;
+      refreshYoyPrev();
+    } else if (Array.isArray(data.rows) && data.rows.length) {
+      YOY_PREV_GROUPS = null;
+      YOY_PREV = data.rows;
+    } else return;
     if (data.label) { document.getElementById('yoyLabelPrev').value = data.label; syncYoyCurrLabel(); }
     YOY_SOURCE = `서버 등록값 (${data.fileName || '파일명 없음'}, ${new Date(data.registeredAt).toLocaleDateString('ko-KR')} 등록)`;
     const el = document.getElementById('yoyFileName');
@@ -964,6 +1054,7 @@ function buildCurrMap() {
 function buildPrevKey(r) { return r.region + '|||' + r.ncs; }
 
 function renderYoY() {
+  refreshYoyPrev();
   const nP = yoyYear('yoyLabelPrev'), nC = yoyYear('yoyLabelCurr');
   const labelPrev = (document.getElementById('yoyLabelPrev').value || '25년') + ' 운영성과' + (nP ? `(${yoyPeriodText(nP)})` : '');
   const labelCurr = (document.getElementById('yoyLabelCurr').value || '26년') + ' 운영성과' + (nC ? `(${yoyPeriodText(nC)})` : '');
@@ -1099,6 +1190,7 @@ function exportYoyExcel() {
   var lP=document.getElementById('yoyLabelPrev').value||'25년';
   var lC=document.getElementById('yoyLabelCurr').value||'26년';
   var today=fmtDate(new Date()), wb=XLSX.utils.book_new();
+  refreshYoyPrev();
   var cMap=buildCurrMap(), cSi=new Set(yoyCurrRows().map(function(r){return r.sido;}));
   var S=xlsxStyles();
   var rows=YOY_PREV.filter(function(p){return cSi.has(p.region);})
@@ -1864,6 +1956,7 @@ function exportAnalysis2Excel() {
     ws3['!cols'] = [{wch:7},{wch:14},{wch:14},{wch:20},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:7},{wch:9},{wch:9},{wch:9},{wch:11},{wch:11},{wch:9}];
     XLSX.utils.book_append_sheet(wb, ws3, '③지역별기관상세');
 
+        refreshYoyPrev();
         if (YOY_PREV.length > 0) {
       var lP=document.getElementById('yoyLabelPrev').value||'25년';
       var lC=document.getElementById('yoyLabelCurr').value||'26년';
