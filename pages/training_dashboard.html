@@ -169,7 +169,7 @@
     <div class="icon">📁</div>
     <strong>엑셀 파일을 업로드하세요</strong>
     <p>클릭하거나 파일을 여기에 드래그하세요</p>
-    <p style="margin-top:8px;font-size:12px;color:var(--text3)">지원 형식: .xlsx · 시트명 <b>통합추가본_260220</b> 포함</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--text3)">지원 형식: .xlsx / 고용24_크롤링 <b>(원본-데이터)_전국 운영현황</b> 파일 / <b>'통합추가본'</b> 탭 자동 인식</p>
     <input type="file" id="fileInput" accept=".xlsx" onchange="handleFile(this.files[0])">
   </div>
   <div class="loading" id="loading">
@@ -179,6 +179,7 @@
 </div>
 
 <div class="main" id="mainSection">
+  <div id="uploadInfo" style="font-size:12px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;margin-bottom:12px;"></div>
 
   <div class="filter-panel">
     <h3>🔍 필터</h3>
@@ -583,6 +584,8 @@ function handleFile(file) {
       const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
       RAW = parseRows(rows);
       initUI();
+      document.getElementById('uploadInfo').textContent =
+        `📂 당기 자료: ${file.name} / 탭: ${sheetName} / ${RAW.length.toLocaleString()}건`;
     } catch(err) {
       alert('파일 파싱 오류: ' + err.message);
       document.getElementById('loading').style.display = 'none';
@@ -694,7 +697,7 @@ function initUI() {
   // 전년도 고정값 로드됨 표시
   const yoyFnEl = document.getElementById('yoyFileName');
   if (yoyFnEl && YOY_PREV.length > 0) {
-    yoyFnEl.textContent = '📌 기본값 적용 중 (25년 · ' + YOY_PREV.length + '개 지역·직종) · 파일 업로드 시 덮어쓰기';
+    yoyFnEl.textContent = '📌 ' + YOY_SOURCE + ' · ' + YOY_PREV.length + '개 지역·직종 · 파일 업로드 시 새로 등록';
     yoyFnEl.style.color = 'var(--accent2)';
   }
 }
@@ -811,14 +814,51 @@ function handleYoyFile(file) {
       }
       document.getElementById('yoyFileName').textContent =
         `✅ ${file.name} | ${sheetName} | ${YOY_PREV.length}개 지역·직종`;
-      document.getElementById('yoyStatus').textContent = '';
+      document.getElementById('yoyStatus').textContent = '⏳ 서버에 전기 자료 등록 중...';
       renderYoY();
+      saveYoyPrev(file.name, sheetName);
     } catch(err) {
       document.getElementById('yoyFileName').textContent = `❌ 오류: ${err.message}`;
     }
   };
   reader.readAsArrayBuffer(file);
 }
+
+// ── 전기 등록값 서버 저장·불러오기 (api/yoy-prev.js) ────────
+let YOY_SOURCE = '내장 기본값(25년)';
+async function saveYoyPrev(fileName, sheetName) {
+  const st = document.getElementById('yoyStatus');
+  try {
+    const res = await fetch('/api/yoy-prev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label: document.getElementById('yoyLabelPrev').value || '',
+        fileName, sheetName, rows: YOY_PREV,
+      }),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || '등록 실패');
+    YOY_SOURCE = `서버 등록값 (${fileName})`;
+    st.textContent = `💾 서버 등록 완료 (${new Date(result.registeredAt).toLocaleString('ko-KR')})`;
+  } catch (err) {
+    st.textContent = `⚠️ 서버 등록 실패: ${err.message} (이번 화면에서만 적용됨)`;
+  }
+}
+async function loadYoyPrev() {
+  try {
+    const res = await fetch('/api/yoy-prev');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data.rows) || !data.rows.length) return;
+    YOY_PREV = data.rows;
+    if (data.label) document.getElementById('yoyLabelPrev').value = data.label;
+    YOY_SOURCE = `서버 등록값 (${data.fileName || '파일명 없음'}, ${new Date(data.registeredAt).toLocaleDateString('ko-KR')} 등록)`;
+    const el = document.getElementById('yoyFileName');
+    if (el && RAW.length) { el.textContent = `📌 ${YOY_SOURCE} · ${YOY_PREV.length}개 지역·직종 · 파일 업로드 시 새로 등록`; el.style.color = 'var(--accent2)'; }
+  } catch {}
+}
+loadYoyPrev();
 
 function normalizeNcsName(s) {
   // 기본 정규화: 특수문자, 공백 처리
@@ -883,7 +923,7 @@ function renderYoY() {
     <tr>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;white-space:nowrap;min-width:52px;position:sticky;left:0;z-index:5;">시·도</th>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;min-width:150px;">직종명</th>
-      <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} 운영 성과 <span style="font-size:10px;opacity:.85;">(고정값)</span></th>
+      <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} 운영 성과 <span style="font-size:10px;opacity:.85;">(전기 등록값)</span></th>
       <th colspan="5" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} 운영 성과 <span style="font-size:10px;opacity:.85;">(현재 필터)</span></th>
       <th colspan="2" style="background:#065f46;color:#fff;text-align:center;border-left:2px solid #fff;">전년 대비</th>
     </tr>

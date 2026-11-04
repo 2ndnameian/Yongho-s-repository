@@ -1,0 +1,66 @@
+import { get, put } from "@vercel/blob";
+
+/*
+ * 훈련성과 대시보드(training_dashboard.html)의 전기(전년 비교) 등록값 보관.
+ * GET  : 현재 등록값 조회 (없으면 404 → 화면은 내장 기본값 사용)
+ * POST : 등록값 저장. 기존 등록값은 날짜별 사본(history/)으로 먼저 보관해 덮어쓰기 유실을 막는다.
+ */
+const CURRENT = "dashboard/yoy-prev/current.json";
+
+async function readCurrent() {
+  const result = await get(CURRENT, { access: "private", useCache: false });
+  if (!result || result.statusCode !== 200) return null;
+  return await new Response(result.stream).json();
+}
+
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  try {
+    if (req.method === "GET") {
+      const data = await readCurrent();
+      if (!data) return res.status(404).json({ error: "등록된 전기 자료 없음" });
+      return res.status(200).json(data);
+    }
+
+    if (req.method === "POST") {
+      const body = req.body || {};
+      if (!Array.isArray(body.rows) || body.rows.length === 0) {
+        return res.status(400).json({ error: "rows(전기 지역·직종 배열)가 필요합니다" });
+      }
+
+      const prev = await readCurrent().catch(() => null);
+      if (prev) {
+        const stamp = (prev.registeredAt || new Date().toISOString()).replace(/[:.]/g, "-");
+        await put(`dashboard/yoy-prev/history/${stamp}.json`, JSON.stringify(prev), {
+          access: "private",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          contentType: "application/json",
+        });
+      }
+
+      const data = {
+        label: String(body.label || ""),
+        fileName: String(body.fileName || ""),
+        sheetName: String(body.sheetName || ""),
+        registeredAt: new Date().toISOString(),
+        rows: body.rows,
+      };
+      await put(CURRENT, JSON.stringify(data), {
+        access: "private",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: "application/json",
+      });
+      return res.status(200).json({ ok: true, count: data.rows.length, registeredAt: data.registeredAt });
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
