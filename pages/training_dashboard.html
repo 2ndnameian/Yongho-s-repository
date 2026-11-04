@@ -189,10 +189,12 @@
     </div>
     <div style="display:grid;grid-template-columns:160px 180px 1fr;gap:14px;margin-bottom:16px;">
       <div class="filter-group">
-        <label>시·도</label>
-        <select id="sidoFilter" onchange="applyFilters()">
-          <option value="">전체</option>
-        </select>
+        <label>시·도 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택)</span></label>
+        <div style="position:relative;">
+          <div id="sidoBox" onclick="toggleSidoDropdown(event)"
+            style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;cursor:pointer;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">전체 ▾</div>
+          <div id="sidoDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:200px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+        </div>
       </div>
       <div class="filter-group">
         <label>국기직종명 <span style="font-size:10px;color:var(--text3);font-weight:400;">(다중선택)</span></label>
@@ -661,10 +663,9 @@ function initUI() {
       <span>${t}</span>
     </label>`).join('');
 
-  const sidos = [...new Set(RAW.map(r => r.sido).filter(Boolean))].sort();
-  const sf = document.getElementById('sidoFilter');
-  sf.innerHTML = '<option value="">전체</option>';
-  sidos.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
+  window.SIDO_LIST = [...new Set(RAW.map(r => r.sido).filter(Boolean))].sort();
+  window.selectedSidos = new Set();
+  renderSidoBox();
 
   const kdcNames = [...new Set(RAW.map(r => r.kdc_name).filter(v => v != null && v !== ''))].sort();
   window.KDC_LIST = kdcNames;
@@ -689,6 +690,7 @@ function initUI() {
     if (!e.target.closest('.filter-group')) {
       document.getElementById('ncsDropdown').style.display = 'none';
       document.getElementById('kdcDropdown').style.display = 'none';
+      document.getElementById('sidoDropdown').style.display = 'none';
     }
   });
 
@@ -733,7 +735,66 @@ function renderKdcDropdown() {
       <span style="font-size:12px;color:${checked?'var(--accent)':'var(--text)'};">${n}</span>
     </label>`;
   }).join('');
-  dd.innerHTML = hdr + `<div style="max-height:180px;overflow-y:auto;">${items}</div>`;
+  setDropdownHtml(dd, hdr + `<div class="dd-list" style="max-height:180px;overflow-y:auto;">${items}</div>`);
+}
+
+// 드롭다운을 다시 그려도 보던 스크롤 위치 유지 (체크 후 목록이 맨 위로 돌아가는 문제 방지)
+function setDropdownHtml(dd, html) {
+  const old = dd.querySelector('.dd-list');
+  const top = old ? old.scrollTop : 0;
+  dd.innerHTML = html;
+  const list = dd.querySelector('.dd-list');
+  if (list) list.scrollTop = top;
+}
+
+// ── 시·도 다중선택 ──────────────────────────────────────
+function sidoSummary() {
+  const s = [...(window.selectedSidos || new Set())];
+  if (!s.length) return '전체';
+  return s.length <= 3 ? s.join(', ') : s.slice(0, 3).join(', ') + ` 외 ${s.length - 3}`;
+}
+function renderSidoBox() {
+  const b = document.getElementById('sidoBox');
+  if (b) b.textContent = sidoSummary() + ' ▾';
+}
+function toggleSidoDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('sidoDropdown');
+  if (dd.style.display === 'block') { dd.style.display = 'none'; return; }
+  renderSidoDropdown();
+}
+function renderSidoDropdown() {
+  const list = window.SIDO_LIST || [];
+  const sel  = window.selectedSidos || new Set();
+  const dd   = document.getElementById('sidoDropdown');
+  dd.style.display = 'block';
+  const hdr = `<div style="padding:6px 12px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;background:#f8fafc;">
+    <span style="font-size:11px;color:var(--text3);">${sel.size ? sel.size + '개 선택' : '전체'}</span>
+    <button onclick="selectAllSido()" style="margin-left:auto;font-size:11px;padding:2px 8px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--accent);border-radius:4px;cursor:pointer;">전체선택</button>
+    <button onclick="clearAllSido()" style="font-size:11px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);color:var(--text3);border-radius:4px;cursor:pointer;">전체해제</button>
+  </div>`;
+  const items = list.map(s => {
+    const checked = sel.has(s);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;background:${checked?'rgba(79,142,247,.1)':'transparent'};">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleSido('${s}',this.checked)"
+        style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <span style="font-size:12px;color:${checked?'var(--accent)':'var(--text)'};">${s}</span>
+    </label>`;
+  }).join('');
+  setDropdownHtml(dd, hdr + `<div class="dd-list" style="max-height:240px;overflow-y:auto;">${items}</div>`);
+}
+function toggleSido(s, checked) {
+  if (!window.selectedSidos) window.selectedSidos = new Set();
+  if (checked) window.selectedSidos.add(s); else window.selectedSidos.delete(s);
+  renderSidoDropdown(); renderSidoBox(); applyFilters();
+}
+function selectAllSido() {
+  (window.SIDO_LIST || []).forEach(s => window.selectedSidos.add(s));
+  renderSidoDropdown(); renderSidoBox(); applyFilters();
+}
+function clearAllSido() {
+  window.selectedSidos = new Set();
+  renderSidoDropdown(); renderSidoBox(); applyFilters();
 }
 function selectAllKdc() {
   const q = (document.getElementById('kdcSearchInput').value||'').toLowerCase().trim();
@@ -1270,7 +1331,7 @@ function renderNcsDropdown() {
       <span style="font-size:12px;color:${checked?'var(--accent)':'var(--text)'};">${n.name}</span>
     </label>`;
   }).join('');
-  dd.innerHTML = headerHtml + `<div style="max-height:180px;overflow-y:auto;">${itemsHtml}</div>`;
+  setDropdownHtml(dd, headerHtml + `<div class="dd-list" style="max-height:180px;overflow-y:auto;">${itemsHtml}</div>`);
 }
 function selectAllNcs() {
   const q = (document.getElementById('ncsSearchInput').value||'').toLowerCase().trim();
@@ -1310,7 +1371,7 @@ function renderNcsSelected() {
 
 function applyFilters() {
   const selTypes = [...document.querySelectorAll('#typeFilter input:checked')].map(i => i.value);
-  const sido     = document.getElementById('sidoFilter').value;
+  const selSido  = window.selectedSidos || new Set();
   const selNcs   = window.selectedNcsCodes || new Set();
   const selKdc   = window.selectedKdcNames || new Set();
   const ds       = document.getElementById('dateStart').value;
@@ -1318,7 +1379,7 @@ function applyFilters() {
   const basis    = document.querySelector('input[name=dateBasis]:checked').value;
   FILTERED = RAW.filter(r => {
     if (!selTypes.includes(r.type)) return false;
-    if (sido && r.sido !== sido) return false;
+    if (selSido.size > 0 && !selSido.has(r.sido)) return false;
     if (selNcs.size > 0 && !selNcs.has(r.ncs_code)) return false;
     if (selKdc.size > 0 && (r.kdc_name == null || !selKdc.has(r.kdc_name))) return false;
     const d = basis === 'end' ? r.end : r.start;
@@ -1339,7 +1400,9 @@ function resetFilters() {
     el.classList.add('active');
     el.querySelector('input').checked = true;
   });
-  document.getElementById('sidoFilter').value = '';
+  window.selectedSidos = new Set();
+  renderSidoBox();
+  document.getElementById('sidoDropdown').style.display = 'none';
   window.selectedKdcNames = new Set();
   document.getElementById('kdcSearchInput').value = '';
   renderKdcDropdown(); renderKdcSelected();
@@ -1879,7 +1942,7 @@ function exportAnalysis2Excel() {
     const pctVal = v => v != null ? parseFloat((v*100).toFixed(1)) : '';
     const fmtNum = v => v != null ? parseFloat(v.toFixed(1)) : '';
     const fmtInt = v => v != null ? Math.round(v) : '';
-    const sidoVal   = document.getElementById('sidoFilter').value || '전체';
+    const sidoVal   = [...(window.selectedSidos || new Set())].join(', ') || '전체';
     const selKdcArr = Array.from(window.selectedKdcNames || new Set());
     const kdcVal    = selKdcArr.length ? selKdcArr.join(', ') : '전체';
     const ds        = document.getElementById('dateStart').value || '';
