@@ -58,6 +58,7 @@ export default async function handler(req, res) {
         fileName: String(body.fileName || ""),
         sheetName: String(body.sheetName || ""),
         registeredAt: new Date().toISOString(),
+        ver: Number(body.ver) || 1,
         ...(hasGroups ? { groups: body.groups } : { rows: body.rows }),
       };
       await put(CURRENT, JSON.stringify(data), {
