@@ -777,11 +777,16 @@ let YOY_PREV = [{"region":"서울","ncs":"디지털컨버전스","score":46.8091
 function handleYoyFile(file) {
   if (!file) return;
   const reader = new FileReader();
+  const beforePrev = YOY_PREV;
+  const beforeLabel = document.getElementById('yoyLabelPrev').value;
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array' });
       const sheetName = wb.SheetNames.find(s => s.includes('전년대비'))
-        || wb.SheetNames.find(s => s.includes('직종별')) || wb.SheetNames[0];
+        || wb.SheetNames.find(s => s.includes('직종별'));
+      if (!sheetName) throw new Error(
+        `전기 형식이 아닙니다 (탭 목록: ${wb.SheetNames.join(', ')}). ` +
+        `'전년대비' 또는 '직종별' 탭이 있는 지역·직종 집계표를 올려주세요. 등록하지 않았습니다.`);
       const ws  = wb.Sheets[sheetName];
       const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
       let dataStart = -1, hdrIdx = -1;
@@ -845,13 +850,22 @@ function handleYoyFile(file) {
           emp_rate:  parseFloat(row[13]) || null,
         });
       }
+      // 형식 검사: 지역이 한글 시도명이고 성과 값이 하나라도 있는 행이 없으면 등록하지 않는다
+      const valid = YOY_PREV.filter(p => /[가-힣]/.test(p.region) &&
+        [p.score, p.cnt, p.complete, p.emp_rate].some(v => v != null));
+      if (!valid.length) throw new Error(
+        `'${sheetName}' 탭에서 지역·직종 성과 값을 찾지 못했습니다. 전기 형식이 아니어서 등록하지 않았습니다.`);
       document.getElementById('yoyFileName').textContent =
         `✅ ${file.name} | ${sheetName} | ${YOY_PREV.length}개 지역·직종`;
       document.getElementById('yoyStatus').textContent = '⏳ 서버에 전기 자료 등록 중...';
       renderYoY();
       saveYoyPrev(file.name, sheetName);
     } catch(err) {
-      document.getElementById('yoyFileName').textContent = `❌ 오류: ${err.message}`;
+      YOY_PREV = beforePrev;
+      document.getElementById('yoyLabelPrev').value = beforeLabel;
+      syncYoyCurrLabel();
+      document.getElementById('yoyFileName').textContent = `❌ ${err.message}`;
+      document.getElementById('yoyStatus').textContent = '';
     }
   };
   reader.readAsArrayBuffer(file);

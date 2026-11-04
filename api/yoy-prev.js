@@ -31,6 +31,12 @@ export default async function handler(req, res) {
       if (!Array.isArray(body.rows) || body.rows.length === 0) {
         return res.status(400).json({ error: "rows(전기 지역·직종 배열)가 필요합니다" });
       }
+      // 형식 검사: 한글 시도명 + 성과 값이 있는 행이 하나도 없으면 전기 자료로 보지 않는다
+      const valid = body.rows.filter(p => p && /[가-힣]/.test(String(p.region || "")) &&
+        ["score", "cnt", "complete", "emp_rate"].some(k => p[k] != null));
+      if (!valid.length) {
+        return res.status(400).json({ error: "전기 형식이 아닙니다(지역·직종 성과 값 없음). 저장하지 않았습니다" });
+      }
 
       const prev = await readCurrent().catch(() => null);
       if (prev) {
