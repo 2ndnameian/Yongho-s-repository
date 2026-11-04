@@ -430,7 +430,7 @@
       <div style="flex:1;min-width:260px;">
         <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;letter-spacing:.04em;">기준연도 표시명</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input type="text" id="yoyLabelPrev" value="25년" placeholder="예: 25년"
+          <input type="text" id="yoyLabelPrev" value="25년" placeholder="예: 25년" oninput="syncYoyCurrLabel()"
             style="width:72px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;">
           <span style="color:var(--text3);">→ 비교연도:</span>
           <input type="text" id="yoyLabelCurr" value="26년" placeholder="예: 26년"
@@ -780,19 +780,52 @@ function handleYoyFile(file) {
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array' });
-      const sheetName = wb.SheetNames.find(s => s.includes('직종별')) || wb.SheetNames[0];
+      const sheetName = wb.SheetNames.find(s => s.includes('전년대비'))
+        || wb.SheetNames.find(s => s.includes('직종별')) || wb.SheetNames[0];
       const ws  = wb.Sheets[sheetName];
       const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-      let dataStart = -1;
+      let dataStart = -1, hdrIdx = -1;
       for (let i = 0; i < raw.length; i++) {
         const row = raw[i].map(v => (v||'').toString());
-        if (row.some(v => v.includes('직종명')) && row.some(v => v.includes('지역'))) {
-          dataStart = i + 2; break;
+        if (row.some(v => v.includes('직종명')) && row.some(v => v.includes('지역') || v.trim() === '시도')) {
+          dataStart = i + 2; hdrIdx = i; break;
         }
       }
       if (dataStart < 0) dataStart = 4;
       YOY_PREV = [];
-      for (let i = dataStart; i < raw.length; i++) {
+
+      // ── 전년대비 묶음 형식: 헤더에 "NN년 운영성과(AA - BB년 종료)" 묶음이 나란히 있는 파일
+      //    (대시보드 '④전년대비' 출력본). 가장 오른쪽(최신) 묶음 6열만 전기로 읽는다.
+      //    열 순서: 성과배점, 개설수, 만족도, 수료, 취업, 취업률(%)
+      const blockRe = /(\d{2})\s*년\s*운영\s*성과/;
+      const hdr = hdrIdx >= 0 ? raw[hdrIdx].map(v => (v||'').toString()) : [];
+      const blockCols = hdr.map((v, i) => blockRe.test(v) ? i : -1).filter(i => i >= 0);
+      if (blockCols.length) {
+        const c0   = blockCols[blockCols.length - 1];
+        const yy   = parseInt(hdr[c0].match(blockRe)[1]);
+        const cReg = hdr.findIndex(v => v.trim() === '시도' || v.includes('지역'));
+        const cNcs = hdr.findIndex(v => v.includes('직종명'));
+        const num  = v => (v == null || v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
+        for (let i = dataStart; i < raw.length; i++) {
+          const row = raw[i];
+          if (!row || row.every(v => v == null || v === '')) continue;
+          if (row[0] == null || isNaN(parseFloat(row[0]))) continue;
+          const region = (row[cReg] || '').toString().trim();
+          const ncs    = normalizeNcsName((row[cNcs] || '').toString());
+          if (!region || !ncs) continue;
+          const er = num(row[c0 + 5]);
+          YOY_PREV.push({
+            region, ncs,
+            score: num(row[c0]), cnt: num(row[c0 + 1]), sat: num(row[c0 + 2]),
+            recruit: null, complete: num(row[c0 + 3]), employ: num(row[c0 + 4]),
+            comp_rate: null, emp_rate: er == null ? null : er / 100,
+          });
+        }
+        document.getElementById('yoyLabelPrev').value = yy + '년';
+        syncYoyCurrLabel();
+      }
+
+      for (let i = dataStart; !blockCols.length && i < raw.length; i++) {
         const row = raw[i];
         if (!row || row.every(v => v == null || v === '')) continue;
         const seq = row[0];
@@ -852,7 +885,7 @@ async function loadYoyPrev() {
     const data = await res.json();
     if (!Array.isArray(data.rows) || !data.rows.length) return;
     YOY_PREV = data.rows;
-    if (data.label) document.getElementById('yoyLabelPrev').value = data.label;
+    if (data.label) { document.getElementById('yoyLabelPrev').value = data.label; syncYoyCurrLabel(); }
     YOY_SOURCE = `서버 등록값 (${data.fileName || '파일명 없음'}, ${new Date(data.registeredAt).toLocaleDateString('ko-KR')} 등록)`;
     const el = document.getElementById('yoyFileName');
     if (el && RAW.length) { el.textContent = `📌 ${YOY_SOURCE} · ${YOY_PREV.length}개 지역·직종 · 파일 업로드 시 새로 등록`; el.style.color = 'var(--accent2)'; }
@@ -881,14 +914,34 @@ function normalizeNcsName(s) {
   return MAP[r] || r;
 }
 
+// ── 전년 대비 기간 규칙: "NN년 운영성과" = 종료일 (NN-2)년 1월 ~ (NN-1)년 12월
+//    예) 26년 운영성과 = 24-25년 종료(전기), 27년 운영성과 = 25-26년 종료(당기)
+function yoyYear(id) {
+  const m = (document.getElementById(id).value || '').match(/(\d{2})\s*년/);
+  return m ? parseInt(m[1]) : null;
+}
+function yoyPeriodText(n) { return n ? `${n-2}-${n-1}년 종료` : ''; }
+function syncYoyCurrLabel() {
+  const n = yoyYear('yoyLabelPrev');
+  if (n) document.getElementById('yoyLabelCurr').value = (n + 1) + '년';
+}
+// 전년 대비 화면에서만 쓰는 당기 자료: 현재 필터 결과 중 당기 종료기간에 해당하는 과정
+function yoyCurrRows() {
+  const n = yoyYear('yoyLabelCurr');
+  if (!n) return FILTERED;
+  const from = `20${String(n-2).padStart(2,'0')}-01-01`, to = `20${String(n-1).padStart(2,'0')}-12-31`;
+  return FILTERED.filter(r => r.end && fmtDate(r.end) >= from && fmtDate(r.end) <= to);
+}
+
 function buildCurrMap() {
   const map = {};
-  const keys = [...new Set(FILTERED.map(r => r.sido + '|||' + normalizeNcsName(r.ncs_name)))];
+  const CURR = yoyCurrRows();
+  const keys = [...new Set(CURR.map(r => r.sido + '|||' + normalizeNcsName(r.ncs_name)))];
   keys.forEach(k => {
     const sep  = k.indexOf('|||');
     const sido = k.slice(0, sep);
     const ncs  = k.slice(sep + 3);
-    const rs   = FILTERED.filter(r => r.sido === sido && normalizeNcsName(r.ncs_name) === ncs);
+    const rs   = CURR.filter(r => r.sido === sido && normalizeNcsName(r.ncs_name) === ncs);
     map[k] = calcAggByInst(rs);
   });
   return map;
@@ -897,8 +950,9 @@ function buildCurrMap() {
 function buildPrevKey(r) { return r.region + '|||' + r.ncs; }
 
 function renderYoY() {
-  const labelPrev = document.getElementById('yoyLabelPrev').value || '25년';
-  const labelCurr = document.getElementById('yoyLabelCurr').value || '26년';
+  const nP = yoyYear('yoyLabelPrev'), nC = yoyYear('yoyLabelCurr');
+  const labelPrev = (document.getElementById('yoyLabelPrev').value || '25년') + ' 운영성과' + (nP ? `(${yoyPeriodText(nP)})` : '');
+  const labelCurr = (document.getElementById('yoyLabelCurr').value || '26년') + ' 운영성과' + (nC ? `(${yoyPeriodText(nC)})` : '');
   if (!YOY_PREV.length) {
     document.getElementById('yoyTbody').innerHTML =
       '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">📂 위에서 전년(25년) 기준 파일을 업로드하세요</td></tr>';
@@ -910,7 +964,7 @@ function renderYoY() {
     return;
   }
   const currMap   = buildCurrMap();
-  const currSidos = new Set(FILTERED.map(r => r.sido));
+  const currSidos = new Set(yoyCurrRows().map(r => r.sido));
   const rows = YOY_PREV
     .filter(p => currSidos.has(p.region))
     .map(p => {
@@ -923,8 +977,8 @@ function renderYoY() {
     <tr>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;white-space:nowrap;min-width:52px;position:sticky;left:0;z-index:5;">시·도</th>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;min-width:150px;">직종명</th>
-      <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} 운영 성과 <span style="font-size:10px;opacity:.85;">(전기 등록값)</span></th>
-      <th colspan="5" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} 운영 성과 <span style="font-size:10px;opacity:.85;">(현재 필터)</span></th>
+      <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} <span style="font-size:10px;opacity:.85;">(전기 등록값)</span></th>
+      <th colspan="5" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} <span style="font-size:10px;opacity:.85;">(업로드 자료)</span></th>
       <th colspan="2" style="background:#065f46;color:#fff;text-align:center;border-left:2px solid #fff;">전년 대비</th>
     </tr>
     <tr>
@@ -1031,12 +1085,12 @@ function exportYoyExcel() {
   var lP=document.getElementById('yoyLabelPrev').value||'25년';
   var lC=document.getElementById('yoyLabelCurr').value||'26년';
   var today=fmtDate(new Date()), wb=XLSX.utils.book_new();
-  var cMap=buildCurrMap(), cSi=new Set(FILTERED.map(function(r){return r.sido;}));
+  var cMap=buildCurrMap(), cSi=new Set(yoyCurrRows().map(function(r){return r.sido;}));
   var S=xlsxStyles();
   var rows=YOY_PREV.filter(function(p){return cSi.has(p.region);})
     .sort(function(a,b){var r=a.region.localeCompare(b.region,'ko');return r!==0?r:a.ncs.localeCompare(b.ncs,'ko');});
   var wd=[
-    [xC('직종별 운영기관 성과 평균 현황 ['+lC+' 종료과정 기준]',S.title)],
+    [xC('직종별 운영기관 성과 평균 현황 ['+lP+' 운영성과('+yoyPeriodText(yoyYear('yoyLabelPrev'))+') → '+lC+' 운영성과('+yoyPeriodText(yoyYear('yoyLabelCurr'))+')]',S.title)],
     [xC('◆ 조사 및 작성 : 국비사업팀',S.sub)],
     [],
     [xC('시·도',S.hdrBase),xC('직종명',S.hdrBase),
@@ -1800,10 +1854,10 @@ function exportAnalysis2Excel() {
       var lP=document.getElementById('yoyLabelPrev').value||'25년';
       var lC=document.getElementById('yoyLabelCurr').value||'26년';
       var cM=buildCurrMap(), cSi={}, S4=xlsxStyles();
-      FILTERED.forEach(function(r){cSi[r.sido]=true;});
+      yoyCurrRows().forEach(function(r){cSi[r.sido]=true;});
       var d4=[
         [xC(infoTxt,{})],[],
-        [xC('[직종별 전년 대비] '+lP+' → '+lC,{})],
+        [xC('[직종별 전년 대비] '+lP+' 운영성과('+yoyPeriodText(yoyYear('yoyLabelPrev'))+') → '+lC+' 운영성과('+yoyPeriodText(yoyYear('yoyLabelCurr'))+')',{})],
         [xC('시도',S4.hdrBase),xC('직종명',S4.hdrBase),
          xC(lP+' 성과배점',S4.hdrPrev),xC(lP+' 개설수',S4.hdrPrev),xC(lP+' 만족도',S4.hdrPrev),xC(lP+' 수료',S4.hdrPrev),xC(lP+' 취업',S4.hdrPrev),xC(lP+' 취업률(%)',S4.hdrPrev),
          xC(lC+' 성과배점',S4.hdrCurr),xC(lC+' 개설수',S4.hdrCurr),xC(lC+' 만족도',S4.hdrCurr),xC(lC+' 수료',S4.hdrCurr),xC(lC+' 취업',S4.hdrCurr),xC(lC+' 취업률(%)',S4.hdrCurr),
