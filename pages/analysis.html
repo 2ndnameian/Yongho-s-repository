@@ -57,6 +57,16 @@
   .json-type-공모사업 { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
   .json-type-뉴스   { background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4; }
   .json-type-경쟁기관 { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+
+  /* 인쇄: 보고서 영역만 출력, 여러 장으로 끝까지 */
+  @media print {
+    .header, .sidebar, .hero, .load-banner, #input-section, #progress-section, button { display:none !important; }
+    html, body { background:#fff !important; }
+    .layout { display:block !important; height:auto !important; }
+    .main { overflow:visible !important; height:auto !important; padding:0 !important; background:#fff !important; }
+    .analysis-section, .card { box-shadow:none !important; border:1px solid #e2e8f0; break-inside:avoid; }
+    details > *:not(summary) { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -289,7 +299,8 @@ const ANALYSIS_PROMPTS = {
 [수집 데이터]
 ${data}
 
-JSON으로만 출력 (백틱 금지):
+규칙: JSON만 출력. 백틱·마크다운·설명문 금지. 각 배열은 형식에 적힌 개수만, 항목마다 한 문장(80자 이내). 문자열 값 안에 큰따옴표 사용 금지(홑따옴표 사용).
+출력 형식:
 {"directions":["방향1","방향2","방향3"],"impacts":["영향1","영향2","영향3"],"predictions":["예측1","예측2"],"responses":["대응1","대응2","대응3"],"summary":"핵심요약(2문장)"}`,
 
   project: (data, orgInfo) => `당신은 대한민국 직업훈련 공모사업 전문가입니다.
@@ -479,7 +490,7 @@ async function callClaude(prompt, retries = 3) {
       const res = await fetch(CLAUDE_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, max_tokens: 1500 }),
+        body: JSON.stringify({ prompt, max_tokens: 3000 }),
       });
       // 429 Too Many Requests → 재시도
       if (res.status === 429) {
