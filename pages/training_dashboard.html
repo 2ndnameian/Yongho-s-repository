@@ -1150,12 +1150,12 @@ function renderYoY() {
   const labelCurr = (document.getElementById('yoyLabelCurr').value || '26년') + ' 운영성과' + (nC ? `(${yoyPeriodText(nC)})` : '');
   if (!YOY_PREV.length) {
     document.getElementById('yoyTbody').innerHTML =
-      '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">📂 위에서 전년(25년) 기준 파일을 업로드하세요</td></tr>';
+      '<tr><td colspan="15" style="text-align:center;padding:48px;color:var(--text3);">📂 위에서 전년(25년) 기준 파일을 업로드하세요</td></tr>';
     return;
   }
   if (!FILTERED.length) {
     document.getElementById('yoyTbody').innerHTML =
-      '<tr><td colspan="14" style="text-align:center;padding:48px;color:var(--text3);">상단 필터를 적용해 비교 데이터를 선택하세요</td></tr>';
+      '<tr><td colspan="15" style="text-align:center;padding:48px;color:var(--text3);">상단 필터를 적용해 비교 데이터를 선택하세요</td></tr>';
     return;
   }
   const currMap   = buildCurrMap();
@@ -1173,7 +1173,7 @@ function renderYoY() {
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;white-space:nowrap;min-width:52px;position:sticky;left:0;z-index:5;">시·도</th>
       <th rowspan="2" style="background:#92400e;color:#fff;text-align:center;min-width:150px;">직종명</th>
       <th colspan="6" style="background:#d97706;color:#fff;text-align:center;border-left:2px solid #fff;">${labelPrev} <span style="font-size:10px;opacity:.85;">(전기 등록값)</span></th>
-      <th colspan="5" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} <span style="font-size:10px;opacity:.85;">(업로드 자료)</span></th>
+      <th colspan="6" style="background:#1e40af;color:#fff;text-align:center;border-left:2px solid #fff;">${labelCurr} <span style="font-size:10px;opacity:.85;">(업로드 자료)</span></th>
       <th colspan="2" style="background:#065f46;color:#fff;text-align:center;border-left:2px solid #fff;">전년 대비</th>
     </tr>
     <tr>
@@ -1187,6 +1187,7 @@ function renderYoY() {
       <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">개설수</th>
       <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">만족도</th>
       <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">수료</th>
+      <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;">취업</th>
       <th style="background:#dbeafe;color:#1e3a8a;font-size:11px;text-align:right;min-width:68px;border-right:2px solid #1e40af;">취업률</th>
       <th style="background:#d1fae5;color:#065f46;font-size:11px;text-align:center;min-width:72px;">▲▼ 성과배점</th>
       <th style="background:#d1fae5;color:#065f46;font-size:11px;text-align:center;min-width:72px;">▲▼ 취업률</th>
@@ -1240,6 +1241,7 @@ function renderYoY() {
       <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cCourseCnt) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cf(cSat) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cComp) : '-'}</td>
+      <td style="text-align:right;background:#eff6ff;font-size:12px;">${c ? cv(cEmp) : '-'}</td>
       <td style="text-align:right;background:#eff6ff;font-size:12px;font-weight:600;border-right:2px solid #1e40af;">${c ? cp(cEmpR) : '-'}</td>
       <td style="text-align:center;background:#ecfdf5;font-size:12px;">${fmtDiff(diffScore, false)}</td>
       <td style="text-align:center;background:#ecfdf5;font-size:12px;">${fmtDiff(diffEmpR, true)}</td>
